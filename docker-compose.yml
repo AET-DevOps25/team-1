@@ -1,0 +1,126 @@
+version: '3.8'
+
+services:
+  # Frontend services
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    expose:
+      - "80"
+    depends_on:
+      - service-gateway
+    networks:
+      - frontend-network
+      - backend-network
+
+  # Gateway service
+  service-gateway:
+    build:
+      context: ./service-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - service-job
+      - service-application
+      - service-assess
+      - service-genai
+    networks:
+      - backend-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+  # Job service
+  service-job:
+    build:
+      context: ./service-job
+      dockerfile: Dockerfile
+    expose:
+      - "8080"
+    depends_on:
+      - postgres
+    networks:
+      - backend-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/hrapp
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+
+  # Application service
+  service-application:
+    build:
+      context: ./service-application
+      dockerfile: Dockerfile
+    expose:
+      - "8080"
+    depends_on:
+      - postgres
+    networks:
+      - backend-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/hrapp
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+
+  # Assessment service
+  service-assess:
+    build:
+      context: ./service-assess
+      dockerfile: Dockerfile
+    expose:
+      - "8080"
+    depends_on:
+      - postgres
+    networks:
+      - backend-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/hrapp
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+
+  # GenAI Python service
+  service-genai:
+    build:
+      context: ./service-genai
+      dockerfile: Dockerfile
+    expose:
+      - "8080"
+    depends_on:
+      - postgres
+    networks:
+      - backend-network
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=hrapp
+
+  # PostgreSQL with pgvector
+  postgres:
+    image: pgvector:0.8.0-pg17
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=hrapp
+    expose:
+      - "5432"
+    networks:
+      - backend-network
+
+networks:
+  frontend-network:
+    driver: bridge
+  backend-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+    driver: local
