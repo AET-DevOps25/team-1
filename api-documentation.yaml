@@ -1,0 +1,1409 @@
+openapi: 3.0.3
+info:
+  title: AI-HR Recruitment System API
+  description: |
+    AI-driven recruitment system with resume filtering, automated interviews, and candidate scoring.
+
+    ## System Overview
+    - **Users**: Candidates and HR personnel
+    - **Core Features**: Resume filtering, AI interviews, candidate scoring
+    - **Architecture**: Microservices with API Gateway
+
+    ## Authentication
+    All APIs (except auth endpoints) require JWT Bearer token in Authorization header.
+
+  version: 1.0.0
+  contact:
+    name: AI-HR Team
+    email: team@aihr.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Development server
+  - url: https://api.aihr.com/v1
+    description: Production server
+
+# Security definitions
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from login endpoint
+
+  # Common response schemas
+  schemas:
+    # Unified Response Format
+    ApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Whether the request was successful
+        message:
+          type: string
+          description: Human-readable message
+        data:
+          oneOf:
+            - type: object
+            - type: array
+            - type: "null"
+          description: Response data (can be object, array, or null)
+        timestamp:
+          type: string
+          format: date-time
+          description: Response timestamp in ISO 8601 format
+        code:
+          type: integer
+          description: HTTP status code
+      required:
+        - success
+        - message
+        - timestamp
+        - code
+
+    # Error Response
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Error description"
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+        timestamp:
+          type: string
+          format: date-time
+        code:
+          type: integer
+
+    # Pagination
+    PageInfo:
+      type: object
+      properties:
+        page:
+          type: integer
+          minimum: 0
+          description: Current page number (0-based)
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+          description: Number of items per page
+        total:
+          type: integer
+          description: Total number of items
+        totalPages:
+          type: integer
+          description: Total number of pages
+
+    PagedResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponse"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                content:
+                  type: array
+                  items: {}
+                pageInfo:
+                  $ref: "#/components/schemas/PageInfo"
+
+    # User DTOs
+    UserDto:
+      type: object
+      properties:
+        userID:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        role:
+          type: string
+          enum: [CANDIDATE, HR]
+        creationTimestamp:
+          type: string
+          format: date-time
+      required:
+        - userID
+        - fullName
+        - email
+        - role
+
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+      required:
+        - email
+        - password
+
+    RegisterRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        password:
+          type: string
+          minLength: 6
+      required:
+        - fullName
+        - email
+        - password
+
+    RegisterHRRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        password:
+          type: string
+          minLength: 6
+      required:
+        - fullName
+        - email
+        - password
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT access token
+        refreshToken:
+          type: string
+          description: Refresh token
+        user:
+          $ref: "#/components/schemas/UserDto"
+        expiresIn:
+          type: integer
+          description: Token expiration time in seconds
+
+    # Job DTOs
+    JobPostingDto:
+      type: object
+      properties:
+        jobID:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        status:
+          type: string
+          enum: [OPEN, CLOSED, DRAFT]
+        creationTimestamp:
+          type: string
+          format: date-time
+        closingDate:
+          type: string
+          format: date
+        lastModifiedTimestamp:
+          type: string
+          format: date-time
+        hrCreator:
+          $ref: "#/components/schemas/UserDto"
+        requirements:
+          type: array
+          items:
+            $ref: "#/components/schemas/JobRequirementDto"
+      required:
+        - jobID
+        - title
+        - status
+        - hrCreator
+
+    JobRequirementDto:
+      type: object
+      properties:
+        requirementID:
+          type: string
+          format: uuid
+        description:
+          type: string
+        type:
+          type: string
+          enum: [SKILL, EXPERIENCE, EDUCATION, OTHER]
+        isMandatory:
+          type: boolean
+      required:
+        - requirementID
+        - description
+        - type
+        - isMandatory
+
+    CreateJobRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        closingDate:
+          type: string
+          format: date
+        requirements:
+          type: array
+          items:
+            type: object
+            properties:
+              description:
+                type: string
+              type:
+                type: string
+                enum: [SKILL, EXPERIENCE, EDUCATION, OTHER]
+              isMandatory:
+                type: boolean
+            required:
+              - description
+              - type
+              - isMandatory
+      required:
+        - title
+        - description
+
+    UpdateJobRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        closingDate:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [OPEN, CLOSED, DRAFT]
+
+    # Application DTOs
+    ApplicationDto:
+      type: object
+      properties:
+        applicationID:
+          type: string
+          format: uuid
+        submissionTimestamp:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum:
+            [
+              SUBMITTED,
+              IN_REVIEW,
+              SHORTLISTED,
+              REJECTED,
+              INTERVIEWING,
+              OFFERED,
+              HIRED,
+            ]
+        resumeContent:
+          type: string
+        originalResumeFilename:
+          type: string
+        originalResumeFileReference:
+          type: string
+        lastModifiedTimestamp:
+          type: string
+          format: date-time
+        candidate:
+          $ref: "#/components/schemas/UserDto"
+        job:
+          $ref: "#/components/schemas/JobPostingDto"
+        assessment:
+          $ref: "#/components/schemas/AssessmentDto"
+      required:
+        - applicationID
+        - status
+        - candidate
+        - job
+
+    CreateApplicationRequest:
+      type: object
+      properties:
+        jobID:
+          type: string
+          format: uuid
+        resumeContent:
+          type: string
+        originalResumeFilename:
+          type: string
+          description: Original filename of uploaded resume (optional)
+        originalResumeFileReference:
+          type: string
+          description: File reference/path generated by file upload service (optional)
+      required:
+        - jobID
+        - resumeContent
+
+    UpdateApplicationRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            [
+              SUBMITTED,
+              IN_REVIEW,
+              SHORTLISTED,
+              REJECTED,
+              INTERVIEWING,
+              OFFERED,
+              HIRED,
+            ]
+
+    # Assessment DTOs
+    AssessmentDto:
+      type: object
+      properties:
+        assessmentID:
+          type: string
+          format: uuid
+        assessmentTimestamp:
+          type: string
+          format: date-time
+        overallScore:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+        summary:
+          type: string
+        resumeAnalysisDetails:
+          type: object
+          description: JSON object containing detailed resume analysis
+        filterStatus:
+          type: string
+          enum: [PASSED_FILTER, FAILED_FILTER, NOT_EVALUATED]
+        lastModifiedTimestamp:
+          type: string
+          format: date-time
+        application:
+          $ref: "#/components/schemas/ApplicationDto"
+        chatSessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChatSessionDto"
+      required:
+        - assessmentID
+        - filterStatus
+        - application
+
+    CreateAssessmentRequest:
+      type: object
+      properties:
+        applicationID:
+          type: string
+          format: uuid
+      required:
+        - applicationID
+
+    # Chat DTOs
+    ChatSessionDto:
+      type: object
+      properties:
+        sessionID:
+          type: string
+          format: uuid
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        assessment:
+          $ref: "#/components/schemas/AssessmentDto"
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChatMessageDto"
+      required:
+        - sessionID
+        - startTime
+
+    ChatMessageDto:
+      type: object
+      properties:
+        messageID:
+          type: string
+          format: uuid
+        sender:
+          type: string
+          enum: [AI, CANDIDATE]
+        timestamp:
+          type: string
+          format: date-time
+        content:
+          type: string
+        messageOrder:
+          type: integer
+      required:
+        - messageID
+        - sender
+        - content
+        - messageOrder
+
+    CreateChatSessionRequest:
+      type: object
+      properties:
+        assessmentID:
+          type: string
+          format: uuid
+      required:
+        - assessmentID
+
+    SendMessageRequest:
+      type: object
+      properties:
+        content:
+          type: string
+          maxLength: 2000
+      required:
+        - content
+
+    # GenAI DTOs
+    ResumeFilterRequest:
+      type: object
+      properties:
+        resumeContent:
+          type: string
+        jobRequirements:
+          type: array
+          items:
+            $ref: "#/components/schemas/JobRequirementDto"
+      required:
+        - resumeContent
+        - jobRequirements
+
+    ResumeFilterResponse:
+      type: object
+      properties:
+        passed:
+          type: boolean
+        score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+        analysis:
+          type: object
+          properties:
+            strengths:
+              type: array
+              items:
+                type: string
+            weaknesses:
+              type: array
+              items:
+                type: string
+            recommendations:
+              type: array
+              items:
+                type: string
+
+    GenerateQuestionsRequest:
+      type: object
+      properties:
+        jobRequirements:
+          type: array
+          items:
+            $ref: "#/components/schemas/JobRequirementDto"
+        resumeContent:
+          type: string
+        candidateBackground:
+          type: object
+      required:
+        - jobRequirements
+        - resumeContent
+
+    GenerateQuestionsResponse:
+      type: object
+      properties:
+        questions:
+          type: array
+          items:
+            type: object
+            properties:
+              question:
+                type: string
+              category:
+                type: string
+              difficulty:
+                type: string
+                enum: [EASY, MEDIUM, HARD]
+              expectedAnswerPoints:
+                type: array
+                items:
+                  type: string
+
+    ScoreCandidateRequest:
+      type: object
+      properties:
+        resumeContent:
+          type: string
+        chatHistory:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChatMessageDto"
+        jobRequirements:
+          type: array
+          items:
+            $ref: "#/components/schemas/JobRequirementDto"
+      required:
+        - resumeContent
+        - chatHistory
+        - jobRequirements
+
+    ScoreCandidateResponse:
+      type: object
+      properties:
+        overallScore:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+        categoryScores:
+          type: object
+          additionalProperties:
+            type: number
+            format: float
+        summary:
+          type: string
+        recommendations:
+          type: array
+          items:
+            type: string
+
+# Apply security globally except for auth endpoints
+security:
+  - BearerAuth: []
+
+paths:
+  # Authentication APIs
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate user with email and password
+      security: [] # No auth required for login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+            example:
+              email: "john.doe@example.com"
+              password: "password123"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/AuthResponse"
+              example:
+                success: true
+                message: "Login successful"
+                data:
+                  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  user:
+                    userID: "123e4567-e89b-12d3-a456-426614174000"
+                    fullName: "John Doe"
+                    email: "john.doe@example.com"
+                    role: "CANDIDATE"
+                    creationTimestamp: "2023-10-01T10:00:00Z"
+                  expiresIn: 3600
+                timestamp: "2023-10-01T10:00:00Z"
+                code: 200
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                message: "Invalid email or password"
+                timestamp: "2023-10-01T10:00:00Z"
+                code: 401
+
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: User registration
+      description: Register a new user (defaults to candidate role)
+      security: [] # No auth required for registration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+            example:
+              fullName: "Jane Smith"
+              email: "jane.smith@example.com"
+              password: "password123"
+      responses:
+        "201":
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/AuthResponse"
+              example:
+                success: true
+                message: "Registration successful"
+                data:
+                  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  user:
+                    userID: "456e7890-e89b-12d3-a456-426614174001"
+                    fullName: "Jane Smith"
+                    email: "jane.smith@example.com"
+                    role: "HR"
+                    creationTimestamp: "2023-10-01T10:00:00Z"
+                  expiresIn: 3600
+                timestamp: "2023-10-01T10:00:00Z"
+                code: 201
+        "400":
+          description: Validation error or email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                message: "Validation failed"
+                errors:
+                  - field: "email"
+                    message: "Email already exists"
+                timestamp: "2023-10-01T10:00:00Z"
+                code: 400
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: User logout
+      description: Logout user and invalidate token
+      responses:
+        "200":
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+              example:
+                success: true
+                message: "Logout successful"
+                data: null
+                timestamp: "2023-10-01T10:00:00Z"
+                code: 200
+
+  /auth/profile:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user profile
+      description: Retrieve the current authenticated user's profile
+      responses:
+        "200":
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/UserDto"
+              example:
+                success: true
+                message: "Profile retrieved successfully"
+                data:
+                  userID: "123e4567-e89b-12d3-a456-426614174000"
+                  fullName: "John Doe"
+                  email: "john.doe@example.com"
+                  role: "CANDIDATE"
+                  creationTimestamp: "2023-10-01T10:00:00Z"
+                  timestamp: "2023-10-01T10:00:00Z"
+                  code: 200
+
+  /users/hr:
+    post:
+      tags:
+        - User Management
+      summary: Add HR user
+      description: Add a new HR user. Only existing HR users can add new HR users. Authentication via JWT is required.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterHRRequest"
+            example:
+              fullName: "Alice Johnson"
+              email: "alice.johnson@company.com"
+              password: "password123"
+      responses:
+        "201":
+          description: HR user added successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/UserDto"
+              example:
+                success: true
+                message: "HR user added successfully"
+                data:
+                  userID: "890e1234-e89b-12d3-a456-426614174012"
+                  fullName: "Alice Johnson"
+                  email: "alice.johnson@company.com"
+                  role: "HR"
+                  creationTimestamp: "2023-10-01T10:00:00Z"
+                timestamp: "2023-10-01T10:00:00Z"
+                code: 201
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                message: "Validation failed"
+                errors:
+                  - field: "email"
+                    message: "Invalid email format"
+                timestamp: "2023-10-01T10:00:00Z"
+                code: 400
+        "403":
+          description: Access denied (not HR)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                message: "Access denied. HR role required to add new HR users."
+                timestamp: "2023-10-01T10:00:00Z"
+                code: 403
+        "409":
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                message: "Email already registered"
+                errors:
+                  - field: "email"
+                    message: "This email is already registered"
+                timestamp: "2023-10-01T10:00:00Z"
+                code: 409
+
+  # Job Management APIs
+  /jobs:
+    get:
+      tags:
+        - Job Management
+      summary: Get all job postings
+      description: Retrieve paginated list of job postings
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [OPEN, CLOSED, DRAFT]
+      responses:
+        "200":
+          description: Jobs retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PagedResponse"
+
+    post:
+      tags:
+        - Job Management
+      summary: Create job posting
+      description: Create a new job posting (HR only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateJobRequest"
+      responses:
+        "201":
+          description: Job created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/JobPostingDto"
+
+  /jobs/{jobId}:
+    get:
+      tags:
+        - Job Management
+      summary: Get job posting
+      description: Retrieve a specific job posting by ID
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Job retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/JobPostingDto"
+
+    put:
+      tags:
+        - Job Management
+      summary: Update job posting
+      description: Update a job posting (HR only)
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateJobRequest"
+      responses:
+        "200":
+          description: Job updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/JobPostingDto"
+
+    delete:
+      tags:
+        - Job Management
+      summary: Delete job posting
+      description: Delete a job posting (HR only)
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Job deleted successfully
+
+  # Application Management APIs
+  /applications:
+    get:
+      tags:
+        - Application Management
+      summary: Get applications
+      description: Retrieve applications (candidates see own, HR sees all)
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: jobId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [SUBMITTED, IN_REVIEW, SHORTLISTED, REJECTED, INTERVIEWING, OFFERED, HIRED]
+      responses:
+        "200":
+          description: Applications retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PagedResponse"
+
+    post:
+      tags:
+        - Application Management
+      summary: Submit application
+      description: Submit a job application (candidates only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateApplicationRequest"
+      responses:
+        "201":
+          description: Application submitted successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/ApplicationDto"
+
+  /applications/{applicationId}:
+    get:
+      tags:
+        - Application Management
+      summary: Get application
+      description: Retrieve a specific application
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Application retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/ApplicationDto"
+
+    put:
+      tags:
+        - Application Management
+      summary: Update application status
+      description: Update application status (HR only)
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateApplicationRequest"
+      responses:
+        "200":
+          description: Application updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/ApplicationDto"
+
+  # Assessment APIs
+  /assessments:
+    post:
+      tags:
+        - Assessment Management
+      summary: Create assessment
+      description: Create assessment for an application (HR only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAssessmentRequest"
+      responses:
+        "201":
+          description: Assessment created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/AssessmentDto"
+
+  /assessments/{assessmentId}:
+    get:
+      tags:
+        - Assessment Management
+      summary: Get assessment
+      description: Retrieve assessment details
+      parameters:
+        - name: assessmentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Assessment retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/AssessmentDto"
+
+  /applications/{applicationId}/assessment:
+    get:
+      tags:
+        - Assessment Management
+      summary: Get assessment by application
+      description: Retrieve assessment for an application
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Assessment retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/AssessmentDto"
+
+  # Chat APIs
+  /chat/sessions:
+    post:
+      tags:
+        - Chat Management
+      summary: Create chat session
+      description: Create a new chat session for assessment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateChatSessionRequest"
+      responses:
+        "201":
+          description: Chat session created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/ChatSessionDto"
+
+  /chat/sessions/{sessionId}:
+    get:
+      tags:
+        - Chat Management
+      summary: Get chat session
+      description: Retrieve chat session with messages
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Chat session retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/ChatSessionDto"
+
+  /chat/sessions/{sessionId}/messages:
+    post:
+      tags:
+        - Chat Management
+      summary: Send message
+      description: Send a message in chat session
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendMessageRequest"
+      responses:
+        "201":
+          description: Message sent successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/ChatMessageDto"
+
+    get:
+      tags:
+        - Chat Management
+      summary: Get messages
+      description: Retrieve messages from chat session
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Messages retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ChatMessageDto"
+
+  /chat/sessions/{sessionId}/end:
+    post:
+      tags:
+        - Chat Management
+      summary: End chat session
+      description: End the chat session
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Chat session ended successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/ChatSessionDto"
+
+  # GenAI APIs
+  /genai/filter-resume:
+    post:
+      tags:
+        - GenAI Services
+      summary: Filter resume
+      description: Use AI to filter resume against job requirements
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResumeFilterRequest"
+      responses:
+        "200":
+          description: Resume filtered successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/ResumeFilterResponse"
+
+  /genai/generate-questions:
+    post:
+      tags:
+        - GenAI Services
+      summary: Generate interview questions
+      description: Generate AI-powered interview questions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateQuestionsRequest"
+      responses:
+        "200":
+          description: Questions generated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/GenerateQuestionsResponse"
+
+  /genai/score-candidate:
+    post:
+      tags:
+        - GenAI Services
+      summary: Score candidate
+      description: Generate AI-based candidate scoring
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScoreCandidateRequest"
+      responses:
+        "200":
+          description: Candidate scored successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/ScoreCandidateResponse"
