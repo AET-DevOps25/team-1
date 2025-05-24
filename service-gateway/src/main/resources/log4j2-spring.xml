@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" monitorInterval="30">
+    <Properties>
+        <!-- Base log directory -->
+        <Property name="LOG_DIR">logs</Property>
+        <Property name="APP_NAME">aihr-gateway</Property>
+
+        <!-- Log patterns -->
+        <Property name="CONSOLE_LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %highlight{%-5level}
+            %logger{36} - %msg%n</Property>
+        <Property name="FILE_LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} -
+            %msg%n</Property>
+
+        <!-- Rolling policy settings -->
+        <Property name="MAX_FILE_SIZE">10MB</Property>
+        <Property name="MAX_HISTORY">30</Property>
+        <Property name="TOTAL_SIZE_CAP">100MB</Property>
+    </Properties>
+
+    <Appenders>
+        <!-- Console Appender -->
+        <Console name="ConsoleAppender" target="SYSTEM_OUT">
+            <PatternLayout pattern="${CONSOLE_LOG_PATTERN}" />
+        </Console>
+
+        <!-- Main Application Log File -->
+        <RollingFile name="AppFileAppender" fileName="${LOG_DIR}/${APP_NAME}-app.log"
+            filePattern="${LOG_DIR}/${APP_NAME}-app-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="${FILE_LOG_PATTERN}" />
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="${MAX_FILE_SIZE}" />
+            </Policies>
+            <DefaultRolloverStrategy max="${MAX_HISTORY}">
+                <Delete basePath="${LOG_DIR}" maxDepth="1">
+                    <IfFileName glob="${APP_NAME}-app-*.log.gz" />
+                    <IfAccumulatedFileSize exceeds="${TOTAL_SIZE_CAP}" />
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+
+        <!-- Error Log File -->
+        <RollingFile name="ErrorFileAppender" fileName="${LOG_DIR}/${APP_NAME}-error.log"
+            filePattern="${LOG_DIR}/${APP_NAME}-error-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="${FILE_LOG_PATTERN}" />
+            <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY" />
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="${MAX_FILE_SIZE}" />
+            </Policies>
+            <DefaultRolloverStrategy max="${MAX_HISTORY}">
+                <Delete basePath="${LOG_DIR}" maxDepth="1">
+                    <IfFileName glob="${APP_NAME}-error-*.log.gz" />
+                    <IfAccumulatedFileSize exceeds="50MB" />
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+
+        <!-- Security Log File -->
+        <RollingFile name="SecurityFileAppender" fileName="${LOG_DIR}/${APP_NAME}-security.log"
+            filePattern="${LOG_DIR}/${APP_NAME}-security-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="${FILE_LOG_PATTERN}" />
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="${MAX_FILE_SIZE}" />
+            </Policies>
+            <DefaultRolloverStrategy max="${MAX_HISTORY}">
+                <Delete basePath="${LOG_DIR}" maxDepth="1">
+                    <IfFileName glob="${APP_NAME}-security-*.log.gz" />
+                    <IfAccumulatedFileSize exceeds="50MB" />
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+
+        <!-- SQL Log File -->
+        <RollingFile name="SqlFileAppender" fileName="${LOG_DIR}/${APP_NAME}-sql.log"
+            filePattern="${LOG_DIR}/${APP_NAME}-sql-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="${FILE_LOG_PATTERN}" />
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="${MAX_FILE_SIZE}" />
+            </Policies>
+            <DefaultRolloverStrategy max="7">
+                <Delete basePath="${LOG_DIR}" maxDepth="1">
+                    <IfFileName glob="${APP_NAME}-sql-*.log.gz" />
+                    <IfAccumulatedFileSize exceeds="20MB" />
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+    </Appenders>
+
+    <Loggers>
+        <!-- Application loggers -->
+        <Logger name="com.aihr" level="INFO" additivity="false">
+            <AppenderRef ref="ConsoleAppender" />
+            <AppenderRef ref="AppFileAppender" />
+            <AppenderRef ref="ErrorFileAppender" />
+        </Logger>
+
+        <!-- Security logger -->
+        <Logger name="org.springframework.security" level="WARN" additivity="false">
+            <AppenderRef ref="SecurityFileAppender" />
+            <AppenderRef ref="ErrorFileAppender" />
+        </Logger>
+
+        <!-- SQL logger -->
+        <Logger name="org.hibernate.SQL" level="WARN" additivity="false">
+            <AppenderRef ref="SqlFileAppender" />
+        </Logger>
+
+        <Logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="WARN" additivity="false">
+            <AppenderRef ref="SqlFileAppender" />
+        </Logger>
+
+        <!-- Spring Framework -->
+        <Logger name="org.springframework" level="WARN" />
+        <Logger name="org.springframework.web" level="WARN" />
+        <Logger name="org.springframework.boot" level="INFO" />
+
+        <!-- Database -->
+        <Logger name="org.hibernate" level="WARN" />
+        <Logger name="org.postgresql" level="WARN" />
+
+        <!-- JWT -->
+        <Logger name="io.jsonwebtoken" level="WARN" />
+
+        <!-- Root logger -->
+        <Root level="INFO">
+            <AppenderRef ref="ConsoleAppender" />
+            <AppenderRef ref="AppFileAppender" />
+            <AppenderRef ref="ErrorFileAppender" />
+        </Root>
+    </Loggers>
+</Configuration> 

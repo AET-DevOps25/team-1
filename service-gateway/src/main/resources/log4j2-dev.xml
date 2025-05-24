@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" monitorInterval="5">
+    <Properties>
+        <!-- Base log directory for development -->
+        <Property name="LOG_DIR">logs/dev</Property>
+        <Property name="APP_NAME">aihr-gateway-dev</Property>
+
+        <!-- Development log patterns (more detailed) -->
+        <Property name="CONSOLE_LOG_PATTERN">%d{HH:mm:ss.SSS} [%t] %highlight{%-5level}
+            %logger{36}:%L - %msg%n</Property>
+        <Property name="FILE_LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36}:%L -
+            %msg%n</Property>
+
+        <!-- Rolling policy settings (smaller for dev) -->
+        <Property name="MAX_FILE_SIZE">5MB</Property>
+        <Property name="MAX_HISTORY">7</Property>
+        <Property name="TOTAL_SIZE_CAP">50MB</Property>
+    </Properties>
+
+    <Appenders>
+        <!-- Console Appender with colors -->
+        <Console name="ConsoleAppender" target="SYSTEM_OUT">
+            <PatternLayout pattern="${CONSOLE_LOG_PATTERN}" />
+        </Console>
+
+        <!-- Development Application Log -->
+        <RollingFile name="DevAppFileAppender" fileName="${LOG_DIR}/${APP_NAME}-app.log"
+            filePattern="${LOG_DIR}/${APP_NAME}-app-%d{yyyy-MM-dd}-%i.log">
+            <PatternLayout pattern="${FILE_LOG_PATTERN}" />
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="${MAX_FILE_SIZE}" />
+            </Policies>
+            <DefaultRolloverStrategy max="${MAX_HISTORY}" />
+        </RollingFile>
+
+        <!-- Development SQL Debug Log -->
+        <RollingFile name="DevSqlFileAppender" fileName="${LOG_DIR}/${APP_NAME}-sql-debug.log"
+            filePattern="${LOG_DIR}/${APP_NAME}-sql-debug-%d{yyyy-MM-dd}-%i.log">
+            <PatternLayout pattern="${FILE_LOG_PATTERN}" />
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="2MB" />
+            </Policies>
+            <DefaultRolloverStrategy max="3" />
+        </RollingFile>
+
+        <!-- Development Security Debug Log -->
+        <RollingFile name="DevSecurityFileAppender"
+            fileName="${LOG_DIR}/${APP_NAME}-security-debug.log"
+            filePattern="${LOG_DIR}/${APP_NAME}-security-debug-%d{yyyy-MM-dd}-%i.log">
+            <PatternLayout pattern="${FILE_LOG_PATTERN}" />
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="2MB" />
+            </Policies>
+            <DefaultRolloverStrategy max="3" />
+        </RollingFile>
+    </Appenders>
+
+    <Loggers>
+        <!-- Application loggers (DEBUG level for development) -->
+        <Logger name="com.aihr" level="DEBUG" additivity="false">
+            <AppenderRef ref="ConsoleAppender" />
+            <AppenderRef ref="DevAppFileAppender" />
+        </Logger>
+
+        <!-- Security logger (DEBUG for development) -->
+        <Logger name="org.springframework.security" level="DEBUG" additivity="false">
+            <AppenderRef ref="ConsoleAppender" />
+            <AppenderRef ref="DevSecurityFileAppender" />
+        </Logger>
+
+        <!-- SQL logger (DEBUG for development) -->
+        <Logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
+            <AppenderRef ref="ConsoleAppender" />
+            <AppenderRef ref="DevSqlFileAppender" />
+        </Logger>
+
+        <Logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE"
+            additivity="false">
+            <AppenderRef ref="DevSqlFileAppender" />
+        </Logger>
+
+        <!-- Spring Framework (more verbose in dev) -->
+        <Logger name="org.springframework.web" level="DEBUG" />
+        <Logger name="org.springframework.boot" level="DEBUG" />
+        <Logger name="org.springframework.data" level="DEBUG" />
+
+        <!-- Database (more verbose in dev) -->
+        <Logger name="org.hibernate" level="DEBUG" />
+
+        <!-- JWT debugging -->
+        <Logger name="io.jsonwebtoken" level="DEBUG" />
+
+        <!-- Root logger (INFO level but console focused) -->
+        <Root level="INFO">
+            <AppenderRef ref="ConsoleAppender" />
+            <AppenderRef ref="DevAppFileAppender" />
+        </Root>
+    </Loggers>
+</Configuration> 

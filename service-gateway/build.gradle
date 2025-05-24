@@ -17,12 +17,141 @@ repositories {
     mavenCentral()
 }
 
+configurations.all {
+    exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+    exclude group: 'org.apache.logging.log4j', module: 'log4j-to-slf4j'
+}
+
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter'
+    // Spring Boot starters
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    
+    // Jakarta EE dependencies
+    implementation 'jakarta.persistence:jakarta.persistence-api:3.1.0'
+    implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
+    
+    // Hibernate dependencies
+    implementation 'org.hibernate.orm:hibernate-core:6.4.1.Final'
+    
+    // Log4j2 dependencies
+    implementation 'org.springframework.boot:spring-boot-starter-log4j2'
+    
+    // Database
+    runtimeOnly 'org.postgresql:postgresql'
+    
+    // JWT
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
+    implementation 'io.jsonwebtoken:jjwt-impl:0.12.3'
+    implementation 'io.jsonwebtoken:jjwt-jackson:0.12.3'
+    
+    // Password hashing (Argon2)
+    implementation 'org.springframework.security:spring-security-crypto'
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.77'
+    
+    // Gateway routing (optional, for future microservices routing)
+    implementation 'org.springframework.cloud:spring-cloud-starter-gateway:4.1.0'
+    
+    // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'com.h2database:h2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+// Custom task for local development
+task runDev(type: org.springframework.boot.gradle.tasks.run.BootRun) {
+    group = 'application'
+    description = 'Run the application with development profile'
+    args = ['--spring.profiles.active=dev']
+    systemProperty 'spring.profiles.active', 'dev'
+    
+    doFirst {
+        println "Starting application with development profile..."
+        println "Database: Local PostgreSQL (localhost:5432)"
+        println "Services: Local endpoints (8081-8084)"
+    }
+}
+
+// Custom task for production build (CI/CD)
+task buildProd(type: org.springframework.boot.gradle.tasks.bundling.BootJar) {
+    group = 'build'
+    description = 'Build production JAR with production profile'
+    archiveClassifier = 'prod'
+    
+    doFirst {
+        println "Building production JAR..."
+        println "Profile: Production"
+        println "Environment variables will be loaded at runtime"
+    }
+}
+
+// Custom task for CI/CD testing with production profile
+task testProd(type: Test) {
+    group = 'verification'
+    description = 'Run tests with production profile'
+    systemProperty 'spring.profiles.active', 'prod'
+    
+    doFirst {
+        println "Running tests with production profile..."
+    }
+}
+
+// Task to show profile information
+task showProfiles {
+    group = 'help'
+    description = 'Show available Spring profiles and their usage'
+    
+    doLast {
+        println """
+        Available Spring Profiles:
+        
+        1. Development Profile (dev):
+           - Use: ./gradlew runDev
+           - Database: Local PostgreSQL
+           - Services: Local endpoints
+           - Debugging: Enabled
+           
+        2. Production Profile (prod):
+           - Use: ./gradlew buildProd
+           - Database: Environment variables
+           - Services: Docker/K8s endpoints
+           - Security: Enhanced
+           
+        Environment Variables for Production:
+        - DATABASE_URL
+        - DATABASE_USERNAME
+        - DATABASE_PASSWORD
+        - JWT_SECRET
+        - JWT_EXPIRATION
+        - JWT_REFRESH_EXPIRATION
+        - INITIAL_HR_EMAIL
+        - INITIAL_HR_PASSWORD
+        - INITIAL_HR_FULLNAME
+        """
+    }
+}
+
+// Configure bootRun to use dev profile by default for local development
+bootRun {
+    args = ['--spring.profiles.active=dev']
+    systemProperty 'spring.profiles.active', 'dev'
+}
+
+// CI/CD helper tasks
+task cicdBuild {
+    group = 'cicd'
+    description = 'Full CI/CD build pipeline'
+    dependsOn clean, testProd, buildProd
+    
+    doLast {
+        println "CI/CD build completed successfully!"
+        println "Production JAR: build/libs/${project.name}-${version}-prod.jar"
+    }
 }
