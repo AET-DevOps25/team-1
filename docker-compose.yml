@@ -22,6 +22,7 @@ services:
     ports:
       - "8080:8080"
     depends_on:
+      - postgres
       - service-job
       - service-application
       - service-assess
@@ -29,7 +30,13 @@ services:
     networks:
       - backend-network
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=prod
+      - DATABASE_URL=jdbc:postgresql://postgres:5432/hrapp
+      - DATABASE_USERNAME=postgres
+      - DATABASE_PASSWORD=postgres
+      - JWT_SECRET=DockerProductionSecretKey2025!
+      - JWT_EXPIRATION=86400000
+      - JWT_REFRESH_EXPIRATION=604800000
 
   # Job service
   service-job:
