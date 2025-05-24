@@ -1,91 +1,91 @@
 CREATE EXTENSION IF NOT EXISTS vector;
 
-CREATE TYPE UserRole AS ENUM ('CANDIDATE', 'HR');
+CREATE TYPE user_role AS ENUM ('CANDIDATE', 'HR');
 
-CREATE TABLE Users (
-    userID UUID PRIMARY KEY,
-    fullName VARCHAR(255),
+CREATE TABLE users (
+    user_id UUID PRIMARY KEY,
+    full_name VARCHAR(255),
     email VARCHAR(255) UNIQUE NOT NULL,
-    passwordHash TEXT NOT NULL,
-    role UserRole NOT NULL,
-    creationTimestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    password_hash TEXT NOT NULL,
+    role user_role NOT NULL,
+    creation_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TYPE JobStatus AS ENUM ('OPEN', 'CLOSED', 'DRAFT');
-CREATE TYPE RequirementType AS ENUM ('SKILL', 'EXPERIENCE', 'EDUCATION', 'OTHER');
+CREATE TYPE job_status AS ENUM ('OPEN', 'CLOSED', 'DRAFT');
+CREATE TYPE requirement_type AS ENUM ('SKILL', 'EXPERIENCE', 'EDUCATION', 'OTHER');
 
-CREATE TABLE JobPostings (
-    jobID UUID PRIMARY KEY,
+CREATE TABLE job_postings (
+    job_id UUID PRIMARY KEY,
     title VARCHAR(255),
     description TEXT,
-    status JobStatus,
-    creationTimestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    closingDate DATE,
-    lastModifiedTimestamp TIMESTAMP,
-    hrCreatorID UUID REFERENCES Users(userID),
-    lastModifiedByUserID UUID REFERENCES Users(userID)
+    status job_status,
+    creation_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    closing_date DATE,
+    last_modified_timestamp TIMESTAMP,
+    hr_creator_id UUID REFERENCES users(user_id),
+    last_modified_by_user_id UUID REFERENCES users(user_id)
 );
 
-CREATE TABLE JobRequirements (
-    requirementID UUID PRIMARY KEY,
-    jobID UUID REFERENCES JobPostings(jobID) ON DELETE CASCADE,
+CREATE TABLE job_requirements (
+    requirement_id UUID PRIMARY KEY,
+    job_id UUID REFERENCES job_postings(job_id) ON DELETE CASCADE,
     description TEXT,
-    type RequirementType,
-    isMandatory BOOLEAN
+    type requirement_type,
+    is_mandatory BOOLEAN
 );
 
-CREATE TYPE ApplicationStatus AS ENUM ('SUBMITTED', 'IN_REVIEW', 'SHORTLISTED', 'REJECTED', 'INTERVIEWING', 'OFFERED', 'HIRED');
+CREATE TYPE application_status AS ENUM ('SUBMITTED', 'IN_REVIEW', 'SHORTLISTED', 'REJECTED', 'INTERVIEWING', 'OFFERED', 'HIRED');
 
-CREATE TABLE Applications (
-    applicationID UUID PRIMARY KEY,
-    submissionTimestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    status ApplicationStatus,
-    resumeContent TEXT,
-    originalResumeFilename VARCHAR(255),
-    originalResumeFileReference VARCHAR(255),
-    lastModifiedTimestamp TIMESTAMP,
-    candidateID UUID REFERENCES Users(userID),
-    jobID UUID REFERENCES JobPostings(jobID),
-    lastModifiedByUserID UUID REFERENCES Users(userID)
+CREATE TABLE applications (
+    application_id UUID PRIMARY KEY,
+    submission_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status application_status,
+    resume_content TEXT,
+    original_resume_filename VARCHAR(255),
+    original_resume_file_reference VARCHAR(255),
+    last_modified_timestamp TIMESTAMP,
+    candidate_id UUID REFERENCES users(user_id),
+    job_id UUID REFERENCES job_postings(job_id),
+    last_modified_by_user_id UUID REFERENCES users(user_id)
 );
 
-CREATE TYPE FilterStatus AS ENUM ('PASSED_FILTER', 'FAILED_FILTER', 'NOT_EVALUATED');
+CREATE TYPE filter_status AS ENUM ('PASSED_FILTER', 'FAILED_FILTER', 'NOT_EVALUATED');
 
-CREATE TABLE Assessments (
-    assessmentID UUID PRIMARY KEY,
-    assessmentTimestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    overallScore FLOAT,
+CREATE TABLE assessments (
+    assessment_id UUID PRIMARY KEY,
+    assessment_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    overall_score FLOAT,
     summary TEXT,
-    resumeAnalysisDetails JSON,
-    filterStatus FilterStatus,
-    lastModifiedTimestamp TIMESTAMP,
-    applicationID UUID REFERENCES Applications(applicationID),
-    lastModifiedByUserID UUID REFERENCES Users(userID)
+    resume_analysis_details JSON,
+    filter_status filter_status,
+    last_modified_timestamp TIMESTAMP,
+    application_id UUID REFERENCES applications(application_id),
+    last_modified_by_user_id UUID REFERENCES users(user_id)
 );
 
-CREATE TABLE ChatSessions (
-    sessionID UUID PRIMARY KEY,
-    startTime TIMESTAMP,
-    endTime TIMESTAMP,
-    assessmentID UUID REFERENCES Assessments(assessmentID)
+CREATE TABLE chat_sessions (
+    session_id UUID PRIMARY KEY,
+    start_time TIMESTAMP,
+    end_time TIMESTAMP,
+    assessment_id UUID REFERENCES assessments(assessment_id)
 );
 
-CREATE TYPE MessageSender AS ENUM ('AI', 'CANDIDATE');
+CREATE TYPE message_sender AS ENUM ('AI', 'CANDIDATE');
 
-CREATE TABLE ChatMessages (
-    messageID UUID PRIMARY KEY,
-    sender MessageSender,
+CREATE TABLE chat_messages (
+    message_id UUID PRIMARY KEY,
+    sender message_sender,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     content TEXT,
-    messageOrder INTEGER,
-    sessionID UUID REFERENCES ChatSessions(sessionID)
+    message_order INTEGER,
+    session_id UUID REFERENCES chat_sessions(session_id)
 );
 
 -- Store embeddings linked to documents or concepts used in GenAI
-CREATE TABLE Embeddings (
-    embeddingID UUID PRIMARY KEY,
-    documentReference TEXT, -- where the embedding comes from (the link to the document)
+CREATE TABLE embeddings (
+    embedding_id UUID PRIMARY KEY,
+    document_reference TEXT,
     content TEXT,
-    embedding VECTOR(1536), -- adjust dimension as per model used (this one is text-embedding-ada-002	OpenAI	1536)
-    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    embedding VECTOR(1536),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

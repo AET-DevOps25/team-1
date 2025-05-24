@@ -14,20 +14,20 @@ import java.util.UUID;
  * User entity representing users in the AI-HR system
  */
 @Entity
-@Table(name = "Users", schema = "public", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_user_email", columnNames = "email")
+@Table(name = "users", schema = "public", uniqueConstraints = {
+        @UniqueConstraint(name = "uk_users_email", columnNames = "email")
 })
 public class User {
 
     @Id
     @GeneratedValue(generator = "UUID")
     @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
-    @Column(name = "userID", updatable = false, nullable = false)
-    private UUID userID;
+    @Column(name = "user_id", updatable = false, nullable = false)
+    private UUID userId;
 
     @NotBlank(message = "Full name is required")
     @Size(min = 2, max = 255, message = "Full name must be between 2 and 255 characters")
-    @Column(name = "fullName", length = 255)
+    @Column(name = "full_name", length = 255)
     private String fullName;
 
     @NotBlank(message = "Email is required")
@@ -37,7 +37,7 @@ public class User {
     private String email;
 
     @NotBlank(message = "Password hash is required")
-    @Column(name = "passwordHash", nullable = false, columnDefinition = "TEXT")
+    @Column(name = "password_hash", nullable = false, columnDefinition = "TEXT")
     private String passwordHash;
 
     @NotNull(message = "User role is required")
@@ -45,7 +45,7 @@ public class User {
     @Column(name = "role", nullable = false)
     private UserRole role;
 
-    @Column(name = "creationTimestamp", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    @Column(name = "creation_timestamp", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime creationTimestamp;
 
     // Constructors
@@ -62,12 +62,12 @@ public class User {
     }
 
     // Getters and Setters
-    public UUID getUserID() {
-        return userID;
+    public UUID getUserId() {
+        return userId;
     }
 
-    public void setUserID(UUID userID) {
-        this.userID = userID;
+    public void setUserId(UUID userId) {
+        this.userId = userId;
     }
 
     public String getFullName() {
@@ -122,7 +122,7 @@ public class User {
     @Override
     public String toString() {
         return "User{" +
-                "userID=" + userID +
+                "userId=" + userId +
                 ", fullName='" + fullName + '\'' +
                 ", email='" + email + '\'' +
                 ", role=" + role +
@@ -137,12 +137,12 @@ public class User {
         if (!(o instanceof User))
             return false;
         User user = (User) o;
-        return userID != null && userID.equals(user.getUserID());
+        return userId != null && userId.equals(user.getUserId());
     }
 
     @Override
     public int hashCode() {
-        return userID != null ? userID.hashCode() : 0;
+        return userId != null ? userId.hashCode() : 0;
     }
 
     // Lifecycle callbacks
