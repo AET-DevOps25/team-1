@@ -34,7 +34,7 @@ public class UserDto {
     // Static factory method to create from User entity
     public static UserDto fromUser(com.aihr.service.gateway.entity.User user) {
         return new UserDto(
-                user.getUserID(),
+                user.getUserId(),
                 user.getFullName(),
                 user.getEmail(),
                 user.getRole(),

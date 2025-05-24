@@ -33,7 +33,7 @@ public class JwtUtil {
      */
     public String generateAccessToken(User user) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("userId", user.getUserID().toString());
+        claims.put("userId", user.getUserId().toString());
         claims.put("email", user.getEmail());
         claims.put("role", user.getRole().toString());
         claims.put("fullName", user.getFullName());
@@ -46,7 +46,7 @@ public class JwtUtil {
      */
     public String generateRefreshToken(User user) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("userId", user.getUserID().toString());
+        claims.put("userId", user.getUserId().toString());
         claims.put("tokenType", "refresh");
 
         return createToken(claims, user.getEmail(), jwtConfig.getRefreshExpirationMs());
