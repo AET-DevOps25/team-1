@@ -1,7 +1,7 @@
 package de.tum.devops.application.controller;
 
 import de.tum.devops.application.dto.*;
-import de.tum.devops.application.entity.ApplicationStatus;
+import de.tum.devops.persistence.entity.ApplicationStatus;
 import de.tum.devops.application.service.ApplicationService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -12,7 +12,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 import java.util.UUID;
@@ -39,13 +38,12 @@ public class ApplicationController {
     @PostMapping
     @PreAuthorize("hasRole('CANDIDATE')")
     public ResponseEntity<ApiResponse<ApplicationDto>> submitApplication(
-            @Valid @RequestPart("application") SubmitApplicationRequest request,
-            @RequestPart(value = "resume", required = false) MultipartFile resume,
+            @Valid @RequestBody SubmitApplicationRequest request,
             Authentication authentication) {
 
         try {
             UUID candidateId = extractUserIdFromJwt(authentication);
-            ApplicationDto submittedApplication = applicationService.submitApplication(request, resume, candidateId);
+            ApplicationDto submittedApplication = applicationService.submitApplication(request, candidateId);
 
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.created(submittedApplication));

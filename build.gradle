@@ -4,12 +4,14 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.4.0' apply false
     id 'io.spring.dependency-management' version '1.1.6' apply false
+    id "ca.cutterslade.analyze" version "2.0.0"
 }
 
 subprojects {
     apply plugin: 'java'
     apply plugin: 'org.springframework.boot'
     apply plugin: 'io.spring.dependency-management'
+    apply plugin: 'ca.cutterslade.analyze'
 
     group = 'de.tum.devops'
     version = '1.0.0'
@@ -73,4 +75,18 @@ tasks.register('dockerComposeDown', Exec) {
     description = 'Stop all services with Docker Compose'
     group = 'docker'
     commandLine 'docker', 'compose', 'down'
+}
+
+tasks.named('analyzeClassesDependencies').configure {
+    warnUsedUndeclared = true
+    warnUnusedDeclared = true
+    warnSuperfluous = true
+    logDependencyInformationToFiles = true
+}
+
+tasks.named('analyzeTestClassesDependencies').configure {
+    warnUsedUndeclared = true
+    warnUnusedDeclared = true
+    warnSuperfluous = true
+    logDependencyInformationToFiles = true
 }

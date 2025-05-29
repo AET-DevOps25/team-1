@@ -175,22 +175,11 @@ components:
         accessToken:
           type: string
           description: JWT access token
-        refreshToken:
-          type: string
-          description: Refresh token
         user:
           $ref: "#/components/schemas/UserDto"
         expiresIn:
           type: integer
           description: Access token expiration time (seconds)
-
-    RefreshRequest:
-      type: object
-      properties:
-        refreshToken:
-          type: string
-      required:
-        - refreshToken
 
     # Job position-related models
     JobDto:
@@ -537,38 +526,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /auth/refresh:
-    post:
-      operationId: refresh
-      tags:
-        - Authentication
-      summary: Refresh access token
-      description: Use refresh token to obtain new access token
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/RefreshRequest"
-      responses:
-        "200":
-          description: Refresh successful
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        $ref: "#/components/schemas/AuthResponse"
-        "401":
-          description: Invalid refresh token
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
 
   /auth/logout:
     post:

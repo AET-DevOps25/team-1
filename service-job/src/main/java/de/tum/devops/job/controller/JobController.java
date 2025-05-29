@@ -1,7 +1,7 @@
 package de.tum.devops.job.controller;
 
 import de.tum.devops.job.dto.*;
-import de.tum.devops.job.entity.JobStatus;
+import de.tum.devops.persistence.entity.JobStatus;
 import de.tum.devops.job.service.JobService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;

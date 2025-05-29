@@ -9,31 +9,31 @@ import java.util.UUID;
 public class ApplicationDto {
 
     private UUID applicationID;
+    private LocalDateTime submissionTimestamp;
+    private String status;
+    private String resumeContent;
+    private String originalResumeFilename;
+    private LocalDateTime lastModifiedTimestamp;
     private UserDto candidate;
     private JobDto job;
-    private String status;
-    private String resumePath;
-    private String coverLetter;
-    private LocalDateTime submissionTimestamp;
-    private LocalDateTime lastModifiedTimestamp;
-    private String hrFeedback;
+    private AssessmentDto assessment;
 
     // Constructors
     public ApplicationDto() {
     }
 
-    public ApplicationDto(UUID applicationID, UserDto candidate, JobDto job, String status,
-            String resumePath, String coverLetter, LocalDateTime submissionTimestamp,
-            LocalDateTime lastModifiedTimestamp, String hrFeedback) {
+    public ApplicationDto(UUID applicationID, LocalDateTime submissionTimestamp, String status,
+            String resumeContent, String originalResumeFilename, LocalDateTime lastModifiedTimestamp,
+            UserDto candidate, JobDto job, AssessmentDto assessment) {
         this.applicationID = applicationID;
+        this.submissionTimestamp = submissionTimestamp;
+        this.status = status;
+        this.resumeContent = resumeContent;
+        this.originalResumeFilename = originalResumeFilename;
+        this.lastModifiedTimestamp = lastModifiedTimestamp;
         this.candidate = candidate;
         this.job = job;
-        this.status = status;
-        this.resumePath = resumePath;
-        this.coverLetter = coverLetter;
-        this.submissionTimestamp = submissionTimestamp;
-        this.lastModifiedTimestamp = lastModifiedTimestamp;
-        this.hrFeedback = hrFeedback;
+        this.assessment = assessment;
     }
 
     // Getters and Setters
@@ -43,6 +43,46 @@ public class ApplicationDto {
 
     public void setApplicationID(UUID applicationID) {
         this.applicationID = applicationID;
+    }
+
+    public LocalDateTime getSubmissionTimestamp() {
+        return submissionTimestamp;
+    }
+
+    public void setSubmissionTimestamp(LocalDateTime submissionTimestamp) {
+        this.submissionTimestamp = submissionTimestamp;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getResumeContent() {
+        return resumeContent;
+    }
+
+    public void setResumeContent(String resumeContent) {
+        this.resumeContent = resumeContent;
+    }
+
+    public String getOriginalResumeFilename() {
+        return originalResumeFilename;
+    }
+
+    public void setOriginalResumeFilename(String originalResumeFilename) {
+        this.originalResumeFilename = originalResumeFilename;
+    }
+
+    public LocalDateTime getLastModifiedTimestamp() {
+        return lastModifiedTimestamp;
+    }
+
+    public void setLastModifiedTimestamp(LocalDateTime lastModifiedTimestamp) {
+        this.lastModifiedTimestamp = lastModifiedTimestamp;
     }
 
     public UserDto getCandidate() {
@@ -61,51 +101,11 @@ public class ApplicationDto {
         this.job = job;
     }
 
-    public String getStatus() {
-        return status;
+    public AssessmentDto getAssessment() {
+        return assessment;
     }
 
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public String getResumePath() {
-        return resumePath;
-    }
-
-    public void setResumePath(String resumePath) {
-        this.resumePath = resumePath;
-    }
-
-    public String getCoverLetter() {
-        return coverLetter;
-    }
-
-    public void setCoverLetter(String coverLetter) {
-        this.coverLetter = coverLetter;
-    }
-
-    public LocalDateTime getSubmissionTimestamp() {
-        return submissionTimestamp;
-    }
-
-    public void setSubmissionTimestamp(LocalDateTime submissionTimestamp) {
-        this.submissionTimestamp = submissionTimestamp;
-    }
-
-    public LocalDateTime getLastModifiedTimestamp() {
-        return lastModifiedTimestamp;
-    }
-
-    public void setLastModifiedTimestamp(LocalDateTime lastModifiedTimestamp) {
-        this.lastModifiedTimestamp = lastModifiedTimestamp;
-    }
-
-    public String getHrFeedback() {
-        return hrFeedback;
-    }
-
-    public void setHrFeedback(String hrFeedback) {
-        this.hrFeedback = hrFeedback;
+    public void setAssessment(AssessmentDto assessment) {
+        this.assessment = assessment;
     }
 }

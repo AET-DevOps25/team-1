@@ -1,14 +1,14 @@
 server:
-  port: 8081
+  port: ${SERVER_PORT:8081}
 
 spring:
   application:
     name: job-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/ai_hr_db
-    username: ai_hr_user
-    password: ai_hr_password
+    url: jdbc:postgresql://localhost:5432/hrapp
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -23,16 +23,7 @@ spring:
 # JWT Configuration for token validation
 app:
   jwt:
-    public-key: |
-      -----BEGIN PUBLIC KEY-----
-      MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyQl8K2yQDQ5c3L9HJ9G5
-      xG7VWa8dH3M9sF2J1L8ZpF6Q3YjKvG8m9HlO7F2NvEg4DgK5QjL8X3P6WoS9DfF4
-      J3Q7H8Y2M5L9O8K4RpT6NzX5V1F7G2J4L8Q9HfM3DgF5Y8O7K4NlT6R2X5V1F7G3
-      J4L8Q9HfM3DgF5Y8O7K4NlT6R2X5V1F7G3J4L8Q9HfM3DgF5Y8O7K4NlT6R2X5V1
-      F7G3J4L8Q9HfM3DgF5Y8O7K4NlT6R2X5V1F7G3J4L8Q9HfM3DgF5Y8O7K4NlT6R2
-      X5V1F7G3J4L8Q9HfM3DgF5Y8O7K4NlT6R2X5V1F7G3J4L8Q9HfM3DgF5Y8O7K4Nl
-      T6R2X5V1F7G3J4L8Q9HfM3DgF5Y8O7K4NlT6R2X5V1F7G3J4L8Q9HfM3DgF5Y8O7
-      -----END PUBLIC KEY-----
+    public-key: ${JWT_PUBLIC_KEY}
 
 # Logging configuration
 logging:

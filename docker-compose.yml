@@ -8,16 +8,16 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_DB=ai_hr_db
-      - POSTGRES_USER=ai_hr_user
-      - POSTGRES_PASSWORD=ai_hr_password
+      - POSTGRES_DB=hrapp
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - ai-hr-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ai_hr_user -d ai_hr_db"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d hrapp"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -37,9 +37,11 @@ services:
       - ai-hr-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql:5432/ai_hr_db
-      - SPRING_DATASOURCE_USERNAME=ai_hr_user
-      - SPRING_DATASOURCE_PASSWORD=ai_hr_password
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql:5432/hrapp
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - JWT_PRIVATE_KEY=${JWT_PRIVATE_KEY:-}
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY:-}
     healthcheck:
       test:
         [
@@ -71,9 +73,10 @@ services:
       - ai-hr-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql:5432/ai_hr_db
-      - SPRING_DATASOURCE_USERNAME=ai_hr_user
-      - SPRING_DATASOURCE_PASSWORD=ai_hr_password
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql:5432/hrapp
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY:-}
     healthcheck:
       test:
         [
@@ -107,9 +110,10 @@ services:
       - ai-hr-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql:5432/ai_hr_db
-      - SPRING_DATASOURCE_USERNAME=ai_hr_user
-      - SPRING_DATASOURCE_PASSWORD=ai_hr_password
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql:5432/hrapp
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY:-}
     volumes:
       - resume-uploads:/app/uploads/resumes
     healthcheck:
@@ -145,9 +149,10 @@ services:
       - ai-hr-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql:5432/ai_hr_db
-      - SPRING_DATASOURCE_USERNAME=ai_hr_user
-      - SPRING_DATASOURCE_PASSWORD=ai_hr_password
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql:5432/hrapp
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY:-}
     healthcheck:
       test:
         [

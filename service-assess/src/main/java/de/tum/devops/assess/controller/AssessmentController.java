@@ -1,9 +1,8 @@
 package de.tum.devops.assess.controller;
 
 import de.tum.devops.assess.dto.*;
-import de.tum.devops.assess.entity.AssessmentStatus;
+import de.tum.devops.persistence.entity.RecommendationEnum;
 import de.tum.devops.assess.service.AssessmentService;
-import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -33,17 +32,17 @@ public class AssessmentController {
     }
 
     /**
-     * POST /api/v1/assessments - Create new assessment (HR only)
+     * POST /api/v1/assessments/{applicationId} - Create assessment for application
+     * (HR only)
      */
-    @PostMapping
+    @PostMapping("/{applicationId}")
     @PreAuthorize("hasRole('HR')")
     public ResponseEntity<ApiResponse<AssessmentDto>> createAssessment(
-            @Valid @RequestBody CreateAssessmentRequest request,
+            @PathVariable UUID applicationId,
             Authentication authentication) {
 
         try {
-            UUID hrCreatorId = extractUserIdFromJwt(authentication);
-            AssessmentDto createdAssessment = assessmentService.createAssessment(request, hrCreatorId);
+            AssessmentDto createdAssessment = assessmentService.createAssessmentForApplication(applicationId);
 
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.created(createdAssessment));
@@ -65,7 +64,7 @@ public class AssessmentController {
     public ResponseEntity<ApiResponse<Map<String, Object>>> getAssessments(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) AssessmentStatus status,
+            @RequestParam(required = false) RecommendationEnum status,
             Authentication authentication) {
 
         try {
@@ -184,6 +183,39 @@ public class AssessmentController {
             logger.error("Error scoring assessment {}: {}", assessmentId, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.internalError("Failed to score assessment"));
+        }
+    }
+
+    /**
+     * PUT /api/v1/assessments/{assessmentId}/score - Update assessment scores
+     * (HR only)
+     */
+    @PutMapping("/{assessmentId}/score")
+    @PreAuthorize("hasRole('HR')")
+    public ResponseEntity<ApiResponse<AssessmentDto>> updateAssessmentScore(
+            @PathVariable UUID assessmentId,
+            @RequestParam(required = false) Float resumeScore,
+            @RequestParam(required = false) Float interviewScore,
+            @RequestParam(required = false) Float finalScore,
+            @RequestParam(required = false) String resumeAnalysis,
+            @RequestParam(required = false) String interviewSummary,
+            @RequestParam(required = false) RecommendationEnum recommendation,
+            Authentication authentication) {
+
+        try {
+            AssessmentDto updatedAssessment = assessmentService.updateAssessmentScore(
+                    assessmentId, resumeScore, interviewScore, finalScore,
+                    resumeAnalysis, interviewSummary, recommendation);
+
+            return ResponseEntity.ok(ApiResponse.success("Assessment updated successfully", updatedAssessment));
+        } catch (IllegalArgumentException e) {
+            logger.warn("Invalid assessment update request: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.badRequest(e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Error updating assessment {}: {}", assessmentId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.internalError("Failed to update assessment"));
         }
     }
 

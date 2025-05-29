@@ -1,6 +1,6 @@
 package de.tum.devops.auth.dto;
 
-import de.tum.devops.auth.entity.UserRole;
+import de.tum.devops.persistence.entity.UserRole;
 
 import java.time.LocalDateTime;
 import java.util.UUID;

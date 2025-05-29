@@ -17,8 +17,11 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.security.KeyFactory;
 import java.security.interfaces.RSAPublicKey;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
+import java.util.Base64;
 
 /**
  * Security configuration for JWT authentication and authorization
@@ -29,7 +32,7 @@ import java.util.Arrays;
 public class SecurityConfig {
 
     @Value("${app.jwt.public-key}")
-    private RSAPublicKey publicKey;
+    private String publicKeyString;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -46,6 +49,7 @@ public class SecurityConfig {
                         // HR-only endpoints
                         .requestMatchers(HttpMethod.POST, "/api/v1/assessments").hasRole("HR")
                         .requestMatchers(HttpMethod.POST, "/api/v1/assessments/*/score").hasRole("HR")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/assessments/*/score").hasRole("HR")
                         // Candidate-only endpoints
                         .requestMatchers(HttpMethod.POST, "/api/v1/assessments/*/start").hasRole("CANDIDATE")
                         .requestMatchers(HttpMethod.POST, "/api/v1/assessments/*/submit").hasRole("CANDIDATE")
@@ -61,7 +65,12 @@ public class SecurityConfig {
 
     @Bean
     public JwtDecoder jwtDecoder() {
-        return NimbusJwtDecoder.withPublicKey(publicKey).build();
+        try {
+            RSAPublicKey publicKey = parsePublicKey(publicKeyString);
+            return NimbusJwtDecoder.withPublicKey(publicKey).build();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse JWT public key", e);
+        }
     }
 
     @Bean
@@ -87,5 +96,20 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    /**
+     * Parse RSA public key from string
+     */
+    private RSAPublicKey parsePublicKey(String keyString) throws Exception {
+        String publicKeyPEM = keyString
+                .replace("-----BEGIN PUBLIC KEY-----", "")
+                .replace("-----END PUBLIC KEY-----", "")
+                .replaceAll("\\s", "");
+
+        byte[] decoded = Base64.getDecoder().decode(publicKeyPEM);
+        X509EncodedKeySpec spec = new X509EncodedKeySpec(decoded);
+        KeyFactory factory = KeyFactory.getInstance("RSA");
+        return (RSAPublicKey) factory.generatePublic(spec);
     }
 }

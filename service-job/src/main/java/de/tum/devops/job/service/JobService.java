@@ -1,9 +1,11 @@
 package de.tum.devops.job.service;
 
 import de.tum.devops.job.dto.*;
-import de.tum.devops.job.entity.Job;
-import de.tum.devops.job.entity.JobStatus;
-import de.tum.devops.job.repository.JobRepository;
+import de.tum.devops.persistence.entity.Job;
+import de.tum.devops.persistence.entity.JobStatus;
+import de.tum.devops.persistence.repository.JobRepository;
+import de.tum.devops.persistence.repository.UserRepository;
+import de.tum.devops.persistence.entity.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -25,11 +27,11 @@ public class JobService {
     private static final Logger logger = LoggerFactory.getLogger(JobService.class);
 
     private final JobRepository jobRepository;
-    private final UserService userService;
+    private final UserRepository userRepository;
 
-    public JobService(JobRepository jobRepository, UserService userService) {
+    public JobService(JobRepository jobRepository, UserRepository userRepository) {
         this.jobRepository = jobRepository;
-        this.userService = userService;
+        this.userRepository = userRepository;
     }
 
     /**
@@ -174,8 +176,19 @@ public class JobService {
      * Convert Job entity to JobDto
      */
     private JobDto convertToDto(Job job) {
-        // Get HR creator information
-        UserDto hrCreator = userService.getUserById(job.getHrCreatorId());
+        // Get HR creator information from UserRepository
+        User hrCreator = userRepository.findById(job.getHrCreatorId())
+                .orElse(null);
+
+        UserDto hrCreatorDto = null;
+        if (hrCreator != null) {
+            hrCreatorDto = new UserDto(
+                    hrCreator.getUserId(),
+                    hrCreator.getFullName(),
+                    hrCreator.getEmail(),
+                    hrCreator.getRole().name(),
+                    hrCreator.getCreationTimestamp());
+        }
 
         return new JobDto(
                 job.getJobId(),
@@ -186,6 +199,6 @@ public class JobService {
                 job.getCreationTimestamp(),
                 job.getClosingDate(),
                 job.getLastModifiedTimestamp(),
-                hrCreator);
+                hrCreatorDto);
     }
 }

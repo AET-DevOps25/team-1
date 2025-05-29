@@ -7,14 +7,12 @@ package de.tum.devops.auth.dto;
  * AuthResponse:
  * properties:
  * accessToken: string
- * refreshToken: string
  * user: UserDto
  * expiresIn: integer
  */
 public class AuthResponse {
 
     private String accessToken;
-    private String refreshToken;
     private UserDto user;
     private int expiresIn;
 
@@ -22,9 +20,8 @@ public class AuthResponse {
     public AuthResponse() {
     }
 
-    public AuthResponse(String accessToken, String refreshToken, UserDto user, int expiresIn) {
+    public AuthResponse(String accessToken, UserDto user, int expiresIn) {
         this.accessToken = accessToken;
-        this.refreshToken = refreshToken;
         this.user = user;
         this.expiresIn = expiresIn;
     }
@@ -36,14 +33,6 @@ public class AuthResponse {
 
     public void setAccessToken(String accessToken) {
         this.accessToken = accessToken;
-    }
-
-    public String getRefreshToken() {
-        return refreshToken;
-    }
-
-    public void setRefreshToken(String refreshToken) {
-        this.refreshToken = refreshToken;
     }
 
     public UserDto getUser() {

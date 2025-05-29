@@ -1,6 +1,10 @@
 package de.tum.devops.auth.controller;
 
-import de.tum.devops.auth.dto.*;
+import de.tum.devops.auth.dto.ApiResponse;
+import de.tum.devops.auth.dto.AuthResponse;
+import de.tum.devops.auth.dto.LoginRequest;
+import de.tum.devops.auth.dto.RegisterRequest;
+import de.tum.devops.auth.dto.UserDto;
 import de.tum.devops.auth.service.AuthService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -11,10 +15,9 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * Authentication Controller
- * Implements the 5 authentication endpoints from api-documentation.yaml:
+ * Implements the 4 authentication endpoints from api-documentation.yaml:
  * - POST /api/v1/auth/login
  * - POST /api/v1/auth/register
- * - POST /api/v1/auth/refresh
  * - POST /api/v1/auth/logout
  * - GET /api/v1/auth/profile
  */
@@ -64,20 +67,6 @@ public class AuthController {
                 .body(ApiResponse.created(authResponse));
     }
 
-    /**
-     * POST /api/v1/auth/refresh
-     * Use refresh token to obtain new access token
-     */
-    @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse<AuthResponse>> refresh(@Valid @RequestBody RefreshRequest request) {
-        logger.info("Token refresh attempt");
-
-        AuthResponse authResponse = authService.refresh(request.getRefreshToken());
-
-        logger.info("Token refresh successful for user: {}", authResponse.getUser().getUserID());
-
-        return ResponseEntity.ok(ApiResponse.success("Token refreshed successfully", authResponse));
-    }
 
     /**
      * POST /api/v1/auth/logout

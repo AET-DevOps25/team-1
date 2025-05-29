@@ -1,49 +1,47 @@
 package de.tum.devops.assess.dto;
 
 /**
- * Pagination information for paginated responses
+ * Pagination information
  */
 public class PageInfo {
-
-    private int page;
-    private int size;
-    private long total;
+    private int pageNumber;
+    private int pageSize;
+    private long totalElements;
     private int totalPages;
 
-    // Constructors
     public PageInfo() {
     }
 
-    public PageInfo(int page, int size, long total, int totalPages) {
-        this.page = page;
-        this.size = size;
-        this.total = total;
+    public PageInfo(int pageNumber, int pageSize, long totalElements, int totalPages) {
+        this.pageNumber = pageNumber;
+        this.pageSize = pageSize;
+        this.totalElements = totalElements;
         this.totalPages = totalPages;
     }
 
-    // Getters and Setters
-    public int getPage() {
-        return page;
+    // Getters and setters
+    public int getPageNumber() {
+        return pageNumber;
     }
 
-    public void setPage(int page) {
-        this.page = page;
+    public void setPageNumber(int pageNumber) {
+        this.pageNumber = pageNumber;
     }
 
-    public int getSize() {
-        return size;
+    public int getPageSize() {
+        return pageSize;
     }
 
-    public void setSize(int size) {
-        this.size = size;
+    public void setPageSize(int pageSize) {
+        this.pageSize = pageSize;
     }
 
-    public long getTotal() {
-        return total;
+    public long getTotalElements() {
+        return totalElements;
     }
 
-    public void setTotal(long total) {
-        this.total = total;
+    public void setTotalElements(long totalElements) {
+        this.totalElements = totalElements;
     }
 
     public int getTotalPages() {

@@ -1,42 +1,56 @@
 package de.tum.devops.application.dto;
 
-import de.tum.devops.application.entity.ApplicationStatus;
+import de.tum.devops.persistence.entity.ApplicationStatus;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Application data transfer object for API responses
+ * Application DTO according to api-documentation.yaml
+ * 
+ * Schema definition:
+ * ApplicationDto:
+ * properties:
+ * applicationID: string (uuid)
+ * submissionTimestamp: string (date-time)
+ * status: string (enum: [SUBMITTED, AI_SCREENING, AI_INTERVIEW, COMPLETED,
+ * SHORTLISTED, REJECTED, HIRED])
+ * resumeContent: string
+ * originalResumeFilename: string
+ * lastModifiedTimestamp: string (date-time)
+ * candidate: UserDto
+ * job: JobDto
+ * assessment: AssessmentDto (optional, can be null)
  */
 public class ApplicationDto {
 
     private UUID applicationID;
+    private LocalDateTime submissionTimestamp;
+    private ApplicationStatus status;
+    private String resumeContent;
+    private String originalResumeFilename;
+    private LocalDateTime lastModifiedTimestamp;
     private UserDto candidate;
     private JobDto job;
-    private ApplicationStatus status;
-    private String resumePath;
-    private String coverLetter;
-    private LocalDateTime submissionTimestamp;
-    private LocalDateTime lastModifiedTimestamp;
-    private String hrFeedback;
+    private Object assessment;
 
     // Constructors
     public ApplicationDto() {
     }
 
-    public ApplicationDto(UUID applicationID, UserDto candidate, JobDto job,
-            ApplicationStatus status, String resumePath, String coverLetter,
-            LocalDateTime submissionTimestamp, LocalDateTime lastModifiedTimestamp,
-            String hrFeedback) {
+    public ApplicationDto(UUID applicationID, LocalDateTime submissionTimestamp,
+            ApplicationStatus status, String resumeContent,
+            String originalResumeFilename, LocalDateTime lastModifiedTimestamp,
+            UserDto candidate, JobDto job, Object assessment) {
         this.applicationID = applicationID;
+        this.submissionTimestamp = submissionTimestamp;
+        this.status = status;
+        this.resumeContent = resumeContent;
+        this.originalResumeFilename = originalResumeFilename;
+        this.lastModifiedTimestamp = lastModifiedTimestamp;
         this.candidate = candidate;
         this.job = job;
-        this.status = status;
-        this.resumePath = resumePath;
-        this.coverLetter = coverLetter;
-        this.submissionTimestamp = submissionTimestamp;
-        this.lastModifiedTimestamp = lastModifiedTimestamp;
-        this.hrFeedback = hrFeedback;
+        this.assessment = assessment;
     }
 
     // Getters and Setters
@@ -46,6 +60,46 @@ public class ApplicationDto {
 
     public void setApplicationID(UUID applicationID) {
         this.applicationID = applicationID;
+    }
+
+    public LocalDateTime getSubmissionTimestamp() {
+        return submissionTimestamp;
+    }
+
+    public void setSubmissionTimestamp(LocalDateTime submissionTimestamp) {
+        this.submissionTimestamp = submissionTimestamp;
+    }
+
+    public ApplicationStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(ApplicationStatus status) {
+        this.status = status;
+    }
+
+    public String getResumeContent() {
+        return resumeContent;
+    }
+
+    public void setResumeContent(String resumeContent) {
+        this.resumeContent = resumeContent;
+    }
+
+    public String getOriginalResumeFilename() {
+        return originalResumeFilename;
+    }
+
+    public void setOriginalResumeFilename(String originalResumeFilename) {
+        this.originalResumeFilename = originalResumeFilename;
+    }
+
+    public LocalDateTime getLastModifiedTimestamp() {
+        return lastModifiedTimestamp;
+    }
+
+    public void setLastModifiedTimestamp(LocalDateTime lastModifiedTimestamp) {
+        this.lastModifiedTimestamp = lastModifiedTimestamp;
     }
 
     public UserDto getCandidate() {
@@ -64,51 +118,11 @@ public class ApplicationDto {
         this.job = job;
     }
 
-    public ApplicationStatus getStatus() {
-        return status;
+    public Object getAssessment() {
+        return assessment;
     }
 
-    public void setStatus(ApplicationStatus status) {
-        this.status = status;
-    }
-
-    public String getResumePath() {
-        return resumePath;
-    }
-
-    public void setResumePath(String resumePath) {
-        this.resumePath = resumePath;
-    }
-
-    public String getCoverLetter() {
-        return coverLetter;
-    }
-
-    public void setCoverLetter(String coverLetter) {
-        this.coverLetter = coverLetter;
-    }
-
-    public LocalDateTime getSubmissionTimestamp() {
-        return submissionTimestamp;
-    }
-
-    public void setSubmissionTimestamp(LocalDateTime submissionTimestamp) {
-        this.submissionTimestamp = submissionTimestamp;
-    }
-
-    public LocalDateTime getLastModifiedTimestamp() {
-        return lastModifiedTimestamp;
-    }
-
-    public void setLastModifiedTimestamp(LocalDateTime lastModifiedTimestamp) {
-        this.lastModifiedTimestamp = lastModifiedTimestamp;
-    }
-
-    public String getHrFeedback() {
-        return hrFeedback;
-    }
-
-    public void setHrFeedback(String hrFeedback) {
-        this.hrFeedback = hrFeedback;
+    public void setAssessment(Object assessment) {
+        this.assessment = assessment;
     }
 }

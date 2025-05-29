@@ -1,9 +1,13 @@
 package de.tum.devops.assess.service;
 
 import de.tum.devops.assess.dto.*;
-import de.tum.devops.assess.entity.Assessment;
-import de.tum.devops.assess.entity.AssessmentStatus;
-import de.tum.devops.assess.repository.AssessmentRepository;
+import de.tum.devops.persistence.entity.Assessment;
+import de.tum.devops.persistence.entity.RecommendationEnum;
+import de.tum.devops.persistence.repository.AssessmentRepository;
+import de.tum.devops.persistence.repository.ApplicationRepository;
+import de.tum.devops.persistence.repository.UserRepository;
+import de.tum.devops.persistence.entity.Application;
+import de.tum.devops.persistence.entity.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -26,45 +30,36 @@ public class AssessmentService {
     private static final Logger logger = LoggerFactory.getLogger(AssessmentService.class);
 
     private final AssessmentRepository assessmentRepository;
-    private final ApplicationService applicationService;
-    private final UserService userService;
+    private final ApplicationRepository applicationRepository;
+    private final UserRepository userRepository;
 
     public AssessmentService(AssessmentRepository assessmentRepository,
-            ApplicationService applicationService,
-            UserService userService) {
+            ApplicationRepository applicationRepository,
+            UserRepository userRepository) {
         this.assessmentRepository = assessmentRepository;
-        this.applicationService = applicationService;
-        this.userService = userService;
+        this.applicationRepository = applicationRepository;
+        this.userRepository = userRepository;
     }
 
     /**
-     * Create new assessment (HR only)
+     * Create assessment for application
      */
-    public AssessmentDto createAssessment(CreateAssessmentRequest request, UUID hrCreatorId) {
-        logger.info("Creating assessment for application: {} by HR: {}", request.getApplicationId(), hrCreatorId);
+    public AssessmentDto createAssessmentForApplication(UUID applicationId) {
+        logger.info("Creating assessment for application: {}", applicationId);
 
-        // Validate application exists
-        if (!applicationService.applicationExists(request.getApplicationId())) {
-            throw new IllegalArgumentException("Application not found");
+        // Verify application exists
+        Application application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new IllegalArgumentException("Application not found"));
+
+        // Check if assessment already exists
+        if (assessmentRepository.existsByApplicationId(applicationId)) {
+            throw new IllegalArgumentException("Assessment already exists for this application");
         }
 
-        // Create assessment
-        Assessment assessment = new Assessment(
-                request.getApplicationId(),
-                request.getAssessmentType(),
-                hrCreatorId);
-
-        if (request.getMaxScore() != null) {
-            assessment.setMaxScore(request.getMaxScore());
-        }
-
-        if (request.getAssessmentData() != null) {
-            assessment.setAssessmentData(request.getAssessmentData());
-        }
-
+        Assessment assessment = new Assessment(applicationId);
         assessment = assessmentRepository.save(assessment);
-        logger.info("Assessment created successfully: {}", assessment.getAssessmentId());
 
+        logger.info("Assessment created successfully: {}", assessment.getAssessmentId());
         return convertToDto(assessment);
     }
 
@@ -72,22 +67,22 @@ public class AssessmentService {
      * Get assessments with pagination and filtering
      */
     @Transactional(readOnly = true)
-    public Map<String, Object> getAssessments(int page, int size, AssessmentStatus status, String userRole,
-            UUID userId) {
-        logger.info("Getting assessments - page: {}, size: {}, status: {}, userRole: {}", page, size, status, userRole);
+    public Map<String, Object> getAssessments(int page, int size, RecommendationEnum recommendation,
+            String userRole, UUID userId) {
+        logger.info("Getting assessments - page: {}, size: {}, recommendation: {}, userRole: {}",
+                page, size, recommendation, userRole);
 
         Pageable pageable = PageRequest.of(page, size);
         Page<Assessment> assessmentPage;
 
-        if (status != null) {
-            assessmentPage = assessmentRepository.findByStatus(status, pageable);
-        } else if ("HR".equals(userRole)) {
+        if (recommendation != null) {
+            assessmentPage = assessmentRepository.findByRecommendation(recommendation, pageable);
+        } else if ("CANDIDATE".equals(userRole)) {
+            // Candidates can only see their own assessments
+            assessmentPage = assessmentRepository.findByApplicationCandidateId(userId, pageable);
+        } else {
             // HR can see all assessments
             assessmentPage = assessmentRepository.findAll(pageable);
-        } else {
-            // Candidates can only see their own assessments
-            assessmentPage = assessmentRepository.findByApplicationId(userId, pageable); // This would need proper
-                                                                                         // candidate filtering
         }
 
         Page<AssessmentDto> assessmentDtoPage = assessmentPage.map(this::convertToDto);
@@ -102,36 +97,86 @@ public class AssessmentService {
     }
 
     /**
-     * Get assessment details by ID
+     * Get assessment by ID
      */
     @Transactional(readOnly = true)
     public AssessmentDto getAssessmentById(UUID assessmentId, String userRole, UUID userId) {
-        logger.info("Getting assessment details: {} for user: {} with role: {}", assessmentId, userId, userRole);
+        logger.info("Getting assessment: {} for user role: {}", assessmentId, userRole);
 
         Assessment assessment = assessmentRepository.findById(assessmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Assessment not found"));
 
-        // Role-based access control would need proper implementation
-        // For now, allow all authenticated users to view assessments
+        // Role-based access control
+        if ("CANDIDATE".equals(userRole)) {
+            // Verify candidate owns this assessment through application
+            Application application = applicationRepository.findById(assessment.getApplicationId())
+                    .orElseThrow(() -> new IllegalArgumentException("Application not found"));
+
+            if (!application.getCandidateId().equals(userId)) {
+                throw new IllegalArgumentException("Access denied");
+            }
+        }
 
         return convertToDto(assessment);
     }
 
     /**
-     * Start assessment (Candidates only)
+     * Update assessment scores and analysis
      */
-    public AssessmentDto startAssessment(UUID assessmentId, UUID candidateId) {
-        logger.info("Starting assessment: {} by candidate: {}", assessmentId, candidateId);
+    public AssessmentDto updateAssessmentScore(UUID assessmentId, Float resumeScore, Float interviewScore,
+            Float finalScore, String resumeAnalysis, String interviewSummary,
+            RecommendationEnum recommendation) {
+        logger.info("Updating assessment scores: {}", assessmentId);
 
         Assessment assessment = assessmentRepository.findById(assessmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Assessment not found"));
 
-        if (assessment.getStatus() != AssessmentStatus.PENDING) {
-            throw new IllegalArgumentException("Assessment is not in pending status");
+        // Update fields if provided
+        if (resumeScore != null) {
+            assessment.setResumeScore(resumeScore);
+        }
+        if (interviewScore != null) {
+            assessment.setInterviewScore(interviewScore);
+        }
+        if (finalScore != null) {
+            assessment.setFinalScore(finalScore);
+        }
+        if (resumeAnalysis != null) {
+            assessment.setResumeAnalysis(resumeAnalysis);
+        }
+        if (interviewSummary != null) {
+            assessment.setInterviewSummary(interviewSummary);
+        }
+        if (recommendation != null) {
+            assessment.setRecommendation(recommendation);
         }
 
-        assessment.setStatus(AssessmentStatus.IN_PROGRESS);
-        assessment.setStartTime(LocalDateTime.now());
+        assessment.setLastModifiedTimestamp(LocalDateTime.now());
+        assessment = assessmentRepository.save(assessment);
+
+        logger.info("Assessment updated successfully: {}", assessmentId);
+        return convertToDto(assessment);
+    }
+
+    /**
+     * Start assessment process (for candidates)
+     */
+    public AssessmentDto startAssessment(UUID assessmentId, UUID candidateId) {
+        logger.info("Starting assessment: {} for candidate: {}", assessmentId, candidateId);
+
+        Assessment assessment = assessmentRepository.findById(assessmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Assessment not found"));
+
+        // Verify candidate ownership
+        Application application = applicationRepository.findById(assessment.getApplicationId())
+                .orElseThrow(() -> new IllegalArgumentException("Application not found"));
+
+        if (!application.getCandidateId().equals(candidateId)) {
+            throw new IllegalArgumentException("Access denied");
+        }
+
+        // Mark assessment as started (you might want to add a status field)
+        assessment.setLastModifiedTimestamp(LocalDateTime.now());
         assessment = assessmentRepository.save(assessment);
 
         logger.info("Assessment started successfully: {}", assessmentId);
@@ -139,21 +184,24 @@ public class AssessmentService {
     }
 
     /**
-     * Submit assessment results (Candidates only)
+     * Submit assessment data (for candidates)
      */
     public AssessmentDto submitAssessment(UUID assessmentId, String assessmentData, UUID candidateId) {
-        logger.info("Submitting assessment: {} by candidate: {}", assessmentId, candidateId);
+        logger.info("Submitting assessment: {} for candidate: {}", assessmentId, candidateId);
 
         Assessment assessment = assessmentRepository.findById(assessmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Assessment not found"));
 
-        if (assessment.getStatus() != AssessmentStatus.IN_PROGRESS) {
-            throw new IllegalArgumentException("Assessment is not in progress");
+        // Verify candidate ownership
+        Application application = applicationRepository.findById(assessment.getApplicationId())
+                .orElseThrow(() -> new IllegalArgumentException("Application not found"));
+
+        if (!application.getCandidateId().equals(candidateId)) {
+            throw new IllegalArgumentException("Access denied");
         }
 
-        assessment.setStatus(AssessmentStatus.COMPLETED);
-        assessment.setEndTime(LocalDateTime.now());
-        assessment.setAssessmentData(assessmentData);
+        // Store assessment data (you might want to add fields for this)
+        assessment.setLastModifiedTimestamp(LocalDateTime.now());
         assessment = assessmentRepository.save(assessment);
 
         logger.info("Assessment submitted successfully: {}", assessmentId);
@@ -161,7 +209,7 @@ public class AssessmentService {
     }
 
     /**
-     * Score assessment (HR only)
+     * Score assessment (for HR)
      */
     public AssessmentDto scoreAssessment(UUID assessmentId, Integer score, String feedback, UUID hrUserId) {
         logger.info("Scoring assessment: {} by HR: {}", assessmentId, hrUserId);
@@ -169,12 +217,16 @@ public class AssessmentService {
         Assessment assessment = assessmentRepository.findById(assessmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Assessment not found"));
 
-        if (assessment.getStatus() != AssessmentStatus.COMPLETED) {
-            throw new IllegalArgumentException("Assessment must be completed before scoring");
+        // Convert integer score to float and set as final score
+        if (score != null) {
+            assessment.setFinalScore(score.floatValue());
         }
 
-        assessment.setScore(score);
-        assessment.setFeedback(feedback);
+        if (feedback != null) {
+            assessment.setInterviewSummary(feedback);
+        }
+
+        assessment.setLastModifiedTimestamp(LocalDateTime.now());
         assessment = assessmentRepository.save(assessment);
 
         logger.info("Assessment scored successfully: {}", assessmentId);
@@ -185,25 +237,16 @@ public class AssessmentService {
      * Convert Assessment entity to AssessmentDto
      */
     private AssessmentDto convertToDto(Assessment assessment) {
-        // Get application information
-        ApplicationDto application = applicationService.getApplicationById(assessment.getApplicationId());
-
-        // Get HR creator information
-        UserDto hrCreator = userService.getUserById(assessment.getHrCreatorId());
-
         return new AssessmentDto(
                 assessment.getAssessmentId(),
-                application,
-                assessment.getAssessmentType(),
-                assessment.getStatus(),
-                assessment.getScore(),
-                assessment.getMaxScore(),
-                assessment.getFeedback(),
-                assessment.getAssessmentData(),
+                assessment.getApplicationId(),
+                assessment.getResumeScore(),
+                assessment.getInterviewScore(),
+                assessment.getFinalScore(),
+                assessment.getResumeAnalysis(),
+                assessment.getInterviewSummary(),
+                assessment.getRecommendation(),
                 assessment.getCreationTimestamp(),
-                assessment.getStartTime(),
-                assessment.getEndTime(),
-                assessment.getLastModifiedTimestamp(),
-                hrCreator);
+                assessment.getLastModifiedTimestamp());
     }
 }

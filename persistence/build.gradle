@@ -1,0 +1,11 @@
+// persistence module specific dependencies
+dependencies {
+    // JPA for database operations
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    
+    // PostgreSQL driver
+    runtimeOnly 'org.postgresql:postgresql'
+    
+    // Testcontainers for database testing
+    testImplementation 'org.testcontainers:postgresql'
+} 

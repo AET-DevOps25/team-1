@@ -1,50 +1,58 @@
 package de.tum.devops.assess.dto;
 
-import de.tum.devops.assess.entity.AssessmentStatus;
+import de.tum.devops.persistence.entity.RecommendationEnum;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Assessment data transfer object for API responses
+ * Assessment DTO according to api-documentation.yaml
+ * 
+ * Schema definition:
+ * AssessmentDto:
+ * properties:
+ * assessmentID: string (uuid)
+ * applicationID: string (uuid)
+ * resumeScore: number (float, 0-100)
+ * interviewScore: number (float, 0-100)
+ * finalScore: number (float, 0-100)
+ * resumeAnalysis: string
+ * interviewSummary: string
+ * recommendation: string (enum: [RECOMMEND, CONSIDER, NOT_RECOMMEND])
+ * creationTimestamp: string (date-time)
+ * lastModifiedTimestamp: string (date-time)
  */
 public class AssessmentDto {
 
     private UUID assessmentID;
-    private ApplicationDto application;
-    private String assessmentType;
-    private AssessmentStatus status;
-    private Integer score;
-    private Integer maxScore;
-    private String feedback;
-    private String assessmentData;
+    private UUID applicationID;
+    private Float resumeScore;
+    private Float interviewScore;
+    private Float finalScore;
+    private String resumeAnalysis;
+    private String interviewSummary;
+    private RecommendationEnum recommendation;
     private LocalDateTime creationTimestamp;
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
     private LocalDateTime lastModifiedTimestamp;
-    private UserDto hrCreator;
 
     // Constructors
     public AssessmentDto() {
     }
 
-    public AssessmentDto(UUID assessmentID, ApplicationDto application, String assessmentType,
-            AssessmentStatus status, Integer score, Integer maxScore, String feedback,
-            String assessmentData, LocalDateTime creationTimestamp, LocalDateTime startTime,
-            LocalDateTime endTime, LocalDateTime lastModifiedTimestamp, UserDto hrCreator) {
+    public AssessmentDto(UUID assessmentID, UUID applicationID, Float resumeScore,
+            Float interviewScore, Float finalScore, String resumeAnalysis,
+            String interviewSummary, RecommendationEnum recommendation,
+            LocalDateTime creationTimestamp, LocalDateTime lastModifiedTimestamp) {
         this.assessmentID = assessmentID;
-        this.application = application;
-        this.assessmentType = assessmentType;
-        this.status = status;
-        this.score = score;
-        this.maxScore = maxScore;
-        this.feedback = feedback;
-        this.assessmentData = assessmentData;
+        this.applicationID = applicationID;
+        this.resumeScore = resumeScore;
+        this.interviewScore = interviewScore;
+        this.finalScore = finalScore;
+        this.resumeAnalysis = resumeAnalysis;
+        this.interviewSummary = interviewSummary;
+        this.recommendation = recommendation;
         this.creationTimestamp = creationTimestamp;
-        this.startTime = startTime;
-        this.endTime = endTime;
         this.lastModifiedTimestamp = lastModifiedTimestamp;
-        this.hrCreator = hrCreator;
     }
 
     // Getters and Setters
@@ -56,60 +64,60 @@ public class AssessmentDto {
         this.assessmentID = assessmentID;
     }
 
-    public ApplicationDto getApplication() {
-        return application;
+    public UUID getApplicationID() {
+        return applicationID;
     }
 
-    public void setApplication(ApplicationDto application) {
-        this.application = application;
+    public void setApplicationID(UUID applicationID) {
+        this.applicationID = applicationID;
     }
 
-    public String getAssessmentType() {
-        return assessmentType;
+    public Float getResumeScore() {
+        return resumeScore;
     }
 
-    public void setAssessmentType(String assessmentType) {
-        this.assessmentType = assessmentType;
+    public void setResumeScore(Float resumeScore) {
+        this.resumeScore = resumeScore;
     }
 
-    public AssessmentStatus getStatus() {
-        return status;
+    public Float getInterviewScore() {
+        return interviewScore;
     }
 
-    public void setStatus(AssessmentStatus status) {
-        this.status = status;
+    public void setInterviewScore(Float interviewScore) {
+        this.interviewScore = interviewScore;
     }
 
-    public Integer getScore() {
-        return score;
+    public Float getFinalScore() {
+        return finalScore;
     }
 
-    public void setScore(Integer score) {
-        this.score = score;
+    public void setFinalScore(Float finalScore) {
+        this.finalScore = finalScore;
     }
 
-    public Integer getMaxScore() {
-        return maxScore;
+    public String getResumeAnalysis() {
+        return resumeAnalysis;
     }
 
-    public void setMaxScore(Integer maxScore) {
-        this.maxScore = maxScore;
+    public void setResumeAnalysis(String resumeAnalysis) {
+        this.resumeAnalysis = resumeAnalysis;
     }
 
-    public String getFeedback() {
-        return feedback;
+    public String getInterviewSummary() {
+        return interviewSummary;
     }
 
-    public void setFeedback(String feedback) {
-        this.feedback = feedback;
+    public void setInterviewSummary(String interviewSummary) {
+        this.interviewSummary = interviewSummary;
     }
 
-    public String getAssessmentData() {
-        return assessmentData;
+    public RecommendationEnum getRecommendation() {
+        return recommendation;
     }
 
-    public void setAssessmentData(String assessmentData) {
-        this.assessmentData = assessmentData;
+    public void setRecommendation(RecommendationEnum recommendation) {
+        this.recommendation = recommendation;
     }
 
     public LocalDateTime getCreationTimestamp() {
@@ -120,35 +128,11 @@ public class AssessmentDto {
         this.creationTimestamp = creationTimestamp;
     }
 
-    public LocalDateTime getStartTime() {
-        return startTime;
-    }
-
-    public void setStartTime(LocalDateTime startTime) {
-        this.startTime = startTime;
-    }
-
-    public LocalDateTime getEndTime() {
-        return endTime;
-    }
-
-    public void setEndTime(LocalDateTime endTime) {
-        this.endTime = endTime;
-    }
-
     public LocalDateTime getLastModifiedTimestamp() {
         return lastModifiedTimestamp;
     }
 
     public void setLastModifiedTimestamp(LocalDateTime lastModifiedTimestamp) {
         this.lastModifiedTimestamp = lastModifiedTimestamp;
-    }
-
-    public UserDto getHrCreator() {
-        return hrCreator;
-    }
-
-    public void setHrCreator(UserDto hrCreator) {
-        this.hrCreator = hrCreator;
     }
 }

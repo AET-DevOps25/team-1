@@ -1,6 +1,6 @@
 package de.tum.devops.job.dto;
 
-import de.tum.devops.job.entity.JobStatus;
+import de.tum.devops.persistence.entity.JobStatus;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

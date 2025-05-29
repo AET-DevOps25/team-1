@@ -1,9 +1,13 @@
 package de.tum.devops.application.service;
 
 import de.tum.devops.application.dto.*;
-import de.tum.devops.application.entity.Application;
-import de.tum.devops.application.entity.ApplicationStatus;
-import de.tum.devops.application.repository.ApplicationRepository;
+import de.tum.devops.persistence.entity.Application;
+import de.tum.devops.persistence.entity.ApplicationStatus;
+import de.tum.devops.persistence.entity.Job;
+import de.tum.devops.persistence.entity.User;
+import de.tum.devops.persistence.repository.ApplicationRepository;
+import de.tum.devops.persistence.repository.JobRepository;
+import de.tum.devops.persistence.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -11,7 +15,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -27,50 +30,39 @@ public class ApplicationService {
     private static final Logger logger = LoggerFactory.getLogger(ApplicationService.class);
 
     private final ApplicationRepository applicationRepository;
-    private final UserService userService;
-    private final JobService jobService;
-    private final FileStorageService fileStorageService;
+    private final UserRepository userRepository;
+    private final JobRepository jobRepository;
 
     public ApplicationService(ApplicationRepository applicationRepository,
-            UserService userService,
-            JobService jobService,
-            FileStorageService fileStorageService) {
+            UserRepository userRepository,
+            JobRepository jobRepository) {
         this.applicationRepository = applicationRepository;
-        this.userService = userService;
-        this.jobService = jobService;
-        this.fileStorageService = fileStorageService;
+        this.userRepository = userRepository;
+        this.jobRepository = jobRepository;
     }
 
     /**
      * Submit new application (Candidates only)
      */
-    public ApplicationDto submitApplication(SubmitApplicationRequest request,
-            MultipartFile resume,
-            UUID candidateId) {
-        logger.info("Submitting application for job: {} by candidate: {}", request.getJobId(), candidateId);
+    public ApplicationDto submitApplication(SubmitApplicationRequest request, UUID candidateId) {
+        logger.info("Submitting application for job: {} by candidate: {}", request.getJobID(), candidateId);
 
         // Check if job exists and is open
-        if (!jobService.isJobOpenForApplications(request.getJobId())) {
+        if (!jobRepository.existsByJobIdAndStatus(request.getJobID(), de.tum.devops.persistence.entity.JobStatus.OPEN)) {
             throw new IllegalArgumentException("Job is not available for applications");
         }
 
         // Check for duplicate application
-        if (applicationRepository.existsByCandidateIdAndJobId(candidateId, request.getJobId())) {
+        if (applicationRepository.existsByCandidateIdAndJobId(candidateId, request.getJobID())) {
             throw new IllegalArgumentException("You have already applied for this job");
         }
 
-        // Store resume file
-        String resumePath = null;
-        if (resume != null && !resume.isEmpty()) {
-            resumePath = fileStorageService.storeFile(resume, candidateId);
-        }
-
-        // Create application
+        // Create application with resume content
         Application application = new Application(
                 candidateId,
-                request.getJobId(),
-                resumePath,
-                request.getCoverLetter());
+                request.getJobID(),
+                request.getResumeContent(),
+                request.getOriginalResumeFilename());
 
         application = applicationRepository.save(application);
         logger.info("Application submitted successfully: {}", application.getApplicationId());
@@ -149,7 +141,7 @@ public class ApplicationService {
      */
     public ApplicationDto updateApplicationStatus(UUID applicationId,
             ApplicationStatus newStatus,
-            String hrFeedback,
+            String hrComments,
             UUID hrUserId) {
         logger.info("Updating application status: {} to {} by HR: {}", applicationId, newStatus, hrUserId);
 
@@ -157,8 +149,8 @@ public class ApplicationService {
                 .orElseThrow(() -> new IllegalArgumentException("Application not found"));
 
         application.setStatus(newStatus);
-        if (hrFeedback != null) {
-            application.setHrFeedback(hrFeedback);
+        if (hrComments != null) {
+            application.setHrComments(hrComments);
         }
         application.setLastModifiedTimestamp(LocalDateTime.now());
 
@@ -182,14 +174,9 @@ public class ApplicationService {
             throw new IllegalArgumentException("You can only withdraw your own applications");
         }
 
-        // Only allow withdrawal if pending
-        if (application.getStatus() != ApplicationStatus.PENDING) {
-            throw new IllegalArgumentException("You can only withdraw pending applications");
-        }
-
-        // Delete resume file if exists
-        if (application.getResumePath() != null) {
-            fileStorageService.deleteFile(application.getResumePath());
+        // Only allow withdrawal if submitted (pending review)
+        if (application.getStatus() != ApplicationStatus.SUBMITTED) {
+            throw new IllegalArgumentException("You can only withdraw submitted applications");
         }
 
         applicationRepository.delete(application);
@@ -200,21 +187,58 @@ public class ApplicationService {
      * Convert Application entity to ApplicationDto
      */
     private ApplicationDto convertToDto(Application application) {
-        // Get candidate information
-        UserDto candidate = userService.getUserById(application.getCandidateId());
+        // Get user and job information
+        User user = userRepository.findById(application.getCandidateId())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        // Get job information
-        JobDto job = jobService.getJobById(application.getJobId());
+        Job job = jobRepository.findById(application.getJobId())
+                .orElseThrow(() -> new IllegalArgumentException("Job not found"));
+
+        // Convert User to UserDto
+        UserDto candidate = new UserDto(
+                user.getUserId(),
+                user.getFullName(),
+                user.getEmail(),
+                user.getRole().toString(),
+                user.getCreationTimestamp()
+        );
+
+        // Get HR creator information for JobDto
+        User hrCreator = userRepository.findById(job.getHrCreatorId())
+                .orElseThrow(() -> new IllegalArgumentException("HR creator not found"));
+
+        // Convert HR creator to UserDto
+        UserDto hrCreatorDto = new UserDto(
+                hrCreator.getUserId(),
+                hrCreator.getFullName(),
+                hrCreator.getEmail(),
+                hrCreator.getRole().toString(),
+                hrCreator.getCreationTimestamp()
+        );
+
+        // Convert Job to JobDto
+        JobDto jobDto = new JobDto(
+                job.getJobId(),
+                job.getTitle(),
+                job.getDescription(),
+                job.getRequirements(),
+                job.getStatus().toString(),
+                job.getCreationTimestamp(),
+                job.getClosingDate(),
+                job.getLastModifiedTimestamp(),
+                hrCreatorDto
+        );
 
         return new ApplicationDto(
                 application.getApplicationId(),
-                candidate,
-                job,
-                application.getStatus(),
-                application.getResumePath(),
-                application.getCoverLetter(),
                 application.getSubmissionTimestamp(),
+                application.getStatus(),
+                application.getResumeContent(),
+                application.getOriginalResumeFilename(),
                 application.getLastModifiedTimestamp(),
-                application.getHrFeedback());
+                candidate,
+                jobDto,
+                null // assessment will be populated separately if needed
+        );
     }
 }
