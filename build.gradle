@@ -1,0 +1,76 @@
+// Root build.gradle - AI-HR Recruitment System
+
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.4.0' apply false
+    id 'io.spring.dependency-management' version '1.1.6' apply false
+}
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+
+    group = 'de.tum.devops'
+    version = '1.0.0'
+
+    java {
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
+    }
+
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        implementation 'org.springframework.boot:spring-boot-starter-web'
+        implementation 'org.springframework.boot:spring-boot-starter-validation'
+        implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+        developmentOnly 'org.springframework.boot:spring-boot-devtools'
+        annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+        testImplementation 'org.springframework.boot:spring-boot-starter-test'
+        testImplementation 'org.testcontainers:junit-jupiter'
+    }
+
+    tasks.named('test') {
+        useJUnitPlatform()
+    }
+
+    jar {
+        enabled = false
+    }
+
+    bootJar {
+        enabled = true
+        archiveFileName = "${project.name}.jar"
+    }
+}
+
+// Root tasks
+tasks.register('buildAll') {
+    description = 'Build all microservices'
+    group = 'build'
+    dependsOn subprojects.collect { it.tasks.named('build') }
+}
+
+tasks.register('cleanAll') {
+    description = 'Clean all microservices'
+    group = 'build'
+    dependsOn subprojects.collect { it.tasks.named('clean') }
+}
+
+// Docker tasks
+tasks.register('dockerComposeUp', Exec) {
+    description = 'Start all services with Docker Compose'
+    group = 'docker'
+    commandLine 'docker', 'compose', 'up', '-d'
+}
+
+tasks.register('dockerComposeDown', Exec) {
+    description = 'Stop all services with Docker Compose'
+    group = 'docker'
+    commandLine 'docker', 'compose', 'down'
+}

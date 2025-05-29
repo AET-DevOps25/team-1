@@ -1,133 +1,176 @@
-version: '3.8'
+version: "3.8"
 
 services:
-  # Frontend services
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    expose:
-      - "80"
-    depends_on:
-      - service-gateway
+  # PostgreSQL database
+  postgresql:
+    image: postgres:15-alpine
+    container_name: ai-hr-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=ai_hr_db
+      - POSTGRES_USER=ai_hr_user
+      - POSTGRES_PASSWORD=ai_hr_password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
-      - frontend-network
-      - backend-network
+      - ai-hr-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ai_hr_user -d ai_hr_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
-  # Gateway service
-  service-gateway:
+  # Authentication service
+  service-auth:
     build:
-      context: ./service-gateway
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: service-auth/Dockerfile
+    container_name: ai-hr-auth
     ports:
       - "8080:8080"
     depends_on:
-      - postgres
-      - service-job
-      - service-application
-      - service-assess
-      - service-genai
+      postgresql:
+        condition: service_healthy
     networks:
-      - backend-network
+      - ai-hr-network
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
-      - DATABASE_URL=jdbc:postgresql://postgres:5432/hrapp
-      - DATABASE_USERNAME=postgres
-      - DATABASE_PASSWORD=postgres
-      - JWT_SECRET=DockerProductionSecretKey2025!
-      - JWT_EXPIRATION=86400000
-      - JWT_REFRESH_EXPIRATION=604800000
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql:5432/ai_hr_db
+      - SPRING_DATASOURCE_USERNAME=ai_hr_user
+      - SPRING_DATASOURCE_PASSWORD=ai_hr_password
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8080/api/v1/auth/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-  # Job service
+  # Job management service
   service-job:
     build:
-      context: ./service-job
-      dockerfile: Dockerfile
-    expose:
-      - "8080"
+      context: .
+      dockerfile: service-job/Dockerfile
+    container_name: ai-hr-job
+    ports:
+      - "8081:8081"
     depends_on:
-      - postgres
+      postgresql:
+        condition: service_healthy
+      service-auth:
+        condition: service_healthy
     networks:
-      - backend-network
+      - ai-hr-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/hrapp
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql:5432/ai_hr_db
+      - SPRING_DATASOURCE_USERNAME=ai_hr_user
+      - SPRING_DATASOURCE_PASSWORD=ai_hr_password
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8081/api/v1/jobs/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-  # Application service
+  # Application management service
   service-application:
     build:
-      context: ./service-application
-      dockerfile: Dockerfile
-    expose:
-      - "8080"
+      context: .
+      dockerfile: service-application/Dockerfile
+    container_name: ai-hr-application
+    ports:
+      - "8082:8082"
     depends_on:
-      - postgres
+      postgresql:
+        condition: service_healthy
+      service-auth:
+        condition: service_healthy
+      service-job:
+        condition: service_healthy
     networks:
-      - backend-network
+      - ai-hr-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/hrapp
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql:5432/ai_hr_db
+      - SPRING_DATASOURCE_USERNAME=ai_hr_user
+      - SPRING_DATASOURCE_PASSWORD=ai_hr_password
+    volumes:
+      - resume-uploads:/app/uploads/resumes
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8082/api/v1/applications/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # Assessment service
   service-assess:
     build:
-      context: ./service-assess
-      dockerfile: Dockerfile
-    expose:
-      - "8080"
+      context: .
+      dockerfile: service-assess/Dockerfile
+    container_name: ai-hr-assess
+    ports:
+      - "8083:8083"
     depends_on:
-      - postgres
+      postgresql:
+        condition: service_healthy
+      service-auth:
+        condition: service_healthy
+      service-application:
+        condition: service_healthy
     networks:
-      - backend-network
+      - ai-hr-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/hrapp
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=postgres
-
-  # GenAI Python service
-  service-genai:
-    build:
-      context: ./service-genai
-      dockerfile: Dockerfile
-    expose:
-      - "8080"
-    depends_on:
-      - postgres
-    networks:
-      - backend-network
-    environment:
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=hrapp
-
-  # PostgreSQL with pgvector
-  postgres:
-    image: pgvector:0.8.0-pg17
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-      - ./postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=hrapp
-    expose:
-      - "5432"
-    networks:
-      - backend-network
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql:5432/ai_hr_db
+      - SPRING_DATASOURCE_USERNAME=ai_hr_user
+      - SPRING_DATASOURCE_PASSWORD=ai_hr_password
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8083/api/v1/assessments/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 networks:
-  frontend-network:
+  ai-hr-network:
     driver: bridge
-  backend-network:
-    driver: bridge
+    name: ai-hr-network
 
 volumes:
   postgres-data:
     driver: local
+    name: ai-hr-postgres-data
+  resume-uploads:
+    driver: local
+    name: ai-hr-resume-uploads

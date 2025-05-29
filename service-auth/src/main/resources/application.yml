@@ -1,0 +1,54 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: service-auth
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/aihr
+    username: ${DB_USERNAME:aihr_user}
+    password: ${DB_PASSWORD:password}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${JWT_ISSUER:ai-hr-system}
+
+# JWT Configuration
+jwt:
+  private-key-path: ${JWT_PRIVATE_KEY_PATH:classpath:rsa-private-key.pem}
+  access-token-expiration: ${JWT_ACCESS_EXPIRATION:3600} # 1 hour
+  refresh-token-expiration: ${JWT_REFRESH_EXPIRATION:604800} # 7 days
+  issuer: ${JWT_ISSUER:ai-hr-system}
+
+# Logging
+logging:
+  level:
+    de.tum.devops.auth: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Management endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized

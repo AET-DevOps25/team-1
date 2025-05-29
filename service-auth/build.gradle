@@ -1,0 +1,20 @@
+// service-auth specific dependencies
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    
+    // JWT Support (Spring Security native)
+    implementation 'org.springframework.security:spring-security-oauth2-jose'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+    runtimeOnly 'com.nimbusds:nimbus-jose-jwt'
+    
+    // Argon2 password encoder
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.76'
+    
+    // Database
+    runtimeOnly 'org.postgresql:postgresql'
+    
+    // Testing
+    testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'org.testcontainers:postgresql'
+} 

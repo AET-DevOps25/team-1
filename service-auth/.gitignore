@@ -1,0 +1,25 @@
+# Module-specific gitignore for service-auth
+
+# IntelliJ IDEA module files
+.idea/
+*.iml
+
+# RSA keys (CRITICAL - these should never be committed)
+src/main/resources/rsa-private-key.pem
+src/main/resources/rsa-public-key.pem
+src/main/resources/*.pem
+src/main/resources/*.key
+
+# Local configuration files
+src/main/resources/application-local.yml
+src/main/resources/application-dev.yml
+src/main/resources/application-secret.yml
+
+# Module build artifacts
+build/
+target/
+out/
+
+# Temporary files
+*.tmp
+*.temp 

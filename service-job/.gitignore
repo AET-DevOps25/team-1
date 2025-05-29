@@ -1,0 +1,24 @@
+# Module-specific gitignore for service-job
+
+# IntelliJ IDEA module files
+.idea/
+*.iml
+
+# RSA public key for JWT validation
+src/main/resources/rsa-public-key.pem
+src/main/resources/*.pem
+src/main/resources/*.key
+
+# Local configuration files
+src/main/resources/application-local.yml
+src/main/resources/application-dev.yml
+src/main/resources/application-secret.yml
+
+# Module build artifacts
+build/
+target/
+out/
+
+# Temporary files
+*.tmp
+*.temp 
