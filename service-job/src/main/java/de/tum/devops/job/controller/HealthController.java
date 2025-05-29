@@ -1,5 +1,6 @@
 package de.tum.devops.job.controller;
 
+import de.tum.devops.job.dto.ApiResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,14 +18,12 @@ import java.util.Map;
 public class HealthController {
 
     @GetMapping("/health")
-    public ResponseEntity<Map<String, Object>> health() {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> health() {
         Map<String, Object> healthInfo = new HashMap<>();
         healthInfo.put("status", "UP");
         healthInfo.put("service", "service-job");
         healthInfo.put("timestamp", LocalDateTime.now());
-        healthInfo.put("version", "1.0.0");
-        healthInfo.put("port", 8081);
 
-        return ResponseEntity.ok(healthInfo);
+        return ResponseEntity.ok(ApiResponse.success("Service is healthy", healthInfo));
     }
 }

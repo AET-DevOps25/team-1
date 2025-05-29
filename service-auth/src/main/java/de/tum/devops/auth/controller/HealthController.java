@@ -23,7 +23,6 @@ public class HealthController {
         healthInfo.put("status", "UP");
         healthInfo.put("service", "service-auth");
         healthInfo.put("timestamp", LocalDateTime.now());
-        healthInfo.put("version", "1.0.0");
 
         return ResponseEntity.ok(ApiResponse.success("Service is healthy", healthInfo));
     }
