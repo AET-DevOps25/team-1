@@ -1,16 +1,52 @@
-FROM eclipse-temurin:21-jdk AS builder
+# Multi-stage build for application service
+FROM eclipse-temurin:21-jdk-alpine AS build
 
+# Set working directory
 WORKDIR /app
 
-COPY . .
-RUN ./gradlew build -x test
+# Copy Gradle wrapper and build files
+COPY gradlew .
+COPY gradle gradle
+COPY settings.gradle .
+COPY build.gradle .
 
-FROM eclipse-temurin:21-jre
+# Copy service source code
+COPY service-application service-application
+COPY persistence persistence
 
+# Build the application
+RUN chmod +x gradlew
+RUN ./gradlew :service-application:build -x test
+
+# Runtime stage
+FROM eclipse-temurin:21-jre-alpine
+
+# Add non-root user for security
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -u 1001 -S appuser -G appgroup
+
+# Set working directory
 WORKDIR /app
 
-COPY --from=builder /app/build/libs/*.jar app.jar
+# Create directory for resume uploads
+RUN mkdir -p /app/uploads/resumes && \
+    chown -R appuser:appgroup /app/uploads
 
-EXPOSE 8080
+# Copy the built JAR from build stage
+COPY --from=build /app/service-application/build/libs/*.jar app.jar
 
-ENTRYPOINT ["java", "-jar", "app.jar"] 
+# Change ownership to appuser
+RUN chown -R appuser:appgroup /app
+
+# Switch to non-root user
+USER appuser
+
+# Expose port
+EXPOSE 8082
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8082/api/v1/applications/health || exit 1
+
+# Run the application
+ENTRYPOINT ["java", "-jar", "app.jar"]
