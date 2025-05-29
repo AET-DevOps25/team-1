@@ -2,7 +2,6 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# Import routers
 from app.routers import health, resume, chat, assessment
 
 # Create FastAPI app
@@ -14,10 +13,15 @@ app = FastAPI(
 
 # Add CORS middleware
 app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    CORSMiddleware,     # type: ignore
+    allow_origins=[
+        "https://aihr.student.k8s.aet.cit.tum.de",
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:4200",
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
