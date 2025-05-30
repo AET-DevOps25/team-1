@@ -6,11 +6,19 @@ services:
     image: traefik:v2.10
     container_name: ai-hr-traefik
     command:
-      - "--api.insecure=true"  # Enable web UI (for development only)
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
+      # prod:
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedByDefault=false"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencrypt.acme.email=admin@aihr.com"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--api.dashboard=true"
+      - "--log.level=INFO"
     ports:
       - "80:80"     # HTTP
       - "443:443"   # HTTPS
@@ -30,6 +38,7 @@ services:
     build:
       context: .
       dockerfile: postgresql/Dockerfile
+    image: ghcr.io/${GHCR_USER}/${GHCR_REPO}-postgresql:${GHCR_TAG:-latest}
     container_name: ai-hr-postgres
     ports:
       - "5432:5432"
@@ -58,6 +67,7 @@ services:
     build:
       context: .
       dockerfile: service-auth/Dockerfile
+    image: ghcr.io/${GHCR_USER}/${GHCR_REPO}-service-auth:${GHCR_TAG:-latest}
     container_name: ai-hr-auth
     depends_on:
       postgresql:
@@ -98,6 +108,7 @@ services:
     build:
       context: .
       dockerfile: service-job/Dockerfile
+    image: ghcr.io/${GHCR_USER}/${GHCR_REPO}-service-job:${GHCR_TAG:-latest}
     container_name: ai-hr-job
     depends_on:
       postgresql:
@@ -139,6 +150,7 @@ services:
     build:
       context: .
       dockerfile: service-application/Dockerfile
+    image: ghcr.io/${GHCR_USER}/${GHCR_REPO}-service-application:${GHCR_TAG:-latest}
     container_name: ai-hr-application
     depends_on:
       postgresql:
@@ -184,6 +196,7 @@ services:
     build:
       context: .
       dockerfile: service-assess/Dockerfile
+    image: ghcr.io/${GHCR_USER}/${GHCR_REPO}-service-assess:${GHCR_TAG:-latest}
     container_name: ai-hr-assess
     depends_on:
       postgresql:
