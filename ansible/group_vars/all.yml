@@ -1,1 +1,0 @@
-ec2_public_ip: "{{ hostvars[inventory_hostname].inventory_hostname }}"
