@@ -1,0 +1,78 @@
+name: Deploy to AET Cluster
+
+on:
+  workflow_run:
+    workflows: ["Build & Push All Docker Images"]
+    types:
+      - completed
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
+    runs-on: ubuntu-latest
+
+    env:
+      NAMESPACE: aihr
+      CHART_DIR: ./charts/aihr
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'latest'
+
+      - name: Decode kubeconfig
+        run: |
+          echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Deploy Helm chart to production (main branch)
+        if: github.event_name == 'workflow_run' && github.event.workflow_run.head_branch == 'main'
+        run: |
+          helm upgrade --install aihr $CHART_DIR \
+            --namespace $NAMESPACE --create-namespace \
+            --set postgresql.password="${{ secrets.DB_PASSWORD }}" \
+            --set services.auth.env.DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
+            --set services.auth.env.JWT_PRIVATE_KEY="${{ secrets.JWT_PRIVATE_KEY }}" \
+            --set services.auth.env.JWT_PUBLIC_KEY="${{ secrets.JWT_PUBLIC_KEY }}" \
+            --set services.auth.tag="${{ github.event.workflow_run.head_sha }}" \
+            --set services.job.tag="${{ github.event.workflow_run.head_sha }}" \
+            --set services.application.tag="${{ github.event.workflow_run.head_sha }}" \
+            --set services.assess.tag="${{ github.event.workflow_run.head_sha }}" \
+            --set services.genai.tag="${{ github.event.workflow_run.head_sha }}" \
+            --set ingress.hosts[0].host="api.aihr.student.k8s.aet.cit.tum.de" \
+            --set ingress.hosts[1].host="dev.api.aihr.student.k8s.aet.cit.tum.de"
+
+      - name: Deploy Helm chart manually (other branches)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          # 你可以这里传入分支名参数，或者用环境变量控制部署到 dev 域名
+          helm upgrade --install aihr $CHART_DIR \
+            --namespace $NAMESPACE --create-namespace \
+            --set postgresql.password="${{ secrets.DB_PASSWORD }}" \
+            --set services.auth.env.DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
+            --set services.auth.env.JWT_PRIVATE_KEY="${{ secrets.JWT_PRIVATE_KEY }}" \
+            --set services.auth.env.JWT_PUBLIC_KEY="${{ secrets.JWT_PUBLIC_KEY }}" \
+            --set services.auth.tag="dev-${{ github.sha }}" \
+            --set services.job.tag="dev-${{ github.sha }}" \
+            --set services.application.tag="dev-${{ github.sha }}" \
+            --set services.assess.tag="dev-${{ github.sha }}" \
+            --set services.genai.tag="dev-${{ github.sha }}" \
+            --set ingress.hosts[0].host="dev.api.aihr.student.k8s.aet.cit.tum.de" \
+            --set ingress.hosts[1].host="dev.api.aihr.student.k8s.aet.cit.tum.de"

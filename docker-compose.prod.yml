@@ -250,17 +250,12 @@ services:
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONUNBUFFERED=1
       - DATABASE_URL=postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD:-postgres}@postgresql:5432/hrapp
-      - ALLOW_ORIGINS=${CORS_ALLOWED_ORIGINS:-"http://localhost:3000,http://localhost:5173,http://localhost:4200"}
+      - ALLOW_ORIGINS=*
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8079/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.genai.rule=Host(`api.localhost`) && (PathPrefix(`/resume`) || PathPrefix(`/chat`) || PathPrefix(`/assessment`))"
-      - "traefik.http.routers.genai.entrypoints=web"
-      - "traefik.http.services.genai.loadbalancer.server.port=8079"
 
   # Frontend
 #  frontend:

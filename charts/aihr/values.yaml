@@ -1,0 +1,119 @@
+namespace: aihr
+
+postgresql:
+  enabled: true
+  image: ghcr.io/aet-devops25/team-1-postgresql
+  tag: ""           # --set
+  db: hrapp
+  user: postgres
+  password: ""      # --set
+  persistence:
+    enabled: true
+    size: 10Gi
+
+services:
+  auth:
+    enabled: true
+    image: ghcr.io/aet-devops25/team-1-service-auth
+    tag: ""         # --set
+    port: 8080
+    env:
+      SPRING_PROFILES_ACTIVE: ""     # --set
+      DB_HOST: ""                    # --set
+      DB_PORT: ""                    # --set
+      DB_USERNAME: ""                # --set
+      DB_PASSWORD: ""                # --set
+      JWT_PRIVATE_KEY: ""            # --set
+      JWT_PUBLIC_KEY: ""             # --set
+      CORS_ALLOWED_ORIGINS: ""       # --set
+
+  job:
+    enabled: true
+    image: ghcr.io/aet-devops25/team-1-service-job
+    tag: ""         # --set
+    port: 8081
+    env:
+      SPRING_PROFILES_ACTIVE: ""
+      DB_HOST: ""
+      DB_PORT: ""
+      DB_USERNAME: ""
+      DB_PASSWORD: ""
+      JWT_PUBLIC_KEY: ""
+      CORS_ALLOWED_ORIGINS: ""
+
+  application:
+    enabled: true
+    image: ghcr.io/aet-devops25/team-1-service-application
+    tag: ""         # --set
+    port: 8082
+    env:
+      SPRING_PROFILES_ACTIVE: ""
+      DB_HOST: ""
+      DB_PORT: ""
+      DB_USERNAME: ""
+      DB_PASSWORD: ""
+      JWT_PUBLIC_KEY: ""
+      CORS_ALLOWED_ORIGINS: ""
+      RESUME_UPLOAD_PATH: ""   # --set
+
+  assess:
+    enabled: true
+    image: ghcr.io/aet-devops25/team-1-service-assess
+    tag: ""         # --set
+    port: 8083
+    env:
+      SPRING_PROFILES_ACTIVE: ""
+      DB_HOST: ""
+      DB_PORT: ""
+      DB_USERNAME: ""
+      DB_PASSWORD: ""
+      JWT_PUBLIC_KEY: ""
+      CORS_ALLOWED_ORIGINS: ""
+
+  genai:
+    enabled: true
+    image: ghcr.io/aet-devops25/team-1-service-genai
+    tag: ""         # --set
+    port: 8079
+    env:
+      PYTHONDONTWRITEBYTECODE: ""    # --set
+      PYTHONUNBUFFERED: ""           # --set
+      DATABASE_URL: ""               # --set
+      ALLOW_ORIGINS: ""              # --set
+
+ingress:
+  enabled: true
+  className: traefik
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: "web,websecure"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: api.aihr.student.k8s.aet.cit.tum.de
+      paths:
+        - path: /api/v1/auth
+          service: service-auth
+          port: 8080
+        - path: /api/v1/jobs
+          service: service-job
+          port: 8081
+        - path: /api/v1/applications
+          service: service-application
+          port: 8082
+        - path: /api/v1/assessments
+          service: service-assess
+          port: 8083
+    - host: dev.api.aihr.student.k8s.aet.cit.tum.de
+      paths:
+        - path: /api/v1/auth
+          service: service-auth
+          port: 8080
+        - path: /api/v1/jobs
+          service: service-job
+          port: 8081
+        - path: /api/v1/applications
+          service: service-application
+          port: 8082
+        - path: /api/v1/assessments
+          service: service-assess
+          port: 8083
+  tls: true
