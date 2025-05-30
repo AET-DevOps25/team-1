@@ -3,10 +3,10 @@ namespace: aihr
 postgresql:
   enabled: true
   image: ghcr.io/aet-devops25/team-1-postgresql
-  tag: ""           # --set
+  tag: ""
   db: hrapp
   user: postgres
-  password: ""      # --set
+  password: ""
   persistence:
     enabled: true
     size: 10Gi
@@ -15,22 +15,22 @@ services:
   auth:
     enabled: true
     image: ghcr.io/aet-devops25/team-1-service-auth
-    tag: ""         # --set
+    tag: ""
     port: 8080
     env:
-      SPRING_PROFILES_ACTIVE: ""     # --set
-      DB_HOST: ""                    # --set
-      DB_PORT: ""                    # --set
-      DB_USERNAME: ""                # --set
-      DB_PASSWORD: ""                # --set
-      JWT_PRIVATE_KEY: ""            # --set
-      JWT_PUBLIC_KEY: ""             # --set
-      CORS_ALLOWED_ORIGINS: ""       # --set
+      SPRING_PROFILES_ACTIVE: ""
+      DB_HOST: ""
+      DB_PORT: ""
+      DB_USERNAME: ""
+      DB_PASSWORD: ""
+      JWT_PRIVATE_KEY: ""
+      JWT_PUBLIC_KEY: ""
+      CORS_ALLOWED_ORIGINS: ""
 
   job:
     enabled: true
     image: ghcr.io/aet-devops25/team-1-service-job
-    tag: ""         # --set
+    tag: ""
     port: 8081
     env:
       SPRING_PROFILES_ACTIVE: ""
@@ -44,7 +44,7 @@ services:
   application:
     enabled: true
     image: ghcr.io/aet-devops25/team-1-service-application
-    tag: ""         # --set
+    tag: ""
     port: 8082
     env:
       SPRING_PROFILES_ACTIVE: ""
@@ -54,12 +54,12 @@ services:
       DB_PASSWORD: ""
       JWT_PUBLIC_KEY: ""
       CORS_ALLOWED_ORIGINS: ""
-      RESUME_UPLOAD_PATH: ""   # --set
+      RESUME_UPLOAD_PATH: ""
 
   assess:
     enabled: true
     image: ghcr.io/aet-devops25/team-1-service-assess
-    tag: ""         # --set
+    tag: ""
     port: 8083
     env:
       SPRING_PROFILES_ACTIVE: ""
@@ -73,13 +73,13 @@ services:
   genai:
     enabled: true
     image: ghcr.io/aet-devops25/team-1-service-genai
-    tag: ""         # --set
+    tag: ""
     port: 8079
     env:
-      PYTHONDONTWRITEBYTECODE: ""    # --set
-      PYTHONUNBUFFERED: ""           # --set
-      DATABASE_URL: ""               # --set
-      ALLOW_ORIGINS: ""              # --set
+      PYTHONDONTWRITEBYTECODE: ""
+      PYTHONUNBUFFERED: ""
+      DATABASE_URL: ""
+      ALLOW_ORIGINS: ""
 
 ingress:
   enabled: true

@@ -45,19 +45,33 @@ jobs:
       - name: Deploy Helm chart to production (main branch)
         if: github.event_name == 'workflow_run' && github.event.workflow_run.head_branch == 'main'
         run: |
-          helm upgrade --install aihr $CHART_DIR \
-            --namespace $NAMESPACE --create-namespace \
-            --set postgresql.password="${{ secrets.DB_PASSWORD }}" \
-            --set services.auth.env.DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
-            --set services.auth.env.JWT_PRIVATE_KEY="${{ secrets.JWT_PRIVATE_KEY }}" \
-            --set services.auth.env.JWT_PUBLIC_KEY="${{ secrets.JWT_PUBLIC_KEY }}" \
-            --set services.auth.tag="${{ github.event.workflow_run.head_sha }}" \
-            --set services.job.tag="${{ github.event.workflow_run.head_sha }}" \
-            --set services.application.tag="${{ github.event.workflow_run.head_sha }}" \
-            --set services.assess.tag="${{ github.event.workflow_run.head_sha }}" \
-            --set services.genai.tag="${{ github.event.workflow_run.head_sha }}" \
+          helm upgrade --install aihr "$CHART_DIR" \
+            --namespace "$NAMESPACE" --create-namespace \
+            --set postgresql.password="$POSTGRES_PASSWORD" \
+            --set services.auth.tag="$AUTH_TAG" \
+            --set services.auth.env.DB_PASSWORD="$DB_PASSWORD" \
+            --set services.auth.env.JWT_PRIVATE_KEY="$JWT_PRIVATE_KEY" \
+            --set services.auth.env.JWT_PUBLIC_KEY="$JWT_PUBLIC_KEY" \
+          
+            --set services.job.tag="$JOB_TAG" \
+            --set services.job.env.DB_PASSWORD="$DB_PASSWORD" \
+          
+            --set services.application.tag="$APPLICATION_TAG" \
+            --set services.application.env.DB_PASSWORD="$DB_PASSWORD" \
+            --set services.application.env.RESUME_UPLOAD_PATH="$RESUME_UPLOAD_PATH" \
+          
+            --set services.assess.tag="$ASSESS_TAG" \
+            --set services.assess.env.DB_PASSWORD="$DB_PASSWORD" \
+          
+            --set services.genai.tag="$GENAI_TAG" \
+            --set services.genai.env.PYTHONDONTWRITEBYTECODE="$PYTHONDONTWRITEBYTECODE" \
+            --set services.genai.env.PYTHONUNBUFFERED="$PYTHONUNBUFFERED" \
+            --set services.genai.env.DATABASE_URL="$DATABASE_URL" \
+            --set services.genai.env.ALLOW_ORIGINS="$ALLOW_ORIGINS" \
+          
             --set ingress.hosts[0].host="api.aihr.student.k8s.aet.cit.tum.de" \
-            --set ingress.hosts[1].host="dev.api.aihr.student.k8s.aet.cit.tum.de"
+            --set ingress.hosts[1].host="dev.api.aihr.student.k8s.aet.cit.tum.de" \
+            --set ingress.tls=true
 
       - name: Deploy Helm chart manually (other branches)
         if: github.event_name == 'workflow_dispatch'

@@ -1,5 +1,5 @@
 {{- range $name, $svc := .Values.services }}
-  {{- if $svc.enabled }}
+{{- if $svc.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -12,5 +12,5 @@ spec:
     - protocol: TCP
       port: {{ $svc.port }}
       targetPort: {{ $svc.port }}
-  {{- end }}
-  {{- end }}
+{{- end }}
+{{- end }}

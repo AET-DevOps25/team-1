@@ -3,11 +3,9 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: aihr-ingress
-  namespace: {{ .Values.namespace | default .Release.Namespace }}
-  {{- with .Values.ingress.annotations }}
+  namespace: {{ .Values.namespace }}
   annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
+    {{- toYaml .Values.ingress.annotations | nindent 4 }}
 spec:
   {{- if .Values.ingress.className }}
   ingressClassName: {{ .Values.ingress.className }}
@@ -35,4 +33,4 @@ spec:
         {{- end }}
       secretName: aihr-tls
   {{- end }}
-  {{- end }}
+{{- end }}
