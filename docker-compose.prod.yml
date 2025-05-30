@@ -48,7 +48,6 @@ services:
       - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
     volumes:
       - ai-hr-postgres-data:/var/lib/postgresql/data
-      - ./postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - ai-hr-network
     healthcheck:
@@ -240,6 +239,7 @@ services:
     build:
       context: ./service-genai
       dockerfile: Dockerfile
+    image: ghcr.io/${GHCR_USER}/${GHCR_REPO}-service-genai:${GHCR_TAG:-latest}
     container_name: ai-hr-genai
     depends_on:
       postgresql:

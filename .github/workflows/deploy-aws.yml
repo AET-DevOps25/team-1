@@ -1,66 +1,75 @@
 name: Deploy to Production
 
 on:
-  workflow_run:
-    workflows: [ "Build & Push All Docker Images" ]   # Must exactly match the `name:` in your build workflow
-    types:
-      - completed
-  workflow_dispatch:   # Allows manual triggering from the Actions tab
+  workflow_call:
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
-    # Only allow automatic deploy for main branch after a successful build workflow.
-    # Other branches can only be deployed manually.
-    if: |
-      (github.event_name == 'workflow_dispatch') ||
-      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    environment:
+      name: AWS
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Generate .env file from GitHub secrets and variables
-      - name: Generate .env file
-        run: |
-          cat > .env <<EOF
-          DB_USERNAME=${{ secrets.DB_USERNAME }}
-          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-          DB_PORT=5432
-          DB_HOST=postgresql
-          JWT_PRIVATE_KEY="${{ secrets.JWT_PRIVATE_KEY }}"
-          JWT_PUBLIC_KEY="${{ secrets.JWT_PUBLIC_KEY }}"
-          CORS_ALLOWED_ORIGINS=${{ vars.CORS_ALLOWED_ORIGINS }}
-          AUTH_SERVER_PORT=8080
-          JOB_SERVER_PORT=8081
-          APPLICATION_SERVER_PORT=8082
-          ASSESS_SERVER_PORT=8083
-          GENAI_SERVER_PORT=8079
-          SPRING_PROFILES_ACTIVE=docker
-          PYTHONDONTWRITEBYTECODE=1
-          PYTHONUNBUFFERED=1
-          EOF
+      # SCP - docker-compose.prod.yml - server
+      - name: Upload docker-compose.prod.yml to remote server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ vars.EC2_PUBLIC_IP }}
+          username: ${{ vars.AWS_EC2_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "./docker-compose.prod.yml"
+          target: ~/srv/app/
 
-      # Write SSH key from GitHub secret to a file
-      - name: Write SSH key
-        run: |
-          echo "${{ secrets.SERVER_SSH_KEY }}" > server_key.pem
-          chmod 600 server_key.pem
+      # remote generate .env
+      - name: Create .env on remote server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ vars.EC2_PUBLIC_IP }}
+          username: ${{ vars.AWS_EC2_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cat > ~/srv/app/.env <<EOF
+            # GitHub Container Registry
+            GHCR_USER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
+            GHCR_REPO=$(echo '${{ github.event.repository.name }}' | tr '[:upper:]' '[:lower:]')
+            GHCR_TAG=$(
+            if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "${{ github.sha }}"
+            else
+            echo "dev-${{ github.sha }}"
+            fi
+            )
+            DB_USERNAME=${{ secrets.DB_USERNAME }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            DB_PORT=5432
+            DB_HOST=postgresql
+            JWT_PRIVATE_KEY="${{ secrets.JWT_PRIVATE_KEY }}"
+            JWT_PUBLIC_KEY="${{ secrets.JWT_PUBLIC_KEY }}"
+            CORS_ALLOWED_ORIGINS=${{ vars.CORS_ALLOWED_ORIGINS }}
+            AUTH_SERVER_PORT=8080
+            JOB_SERVER_PORT=8081
+            APPLICATION_SERVER_PORT=8082
+            ASSESS_SERVER_PORT=8083
+            GENAI_SERVER_PORT=8079
+            SPRING_PROFILES_ACTIVE=docker
+            PYTHONDONTWRITEBYTECODE=1
+            PYTHONUNBUFFERED=1
+            EOF
 
-      # Upload .env and docker-compose.prod.yml to the remote server
-      - name: Upload .env and docker-compose.prod.yml to server
-        run: |
-          scp -i server_key.pem -o StrictHostKeyChecking=no \
-            .env docker-compose.prod.yml ubuntu@YOUR_SERVER_IP:/srv/app/
-        env:
-        # Optionally, use environment variables for server user or IP
-
-      # Remotely pull images and restart containers using Docker Compose
-      - name: Remote pull images and restart containers
-        run: |
-          ssh -i server_key.pem -o StrictHostKeyChecking=no ubuntu@YOUR_SERVER_IP "
-            cd /srv/app &&
-            docker compose pull &&
-            docker compose up -d
-          "
+      # SSH - pull images and restart containers
+      - name: Pull images and restart containers remotely
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ vars.EC2_PUBLIC_IP }}
+          username: ${{ vars.AWS_EC2_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cd ~/srv/app
+            echo "Logging into GHCR..."
+            echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            docker compose -f docker-compose.prod.yml --env-file .env pull
+            docker compose -f docker-compose.prod.yml --env-file .env up -d

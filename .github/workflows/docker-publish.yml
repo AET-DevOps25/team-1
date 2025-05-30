@@ -2,6 +2,9 @@ name: Build & Push All Docker Images
 
 on:
   push:
+    branches:
+      - main
+      - week*
 
 jobs:
   build-and-push:
@@ -40,3 +43,8 @@ jobs:
 
       - name: Push all images via docker compose
         run: docker compose -f docker-compose.prod.yml push
+
+  deploy-aws:
+    needs: build-and-push
+    uses: ./.github/workflows/deploy-aws.yml
+    secrets: inherit
