@@ -1,3 +1,4 @@
+import os
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,14 +13,15 @@ app = FastAPI(
 )
 
 # Add CORS middleware
+origins_env = os.environ.get("CORS_ALLOWED_ORIGINS", "")
+allow_origins = [o.strip() for o in origins_env.split(",") if o.strip()] if origins_env else [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:4200",
+]
 app.add_middleware(
     CORSMiddleware,     # type: ignore
-    allow_origins=[
-        "https://aihr.student.k8s.aet.cit.tum.de",
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:4200",
-    ],
+    allow_origins=allow_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],

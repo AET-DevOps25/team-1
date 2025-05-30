@@ -21,7 +21,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.security.KeyFactory;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 
@@ -43,8 +42,10 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // Health check endpoints
+                        .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/actuator/info").permitAll()
                         // Public endpoints
-                        .requestMatchers("/api/v1/jobs/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/jobs").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/jobs/**").authenticated()
                         // HR-only endpoints

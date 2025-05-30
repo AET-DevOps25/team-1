@@ -12,6 +12,7 @@ COPY build.gradle .
 
 # Copy service source code
 COPY service-assess service-assess
+COPY persistence persistence
 
 # Build the application
 RUN chmod +x gradlew
