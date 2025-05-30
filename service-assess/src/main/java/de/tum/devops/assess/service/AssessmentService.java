@@ -1,13 +1,12 @@
 package de.tum.devops.assess.service;
 
-import de.tum.devops.assess.dto.*;
+import de.tum.devops.assess.dto.AssessmentDto;
+import de.tum.devops.assess.dto.PageInfo;
+import de.tum.devops.persistence.entity.Application;
 import de.tum.devops.persistence.entity.Assessment;
 import de.tum.devops.persistence.entity.RecommendationEnum;
-import de.tum.devops.persistence.repository.AssessmentRepository;
 import de.tum.devops.persistence.repository.ApplicationRepository;
-import de.tum.devops.persistence.repository.UserRepository;
-import de.tum.devops.persistence.entity.Application;
-import de.tum.devops.persistence.entity.User;
+import de.tum.devops.persistence.repository.AssessmentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -31,14 +30,11 @@ public class AssessmentService {
 
     private final AssessmentRepository assessmentRepository;
     private final ApplicationRepository applicationRepository;
-    private final UserRepository userRepository;
 
     public AssessmentService(AssessmentRepository assessmentRepository,
-            ApplicationRepository applicationRepository,
-            UserRepository userRepository) {
+                             ApplicationRepository applicationRepository) {
         this.assessmentRepository = assessmentRepository;
         this.applicationRepository = applicationRepository;
-        this.userRepository = userRepository;
     }
 
     /**
@@ -68,7 +64,7 @@ public class AssessmentService {
      */
     @Transactional(readOnly = true)
     public Map<String, Object> getAssessments(int page, int size, RecommendationEnum recommendation,
-            String userRole, UUID userId) {
+                                              String userRole, UUID userId) {
         logger.info("Getting assessments - page: {}, size: {}, recommendation: {}, userRole: {}",
                 page, size, recommendation, userRole);
 
@@ -124,8 +120,8 @@ public class AssessmentService {
      * Update assessment scores and analysis
      */
     public AssessmentDto updateAssessmentScore(UUID assessmentId, Float resumeScore, Float interviewScore,
-            Float finalScore, String resumeAnalysis, String interviewSummary,
-            RecommendationEnum recommendation) {
+                                               Float finalScore, String resumeAnalysis, String interviewSummary,
+                                               RecommendationEnum recommendation) {
         logger.info("Updating assessment scores: {}", assessmentId);
 
         Assessment assessment = assessmentRepository.findById(assessmentId)

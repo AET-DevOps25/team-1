@@ -1,5 +1,7 @@
 package de.tum.devops.auth.service;
 
+import io.jsonwebtoken.*;
+import io.jsonwebtoken.security.SecurityException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,10 +15,6 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.Date;
 import java.util.UUID;
-
-import io.jsonwebtoken.*;
-import io.jsonwebtoken.security.Keys;
-import io.jsonwebtoken.security.SecurityException;
 
 /**
  * Service for JWT token operations
@@ -52,9 +50,9 @@ public class JwtService {
 
                 logger.info("JWT RSA keys loaded successfully from environment variables");
             } catch (Exception e) {
-                logger.warn("Failed to load RSA keys from environment variables, generating fallback keys: {}",
+                logger.error("Failed to load RSA keys from environment variables, generating fallback keys: {}",
                         e.getMessage());
-                generateFallbackKeys();
+                throw new IllegalStateException("Missing or invalid RSA keys for JWT. Shutting down.", e);
             }
         }
     }
@@ -90,21 +88,6 @@ public class JwtService {
     }
 
     /**
-     * Generate fallback RSA keys if environment variables are not available
-     */
-    private void generateFallbackKeys() {
-        try {
-            java.security.KeyPair keyPair = Keys.keyPairFor(SignatureAlgorithm.RS256);
-            this.privateKey = keyPair.getPrivate();
-            this.publicKey = keyPair.getPublic();
-            logger.info("Generated fallback RSA key pair for JWT tokens");
-        } catch (Exception e) {
-            logger.error("Failed to generate fallback RSA keys", e);
-            throw new RuntimeException("Cannot initialize JWT service without valid keys", e);
-        }
-    }
-
-    /**
      * Generate access token
      */
     public String generateAccessToken(String userEmail, UUID userId, String role, String fullName) {
@@ -114,12 +97,12 @@ public class JwtService {
         Date expiry = new Date(now.getTime() + accessTokenExpiration);
 
         return Jwts.builder()
-                .setSubject(userId.toString())
+                .subject(userId.toString())
                 .claim("email", userEmail)
                 .claim("role", role)
                 .claim("fullName", fullName)
-                .setIssuedAt(now)
-                .setExpiration(expiry)
+                .issuedAt(now)
+                .expiration(expiry)
                 .signWith(privateKey)
                 .compact();
     }
@@ -133,10 +116,10 @@ public class JwtService {
 
         try {
             return Jwts.parser()
-                    .setSigningKey(publicKey)
+                    .verifyWith(publicKey)
                     .build()
-                    .parseClaimsJws(token)
-                    .getBody();
+                    .parseSignedClaims(token)
+                    .getPayload();
         } catch (SecurityException e) {
             logger.warn("Invalid JWT signature: {}", e.getMessage());
             throw new IllegalArgumentException("Invalid JWT signature", e);
