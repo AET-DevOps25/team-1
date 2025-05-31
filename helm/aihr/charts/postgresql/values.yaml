@@ -10,4 +10,4 @@ resources: {}
 persistence:
   enabled: true
   size: 2Gi
-  storageClass: ""
+  storageClass: csi-rbd-sc
