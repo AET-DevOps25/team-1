@@ -15,8 +15,8 @@ global:
   # 运行环境专属（由 values-dev / prod 覆盖）
   env:
     stage: ""          # dev / prod
-    host: ""           # api.aihr*.student.k8s.aet.cit.tum.de
-    tlsSecret: ""      # aihr-*-tls
+    host: ""           # api.ai-hr*.student.k8s.aet.cit.tum.de
+    tlsSecret: ""      # ai-hr-*-tls
     # CORS
     corsAllowed: ""          # 由 dev / prod 覆盖
   jwt:
