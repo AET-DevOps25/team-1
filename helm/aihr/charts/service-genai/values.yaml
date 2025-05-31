@@ -1,0 +1,15 @@
+replicaCount: 1
+
+image:
+  # 默认拼接：ghcr.io/<user>/<repo>-service-genai:<tag>
+  repository: ""
+  tag: ""
+  pullPolicy: IfNotPresent
+
+service:
+  port: 8079
+
+# 环境变量（非敏感）
+env:
+  springProfile: docker
+  corsAllowed: ""

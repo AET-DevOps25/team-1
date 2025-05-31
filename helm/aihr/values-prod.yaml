@@ -1,0 +1,6 @@
+global:
+  env:
+    stage: prod
+    host: api.aihr.student.k8s.aet.cit.tum.de
+    tlsSecret: aihr-prod-tls
+    corsAllowed: "https://aihr.student.k8s.aet.cit.tum.de/api/v1/applications"

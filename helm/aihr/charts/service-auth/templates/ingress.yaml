@@ -1,0 +1,27 @@
+{{- if .Values.global.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "service-auth.fullname" . }}
+  annotations:
+{{ include "aihr.ingress.annotations" . | indent 4 }}
+spec:
+  ingressClassName: {{ .Values.global.ingress.className }}
+  {{- if .Values.global.ingress.tls }}
+  tls:
+    - hosts:
+        - {{ include "aihr.host" . }}
+      secretName: {{ .Values.global.env.tlsSecret }}
+  {{- end }}
+  rules:
+    - host: {{ include "aihr.host" . }}
+      http:
+        paths:
+          - path: /api/v1/auth
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "service-auth.fullname" . }}
+                port:
+                  number: 80
+{{- end }}

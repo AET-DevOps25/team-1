@@ -1,0 +1,75 @@
+{{- /* ------------------------------------------------------------------------
+     拼接默认镜像路径：
+       ghcr.io/<global.ghcrUser>/<global.ghcrRepo>-postgresql:<global.imageTag>
+     若在 helm install/upgrade 时通过 --set image.repository / image.tag
+     显式覆盖，则使用覆盖值。
+------------------------------------------------------------------------ */ -}}
+{{- $user := .Values.global.ghcrUser -}}
+{{- $repo := .Values.global.ghcrRepo -}}
+{{- $tag  := default "latest" .Values.global.imageTag -}}
+{{- $defaultRepo := printf "ghcr.io/%s/%s-postgresql" $user $repo -}}
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "postgresql.fullname" . }}
+  labels:
+    app: {{ include "postgresql.fullname" . }}
+spec:
+  serviceName: {{ include "postgresql.fullname" . }}
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "postgresql.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "postgresql.fullname" . }}
+    spec:
+      containers:
+        - name: postgres
+          image: "{{ default $defaultRepo .Values.image.repository }}:{{ default $tag .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 5432
+              name: postgres
+          env:
+            - name: POSTGRES_DB
+              value: {{ .Values.postgresqlDatabase | quote }}
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-db-creds
+                  key: DB_USERNAME
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-db-creds
+                  key: DB_PASSWORD
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - pg_isready -U "$POSTGRES_USER"
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - pg_isready -U "$POSTGRES_USER"
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: {{ .Values.persistence.storageClass | quote }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}

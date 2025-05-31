@@ -1,0 +1,13 @@
+image:
+  repository: ""
+  tag: ""
+  pullPolicy: IfNotPresent
+
+postgresqlDatabase: hrapp
+
+resources: {}
+
+persistence:
+  enabled: true
+  size: 10Gi
+  storageClass: ""

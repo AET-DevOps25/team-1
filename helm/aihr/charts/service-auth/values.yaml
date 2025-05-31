@@ -1,0 +1,17 @@
+replicaCount: 1
+
+image:
+  # 默认拼接：ghcr.io/<user>/<repo>-service-auth:<tag>
+  repository: ""
+  tag: ""
+  pullPolicy: IfNotPresent
+
+service:
+  port: 8080
+
+# 环境变量（非敏感）
+env:
+  springProfile: docker
+  corsAllowed: ""
+  jwtPrivateKey: ""
+  jwtPublicKey: ""

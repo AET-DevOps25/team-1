@@ -1,0 +1,6 @@
+apiVersion: v2
+name: service-genai
+description: genai fastapi micro-service for AI-HR
+type: application
+version: 0.1.0
+appVersion: "latest"
