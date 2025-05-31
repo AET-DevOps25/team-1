@@ -45,6 +45,7 @@ jobs:
         run: docker compose -f docker-compose.prod.yml push
 
   deploy-aws:
+    if: github.ref == 'refs/heads/main'
     needs: build-and-push
     uses: ./.github/workflows/deploy-aws.yml
     secrets: inherit

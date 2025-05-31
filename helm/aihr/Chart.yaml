@@ -14,13 +14,13 @@ dependencies:
     version: 0.1.0
     repository: "file://charts/service-auth"
   - name: service-job
-    version:  0.1.0
+    version: 0.1.0
     repository: "file://charts/service-job"
   - name: service-application
     version: 0.1.0
     repository: "file://charts/service-application"
   - name: service-assess
-    version:  0.1.0
+    version: 0.1.0
     repository: "file://charts/service-assess"
   - name: service-genai
     version: 0.1.0
