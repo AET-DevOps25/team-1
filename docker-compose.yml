@@ -1,126 +1,285 @@
-version: '3.8'
-
 services:
-  # Frontend services
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    expose:
-      - "80"
-    depends_on:
-      - service-gateway
-    networks:
-      - frontend-network
-      - backend-network
-
-  # Gateway service
-  service-gateway:
-    build:
-      context: ./service-gateway
-      dockerfile: Dockerfile
+  # Traefik reverse proxy
+  traefik:
+    image: traefik:v2.10
+    container_name: ai-hr-traefik
+    command:
+      - "--api.insecure=true"  # Enable web UI (for development only)
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
     ports:
-      - "8080:8080"
-    depends_on:
-      - service-job
-      - service-application
-      - service-assess
-      - service-genai
+      - "80:80"     # HTTP
+      - "443:443"   # HTTPS
+      - "8080:8080" # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
-      - backend-network
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - ai-hr-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.localhost`)"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.entrypoints=web"
 
-  # Job service
+  # PostgreSQL database
+  postgresql:
+    build:
+      context: .
+      dockerfile: postgresql/Dockerfile
+    container_name: ai-hr-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=hrapp
+      - POSTGRES_USER=${DB_USERNAME:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
+    volumes:
+      - ai-hr-postgres-data:/var/lib/postgresql/data
+    networks:
+      - ai-hr-network
+    healthcheck:
+      test: [
+        "CMD-SHELL",
+        "PGPASSWORD=$$POSTGRES_PASSWORD psql -U $$POSTGRES_USER -d $$POSTGRES_DB -tAc \"SELECT to_regclass('public.embeddings');\" | grep -q embeddings"
+      ]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+    labels:
+      - "traefik.enable=false"
+
+  # Authentication service
+  service-auth:
+    build:
+      context: .
+      dockerfile: service-auth/Dockerfile
+    container_name: ai-hr-auth
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    networks:
+      - ai-hr-network
+    environment:
+      - SERVER_PORT=${AUTH_SERVER_PORT:-8080}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-docker}
+      - DB_HOST=${DB_HOST:-postgresql}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - JWT_PRIVATE_KEY=${JWT_PRIVATE_KEY:-}
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY:-}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-"http://localhost:3000,http://localhost:5173,http://localhost:4200"}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8080/actuator/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.auth.rule=Host(`api.localhost`) && PathPrefix(`/api/v1/auth`)"
+      - "traefik.http.routers.auth.entrypoints=web"
+      - "traefik.http.services.auth.loadbalancer.server.port=8080"
+
+  # Job management service
   service-job:
     build:
-      context: ./service-job
-      dockerfile: Dockerfile
-    expose:
-      - "8080"
+      context: .
+      dockerfile: service-job/Dockerfile
+    container_name: ai-hr-job
     depends_on:
-      - postgres
+      postgresql:
+        condition: service_healthy
+      service-auth:
+        condition: service_healthy
     networks:
-      - backend-network
+      - ai-hr-network
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/hrapp
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SERVER_PORT=${JOB_SERVER_PORT:-8081}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-docker}
+      - DB_HOST=${DB_HOST:-postgresql}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY:-}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-"http://localhost:3000,http://localhost:5173,http://localhost:4200"}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8081/actuator/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.job.rule=Host(`api.localhost`) && PathPrefix(`/api/v1/jobs`)"
+      - "traefik.http.routers.job.entrypoints=web"
+      - "traefik.http.services.job.loadbalancer.server.port=8081"
 
-  # Application service
+  # Application management service
   service-application:
     build:
-      context: ./service-application
-      dockerfile: Dockerfile
-    expose:
-      - "8080"
+      context: .
+      dockerfile: service-application/Dockerfile
+    container_name: ai-hr-application
     depends_on:
-      - postgres
+      postgresql:
+        condition: service_healthy
+      service-auth:
+        condition: service_healthy
+      service-job:
+        condition: service_healthy
     networks:
-      - backend-network
+      - ai-hr-network
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/hrapp
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SERVER_PORT=${APPLICATION_SERVER_PORT:-8082}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-docker}
+      - DB_HOST=${DB_HOST:-postgresql}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY:-}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-"http://localhost:3000,http://localhost:5173,http://localhost:4200"}
+    volumes:
+      - resume-uploads:/app/uploads/resumes
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8082/actuator/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.application.rule=Host(`api.localhost`) && PathPrefix(`/api/v1/applications`)"
+      - "traefik.http.routers.application.entrypoints=web"
+      - "traefik.http.services.application.loadbalancer.server.port=8082"
 
   # Assessment service
   service-assess:
     build:
-      context: ./service-assess
-      dockerfile: Dockerfile
-    expose:
-      - "8080"
+      context: .
+      dockerfile: service-assess/Dockerfile
+    container_name: ai-hr-assess
     depends_on:
-      - postgres
+      postgresql:
+        condition: service_healthy
+      service-auth:
+        condition: service_healthy
+      service-application:
+        condition: service_healthy
     networks:
-      - backend-network
+      - ai-hr-network
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/hrapp
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SERVER_PORT=${ASSESS_SERVER_PORT:-8083}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-docker}
+      - DB_HOST=${DB_HOST:-postgresql}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY:-}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-"http://localhost:3000,http://localhost:5173,http://localhost:4200"}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8083/actuator/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.assess.rule=Host(`api.localhost`) && PathPrefix(`/api/v1/assessments`)"
+      - "traefik.http.routers.assess.entrypoints=web"
+      - "traefik.http.services.assess.loadbalancer.server.port=8083"
 
-  # GenAI Python service
+  # GenAI service
   service-genai:
     build:
       context: ./service-genai
       dockerfile: Dockerfile
-    expose:
-      - "8080"
+    container_name: ai-hr-genai
     depends_on:
-      - postgres
+      postgresql:
+        condition: service_healthy
     networks:
-      - backend-network
+      - ai-hr-network
     environment:
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=hrapp
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+      - DATABASE_URL=postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD:-postgres}@postgresql:5432/hrapp
+      - ALLOW_ORIGINS=${CORS_ALLOWED_ORIGINS:-"http://localhost:3000,http://localhost:5173,http://localhost:4200"}
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8079/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.genai.rule=Host(`api.localhost`) && (PathPrefix(`/resume`) || PathPrefix(`/chat`) || PathPrefix(`/assessment`))"
+      - "traefik.http.routers.genai.entrypoints=web"
+      - "traefik.http.services.genai.loadbalancer.server.port=8079"
 
-  # PostgreSQL with pgvector
-  postgres:
-    image: pgvector:0.8.0-pg17
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-      - ./postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=hrapp
-    expose:
-      - "5432"
-    networks:
-      - backend-network
+  # Frontend
+#  frontend:
+#    build:
+#      context: ./frontend
+#      dockerfile: Dockerfile
+#    container_name: ai-hr-frontend
+#    depends_on:
+#      service-auth:
+#        condition: service_healthy
+#      service-job:
+#        condition: service_healthy
+#      service-application:
+#        condition: service_healthy
+#      service-assess:
+#        condition: service_healthy
+#      service-genai:
+#        condition: service_healthy
+#    networks:
+#      - ai-hr-network
+#    labels:
+#      - "traefik.enable=true"
+#      - "traefik.http.routers.frontend.rule=Host(`localhost`)"
+#      - "traefik.http.routers.frontend.entrypoints=web"
+#      - "traefik.http.services.frontend.loadbalancer.server.port=80"
 
 networks:
-  frontend-network:
+  ai-hr-network:
     driver: bridge
-  backend-network:
-    driver: bridge
+    name: ai-hr-network
 
 volumes:
-  postgres-data:
+  ai-hr-postgres-data:
     driver: local
+    name: ai-hr-postgres-data
+  resume-uploads:
+    driver: local
+    name: ai-hr-resume-uploads

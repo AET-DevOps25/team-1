@@ -1,0 +1,276 @@
+services:
+  # Traefik reverse proxy
+  traefik:
+    image: traefik:v2.10
+    container_name: ai-hr-traefik
+    command:
+      # prod:
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedByDefault=false"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencrypt.acme.email=admin@aihr.com"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--api.dashboard=true"
+      - "--log.level=INFO"
+    ports:
+      - "80:80"     # HTTP
+      - "443:443"   # HTTPS
+      - "8080:8080" # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - ai-hr-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.localhost`)"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.entrypoints=web"
+
+  # PostgreSQL database
+  postgresql:
+    image: ghcr.io/${GHCR_USER}/${GHCR_REPO}-postgresql:${GHCR_TAG:-latest}
+    container_name: ai-hr-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=hrapp
+      - POSTGRES_USER=${DB_USERNAME:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
+    volumes:
+      - ai-hr-postgres-data:/var/lib/postgresql/data
+    networks:
+      - ai-hr-network
+    healthcheck:
+      test: [
+        "CMD-SHELL",
+        "PGPASSWORD=$$POSTGRES_PASSWORD psql -U $$POSTGRES_USER -d $$POSTGRES_DB -tAc \"SELECT to_regclass('public.embeddings');\" | grep -q embeddings"
+      ]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+    labels:
+      - "traefik.enable=false"
+
+  # Authentication service
+  service-auth:
+    image: ghcr.io/${GHCR_USER}/${GHCR_REPO}-service-auth:${GHCR_TAG:-latest}
+    container_name: ai-hr-auth
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    networks:
+      - ai-hr-network
+    environment:
+      - SERVER_PORT=${AUTH_SERVER_PORT:-8080}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-docker}
+      - DB_HOST=${DB_HOST:-postgresql}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - JWT_PRIVATE_KEY=${JWT_PRIVATE_KEY:-}
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY:-}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-"http://localhost:3000,http://localhost:5173,http://localhost:4200"}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8080/actuator/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.auth.rule=Host(`api.localhost`) && PathPrefix(`/api/v1/auth`)"
+      - "traefik.http.routers.auth.entrypoints=web"
+      - "traefik.http.services.auth.loadbalancer.server.port=8080"
+
+  # Job management service
+  service-job:
+    image: ghcr.io/${GHCR_USER}/${GHCR_REPO}-service-job:${GHCR_TAG:-latest}
+    container_name: ai-hr-job
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      service-auth:
+        condition: service_healthy
+    networks:
+      - ai-hr-network
+    environment:
+      - SERVER_PORT=${JOB_SERVER_PORT:-8081}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-docker}
+      - DB_HOST=${DB_HOST:-postgresql}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY:-}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-"http://localhost:3000,http://localhost:5173,http://localhost:4200"}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8081/actuator/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.job.rule=Host(`api.localhost`) && PathPrefix(`/api/v1/jobs`)"
+      - "traefik.http.routers.job.entrypoints=web"
+      - "traefik.http.services.job.loadbalancer.server.port=8081"
+
+  # Application management service
+  service-application:
+    image: ghcr.io/${GHCR_USER}/${GHCR_REPO}-service-application:${GHCR_TAG:-latest}
+    container_name: ai-hr-application
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      service-auth:
+        condition: service_healthy
+      service-job:
+        condition: service_healthy
+    networks:
+      - ai-hr-network
+    environment:
+      - SERVER_PORT=${APPLICATION_SERVER_PORT:-8082}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-docker}
+      - DB_HOST=${DB_HOST:-postgresql}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY:-}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-"http://localhost:3000,http://localhost:5173,http://localhost:4200"}
+    volumes:
+      - resume-uploads:/app/uploads/resumes
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8082/actuator/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.application.rule=Host(`api.localhost`) && PathPrefix(`/api/v1/applications`)"
+      - "traefik.http.routers.application.entrypoints=web"
+      - "traefik.http.services.application.loadbalancer.server.port=8082"
+
+  # Assessment service
+  service-assess:
+    image: ghcr.io/${GHCR_USER}/${GHCR_REPO}-service-assess:${GHCR_TAG:-latest}
+    container_name: ai-hr-assess
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      service-auth:
+        condition: service_healthy
+      service-application:
+        condition: service_healthy
+    networks:
+      - ai-hr-network
+    environment:
+      - SERVER_PORT=${ASSESS_SERVER_PORT:-8083}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-docker}
+      - DB_HOST=${DB_HOST:-postgresql}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY:-}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-"http://localhost:3000,http://localhost:5173,http://localhost:4200"}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8083/actuator/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.assess.rule=Host(`api.localhost`) && PathPrefix(`/api/v1/assessments`)"
+      - "traefik.http.routers.assess.entrypoints=web"
+      - "traefik.http.services.assess.loadbalancer.server.port=8083"
+
+  # GenAI service
+  service-genai:
+    image: ghcr.io/${GHCR_USER}/${GHCR_REPO}-service-genai:${GHCR_TAG:-latest}
+    container_name: ai-hr-genai
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    networks:
+      - ai-hr-network
+    environment:
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+      - DATABASE_URL=postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD:-postgres}@postgresql:5432/hrapp
+      - ALLOW_ORIGINS=*
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8079/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend
+#  frontend:
+#    build:
+#      context: ./frontend
+#      dockerfile: Dockerfile
+#    container_name: ai-hr-frontend
+#    depends_on:
+#      service-auth:
+#        condition: service_healthy
+#      service-job:
+#        condition: service_healthy
+#      service-application:
+#        condition: service_healthy
+#      service-assess:
+#        condition: service_healthy
+#      service-genai:
+#        condition: service_healthy
+#    networks:
+#      - ai-hr-network
+#    labels:
+#      - "traefik.enable=true"
+#      - "traefik.http.routers.frontend.rule=Host(`localhost`)"
+#      - "traefik.http.routers.frontend.entrypoints=web"
+#      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+
+networks:
+  ai-hr-network:
+    driver: bridge
+    name: ai-hr-network
+
+volumes:
+  ai-hr-postgres-data:
+    driver: local
+    name: ai-hr-postgres-data
+  resume-uploads:
+    driver: local
+    name: ai-hr-resume-uploads

@@ -1,0 +1,29 @@
+global:
+  # 镜像仓库信息（CI/CD 注入）
+  ghcrUser: ""
+  ghcrRepo: ""
+  imageTag: ""
+
+  # Ingress 通用设置
+  ingress:
+    enabled: true
+    className: nginx
+    tls: true
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+
+  # 运行环境专属（由 values-dev / prod 覆盖）
+  env:
+    stage: ""          # dev / prod
+    host: ""           # api.ai-hr*.student.k8s.aet.cit.tum.de
+    tlsSecret: ""      # ai-hr-*-tls
+    # CORS
+    corsAllowed: ""          # 由 dev / prod 覆盖
+  jwt:
+    privateKey: ""           # helm --set-file 注入
+    publicKey: ""            # helm --set-file 注入
+
+  # 数据库凭据（用户名可外部覆写，密码留空→安装时随机）
+  db:
+    username: ""
+    password: ""
