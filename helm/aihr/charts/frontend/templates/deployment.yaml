@@ -1,0 +1,29 @@
+{{- $user := .Values.global.ghcrUser -}}
+{{- $repo := .Values.global.ghcrRepo -}}
+{{- $tag  := default "latest" .Values.global.imageTag -}}
+{{- $defRepo := printf "ghcr.io/%s/%s-frontend" $user $repo -}}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "frontend.fullname" . }}
+  labels: { app: {{ include "frontend.fullname" . }} }
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels: { app: {{ include "frontend.fullname" . }} }
+  template:
+    metadata:
+      labels: { app: {{ include "frontend.fullname" . }} }
+    spec:
+      containers:
+        - name: frontend
+          image: "{{ default $defRepo .Values.image.repository }}:{{ default $tag .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+          readinessProbe:
+            httpGet: { path: /, port: http }
+            initialDelaySeconds: 5
+            periodSeconds: 10

@@ -1,0 +1,27 @@
+{{- if .Values.ingress.enabled }}
+{{- $host := .Values.ingress.host | default .Values.global.env.frontendHost | default .Values.global.env.host -}}
+{{- $tls  := .Values.ingress.tlsSecret | default .Values.global.env.tlsSecret -}}
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "frontend.fullname" . }}
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts: [ {{ $host | quote }} ]
+      secretName: {{ $tls }}
+  rules:
+    - host: {{ $host | quote }}
+      http:
+        paths:
+          - path: /          # 根路径
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "frontend.fullname" . }}
+                port:
+                  number: 80
+{{- end }}

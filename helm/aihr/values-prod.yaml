@@ -4,3 +4,9 @@ global:
     host: api.ai-hr.student.k8s.aet.cit.tum.de
     tlsSecret: ai-hr-prod-tls
     corsAllowed: "https://ai-hr.student.k8s.aet.cit.tum.de/api/v1/applications"
+
+frontend:
+  ingress:
+    enabled: true
+    host: ai-hr.student.k8s.aet.cit.tum.de
+    tlsSecret: ai-hr-prod-tls
