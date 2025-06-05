@@ -1,7 +1,7 @@
 package de.tum.devops.persistence.repository;
 
 import de.tum.devops.persistence.entity.Application;
-import de.tum.devops.persistence.entity.ApplicationStatus;
+import de.tum.devops.persistence.enums.ApplicationStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

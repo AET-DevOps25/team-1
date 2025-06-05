@@ -2,9 +2,10 @@ package de.tum.devops.application.service;
 
 import de.tum.devops.application.dto.*;
 import de.tum.devops.persistence.entity.Application;
-import de.tum.devops.persistence.entity.ApplicationStatus;
 import de.tum.devops.persistence.entity.Job;
 import de.tum.devops.persistence.entity.User;
+import de.tum.devops.persistence.enums.ApplicationStatus;
+import de.tum.devops.persistence.enums.JobStatus;
 import de.tum.devops.persistence.repository.ApplicationRepository;
 import de.tum.devops.persistence.repository.JobRepository;
 import de.tum.devops.persistence.repository.UserRepository;
@@ -48,7 +49,7 @@ public class ApplicationService {
         logger.info("Submitting application for job: {} by candidate: {}", request.getJobID(), candidateId);
 
         // Check if job exists and is open
-        if (!jobRepository.existsByJobIdAndStatus(request.getJobID(), de.tum.devops.persistence.entity.JobStatus.OPEN)) {
+        if (!jobRepository.existsByJobIdAndStatus(request.getJobID(), JobStatus.OPEN)) {
             throw new IllegalArgumentException("Job is not available for applications");
         }
 

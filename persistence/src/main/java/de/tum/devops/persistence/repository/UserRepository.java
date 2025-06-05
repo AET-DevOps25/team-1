@@ -1,7 +1,7 @@
 package de.tum.devops.persistence.repository;
 
 import de.tum.devops.persistence.entity.User;
-import de.tum.devops.persistence.entity.UserRole;
+import de.tum.devops.persistence.enums.UserRole;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

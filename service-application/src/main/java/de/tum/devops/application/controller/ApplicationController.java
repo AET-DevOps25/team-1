@@ -1,8 +1,10 @@
 package de.tum.devops.application.controller;
 
-import de.tum.devops.application.dto.*;
-import de.tum.devops.persistence.entity.ApplicationStatus;
+import de.tum.devops.application.dto.ApiResponse;
+import de.tum.devops.application.dto.ApplicationDto;
+import de.tum.devops.application.dto.SubmitApplicationRequest;
 import de.tum.devops.application.service.ApplicationService;
+import de.tum.devops.persistence.enums.ApplicationStatus;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

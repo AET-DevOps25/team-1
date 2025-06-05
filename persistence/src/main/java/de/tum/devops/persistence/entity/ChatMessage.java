@@ -1,5 +1,6 @@
 package de.tum.devops.persistence.entity;
 
+import de.tum.devops.persistence.enums.MessageSender;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
@@ -34,7 +35,6 @@ public class ChatMessage {
     private UUID sessionId;
 
     @NotNull
-    @Enumerated(EnumType.STRING)
     @Column(name = "sender", nullable = false, columnDefinition = "message_sender")
     private MessageSender sender;
 

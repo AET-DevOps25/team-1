@@ -1,6 +1,6 @@
 package de.tum.devops.job.dto;
 
-import de.tum.devops.persistence.entity.JobStatus;
+import de.tum.devops.persistence.enums.JobStatus;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;

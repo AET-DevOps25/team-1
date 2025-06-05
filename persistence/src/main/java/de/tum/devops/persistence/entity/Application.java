@@ -1,5 +1,7 @@
 package de.tum.devops.persistence.entity;
 
+import de.tum.devops.persistence.enums.ApplicationStatus;
+import de.tum.devops.persistence.enums.DecisionEnum;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
@@ -41,7 +43,6 @@ public class Application {
     private LocalDateTime submissionTimestamp;
 
     @NotNull
-    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, columnDefinition = "application_status")
     private ApplicationStatus status = ApplicationStatus.SUBMITTED;
 
@@ -64,7 +65,6 @@ public class Application {
     @Column(name = "job_id", nullable = false, columnDefinition = "UUID")
     private UUID jobId;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "hr_decision", columnDefinition = "decision_enum")
     private DecisionEnum hrDecision;
 

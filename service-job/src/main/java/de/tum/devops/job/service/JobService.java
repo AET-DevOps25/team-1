@@ -2,10 +2,10 @@ package de.tum.devops.job.service;
 
 import de.tum.devops.job.dto.*;
 import de.tum.devops.persistence.entity.Job;
-import de.tum.devops.persistence.entity.JobStatus;
+import de.tum.devops.persistence.entity.User;
+import de.tum.devops.persistence.enums.JobStatus;
 import de.tum.devops.persistence.repository.JobRepository;
 import de.tum.devops.persistence.repository.UserRepository;
-import de.tum.devops.persistence.entity.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;

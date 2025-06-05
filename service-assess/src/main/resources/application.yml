@@ -6,7 +6,7 @@ spring:
     name: assess-service
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/hrapp
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/hrapp?stringtype=unspecified
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver

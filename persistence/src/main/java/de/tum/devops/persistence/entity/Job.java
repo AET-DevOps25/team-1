@@ -1,5 +1,6 @@
 package de.tum.devops.persistence.entity;
 
+import de.tum.devops.persistence.enums.JobStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -49,7 +50,6 @@ public class Job {
     private String requirements;
 
     @NotNull
-    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, columnDefinition = "job_status")
     private JobStatus status = JobStatus.DRAFT;
 

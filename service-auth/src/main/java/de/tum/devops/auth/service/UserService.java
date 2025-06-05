@@ -2,7 +2,7 @@ package de.tum.devops.auth.service;
 
 import de.tum.devops.auth.dto.UserDto;
 import de.tum.devops.persistence.entity.User;
-import de.tum.devops.persistence.entity.UserRole;
+import de.tum.devops.persistence.enums.UserRole;
 import de.tum.devops.persistence.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

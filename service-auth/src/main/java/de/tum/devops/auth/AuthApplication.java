@@ -1,7 +1,7 @@
 package de.tum.devops.auth;
 
 import de.tum.devops.persistence.entity.User;
-import de.tum.devops.persistence.entity.UserRole;
+import de.tum.devops.persistence.enums.UserRole;
 import de.tum.devops.persistence.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

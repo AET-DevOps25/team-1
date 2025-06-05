@@ -1,6 +1,6 @@
 package de.tum.devops.application.dto;
 
-import de.tum.devops.persistence.entity.ApplicationStatus;
+import de.tum.devops.persistence.enums.ApplicationStatus;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
