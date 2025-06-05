@@ -45,7 +45,7 @@ public class AuthApplication {
             if (userRepository.countByRole(UserRole.HR) == 0) {
                 User admin = new User();
                 admin.setFullName("admin");
-                admin.setEmail("admin");
+                admin.setEmail("admin@aihr.com");
                 admin.setPasswordHash(passwordEncoder.encode("admin"));
                 admin.setRole(UserRole.HR);
                 userRepository.save(admin);
