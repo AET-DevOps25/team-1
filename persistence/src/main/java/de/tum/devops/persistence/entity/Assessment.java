@@ -1,5 +1,6 @@
 package de.tum.devops.persistence.entity;
 
+import de.tum.devops.persistence.enums.RecommendationEnum;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -62,7 +63,6 @@ public class Assessment {
     @Column(name = "interview_summary", columnDefinition = "TEXT")
     private String interviewSummary;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "recommendation", columnDefinition = "recommendation_enum")
     private RecommendationEnum recommendation;
 

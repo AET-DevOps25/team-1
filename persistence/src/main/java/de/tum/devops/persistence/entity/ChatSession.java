@@ -1,5 +1,6 @@
 package de.tum.devops.persistence.entity;
 
+import de.tum.devops.persistence.enums.ChatStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
@@ -34,7 +35,7 @@ public class ChatSession {
     @Column(name = "application_id", nullable = false, columnDefinition = "UUID")
     private UUID applicationId;
 
-    @Enumerated(EnumType.STRING)
+    // Remove @Enumerated to prevent conflict with converter
     @Column(name = "status", columnDefinition = "chat_status")
     private ChatStatus status = ChatStatus.ACTIVE;
 

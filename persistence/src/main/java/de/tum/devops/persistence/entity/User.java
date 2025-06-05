@@ -1,5 +1,6 @@
 package de.tum.devops.persistence.entity;
 
+import de.tum.devops.persistence.enums.UserRole;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 

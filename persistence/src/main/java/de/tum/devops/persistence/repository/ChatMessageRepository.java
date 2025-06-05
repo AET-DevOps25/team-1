@@ -1,7 +1,7 @@
 package de.tum.devops.persistence.repository;
 
 import de.tum.devops.persistence.entity.ChatMessage;
-import de.tum.devops.persistence.entity.MessageSender;
+import de.tum.devops.persistence.enums.MessageSender;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

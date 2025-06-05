@@ -1,7 +1,7 @@
 package de.tum.devops.persistence.repository;
 
 import de.tum.devops.persistence.entity.ChatSession;
-import de.tum.devops.persistence.entity.ChatStatus;
+import de.tum.devops.persistence.enums.ChatStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

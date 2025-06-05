@@ -1,6 +1,6 @@
 package de.tum.devops.application.dto;
 
-import de.tum.devops.persistence.entity.ChatStatus;
+import de.tum.devops.persistence.enums.ChatStatus;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
