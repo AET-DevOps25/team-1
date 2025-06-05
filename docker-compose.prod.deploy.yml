@@ -18,8 +18,8 @@ services:
       - "--api.dashboard=true"
       - "--log.level=INFO"
     ports:
-      - "80:80"     # HTTP
-      - "443:443"   # HTTPS
+      - "80:80" # HTTP
+      - "443:443" # HTTPS
       - "8080:8080" # Traefik dashboard
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -46,10 +46,11 @@ services:
     networks:
       - ai-hr-network
     healthcheck:
-      test: [
-        "CMD-SHELL",
-        "PGPASSWORD=$$POSTGRES_PASSWORD psql -U $$POSTGRES_USER -d $$POSTGRES_DB -tAc \"SELECT to_regclass('public.embeddings');\" | grep -q embeddings"
-      ]
+      test:
+        [
+          "CMD-SHELL",
+          'PGPASSWORD=$$POSTGRES_PASSWORD psql -U $$POSTGRES_USER -d $$POSTGRES_DB -tAc "SELECT to_regclass(''public.embeddings'');" | grep -q embeddings',
+        ]
       interval: 20s
       timeout: 10s
       retries: 5
@@ -232,35 +233,22 @@ services:
       - DATABASE_URL=postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD:-postgres}@postgresql:5432/hrapp
       - ALLOW_ORIGINS=*
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8079/health" ]
+      test: ["CMD", "curl", "-f", "http://localhost:8079/health"]
       interval: 30s
       timeout: 10s
       retries: 3
 
   # Frontend
-#  frontend:
-#    build:
-#      context: ./frontend
-#      dockerfile: Dockerfile
-#    container_name: ai-hr-frontend
-#    depends_on:
-#      service-auth:
-#        condition: service_healthy
-#      service-job:
-#        condition: service_healthy
-#      service-application:
-#        condition: service_healthy
-#      service-assess:
-#        condition: service_healthy
-#      service-genai:
-#        condition: service_healthy
-#    networks:
-#      - ai-hr-network
-#    labels:
-#      - "traefik.enable=true"
-#      - "traefik.http.routers.frontend.rule=Host(`localhost`)"
-#      - "traefik.http.routers.frontend.entrypoints=web"
-#      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+  frontend:
+    image: ghcr.io/${GHCR_USER}/${GHCR_REPO}-frontend:${GHCR_TAG:-latest}
+    container_name: ai-hr-frontend
+    networks:
+      - ai-hr-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`localhost`)"
+      - "traefik.http.routers.frontend.entrypoints=web"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
 
 networks:
   ai-hr-network:

@@ -1,0 +1,13 @@
+replicaCount: 1
+
+image:
+  repository: "" # default to let template fill ghcr.io/ghuser/ghrepo-frontend
+  tag: "" # follow global.imageTag
+  pullPolicy: IfNotPresent
+
+service:
+  port: 80
+
+ingress:
+  enabled: true
+  path: /
