@@ -1,10 +1,7 @@
 package de.tum.devops.auth.persistence.entity;
 
 import de.tum.devops.auth.persistence.enums.UserRole;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -40,11 +37,12 @@ public class User {
     @Column(name = "password_hash", nullable = false, columnDefinition = "TEXT")
     private String passwordHash;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false, columnDefinition = "user_role")
     private UserRole role;
 
     @CreationTimestamp
-    @Column(name = "creation_timestamp", updatable = false)
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime creationTimestamp;
 
     // Constructors

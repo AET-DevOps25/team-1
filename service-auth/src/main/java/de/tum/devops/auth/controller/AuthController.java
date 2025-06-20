@@ -1,17 +1,18 @@
 package de.tum.devops.auth.controller;
 
-import de.tum.devops.auth.dto.ApiResponse;
-import de.tum.devops.auth.dto.AuthResponse;
-import de.tum.devops.auth.dto.LoginRequest;
-import de.tum.devops.auth.dto.RegisterRequest;
-import de.tum.devops.auth.dto.UserDto;
+import de.tum.devops.auth.dto.*;
 import de.tum.devops.auth.service.AuthService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Authentication Controller
@@ -70,26 +71,21 @@ public class AuthController {
      * POST /api/v1/auth/hr-register
      * Existing HR users create other HR accounts
      */
+    @PreAuthorize("hasRole('HR')")
     @PostMapping("/hr-register")
     public ResponseEntity<ApiResponse<UserDto>> hrRegister(
             @Valid @RequestBody RegisterRequest request,
-            @RequestHeader("Authorization") String authHeader) {
+            @AuthenticationPrincipal String requestorId) {
 
-        logger.info("HR register attempt for email: {}", request.getEmail());
-
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new IllegalArgumentException("Authorization header is required");
-        }
-
-        String token = authHeader.substring(7);
+        logger.info("HR register attempt for email: {} by HR user: {}", request.getEmail(), requestorId);
 
         UserDto newHR = authService.createHRUser(
                 request.getFullName(),
                 request.getEmail(),
                 request.getPassword(),
-                token);
+                requestorId);
 
-        logger.info("HR user created: {}", newHR.getUserID());
+        logger.info("HR user created: {} by HR user: {}", newHR.getUserID(), requestorId);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created(newHR));

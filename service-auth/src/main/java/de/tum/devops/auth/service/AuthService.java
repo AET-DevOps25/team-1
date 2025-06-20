@@ -5,7 +5,8 @@ import de.tum.devops.auth.dto.UserDto;
 import de.tum.devops.auth.persistence.entity.User;
 import de.tum.devops.auth.persistence.enums.UserRole;
 import de.tum.devops.auth.persistence.repository.UserRepository;
-import io.jsonwebtoken.Claims;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
 
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
         this.userRepository = userRepository;
@@ -93,12 +95,13 @@ public class AuthService {
     /**
      * Create HR user (only by existing HR users)
      */
-    public UserDto createHRUser(String fullName, String email, String password, String requestorToken) {
-        // Verify requestor is HR
-        UserDto requestor = getUserById(extractUserIdFromToken(requestorToken));
-        if (!requestor.getRole().name().equals("HR")) {
-            throw new IllegalArgumentException("Only HR users can create other HR users");
-        }
+    public UserDto createHRUser(String fullName, String email, String password, String requestorId) {
+        // Requestor validation (token parsing, fetching requestor user, role check)
+        // is now handled by JwtAuthenticationFilter and @PreAuthorize("hasRole('HR')")
+        // in the AuthController.
+
+        // Log who is performing the action
+        logger.info("HR user '{}' is creating a new HR account for email '{}' with full name '{}'", requestorId, email, fullName);
 
         // Check if email already exists
         if (userRepository.existsByEmail(email)) {
@@ -130,16 +133,5 @@ public class AuthService {
                 accessToken,
                 userDto,
                 3600); // 1 hour in seconds
-    }
-
-    /**
-     * Extract user ID from JWT token
-     */
-    public UUID extractUserIdFromToken(String token) {
-        try {
-            return jwtService.extractUserId(token);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid token");
-        }
     }
 }
