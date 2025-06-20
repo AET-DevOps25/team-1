@@ -4,7 +4,11 @@ on:
   push:
     branches:
       - main
-      - week*
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch or tag to build (e.g. week1)' 
+        required: false
 
 jobs:
   build-and-push:
@@ -43,12 +47,6 @@ jobs:
 
       - name: Push all images via docker compose
         run: docker compose -f docker-compose.prod.yml push
-
-  deploy-aws:
-    if: github.ref == 'refs/heads/main'
-    needs: build-and-push
-    uses: ./.github/workflows/deploy-aws.yml
-    secrets: inherit
 
   deploy-k8s:
     needs: build-and-push
