@@ -1,12 +1,12 @@
 package de.tum.devops.assess.service;
 
+import de.tum.devops.application.persistence.entity.Application;
+import de.tum.devops.application.persistence.entity.Assessment;
+import de.tum.devops.application.persistence.enums.RecommendationEnum;
+import de.tum.devops.application.persistence.repository.ApplicationRepository;
+import de.tum.devops.application.persistence.repository.AssessmentRepository;
 import de.tum.devops.assess.dto.AssessmentDto;
 import de.tum.devops.assess.dto.PageInfo;
-import de.tum.devops.persistence.entity.Application;
-import de.tum.devops.persistence.entity.Assessment;
-import de.tum.devops.persistence.enums.RecommendationEnum;
-import de.tum.devops.persistence.repository.ApplicationRepository;
-import de.tum.devops.persistence.repository.AssessmentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;

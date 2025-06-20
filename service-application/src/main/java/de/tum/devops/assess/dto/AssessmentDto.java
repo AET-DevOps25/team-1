@@ -1,6 +1,6 @@
 package de.tum.devops.assess.dto;
 
-import de.tum.devops.persistence.enums.RecommendationEnum;
+import de.tum.devops.application.persistence.enums.RecommendationEnum;
 
 import java.time.LocalDateTime;
 import java.util.UUID;

@@ -1,6 +1,6 @@
-package de.tum.devops.persistence.entity;
+package de.tum.devops.application.persistence.entity;
 
-import de.tum.devops.persistence.enums.RecommendationEnum;
+import de.tum.devops.application.persistence.enums.RecommendationEnum;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -52,27 +52,22 @@ public class Assessment {
     @Column(name = "interview_score")
     private Float interviewScore;
 
-    @DecimalMin("0.0")
-    @DecimalMax("100.0")
-    @Column(name = "final_score")
-    private Float finalScore;
+    @Column(name = "resume_comment", columnDefinition = "TEXT")
+    private String resumeComment;
 
-    @Column(name = "resume_analysis", columnDefinition = "TEXT")
-    private String resumeAnalysis;
-
-    @Column(name = "interview_summary", columnDefinition = "TEXT")
-    private String interviewSummary;
+    @Column(name = "interview_comment", columnDefinition = "TEXT")
+    private String interviewComment;
 
     @Column(name = "recommendation", columnDefinition = "recommendation_enum")
     private RecommendationEnum recommendation;
 
     @CreationTimestamp
-    @Column(name = "creation_timestamp", updatable = false)
-    private LocalDateTime creationTimestamp;
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "last_modified_timestamp")
-    private LocalDateTime lastModifiedTimestamp;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     // Constructors
     public Assessment() {
@@ -117,28 +112,20 @@ public class Assessment {
         this.interviewScore = interviewScore;
     }
 
-    public Float getFinalScore() {
-        return finalScore;
+    public String getResumeComment() {
+        return resumeComment;
     }
 
-    public void setFinalScore(Float finalScore) {
-        this.finalScore = finalScore;
+    public void setResumeComment(String resumeComment) {
+        this.resumeComment = resumeComment;
     }
 
-    public String getResumeAnalysis() {
-        return resumeAnalysis;
+    public String getInterviewComment() {
+        return interviewComment;
     }
 
-    public void setResumeAnalysis(String resumeAnalysis) {
-        this.resumeAnalysis = resumeAnalysis;
-    }
-
-    public String getInterviewSummary() {
-        return interviewSummary;
-    }
-
-    public void setInterviewSummary(String interviewSummary) {
-        this.interviewSummary = interviewSummary;
+    public void setInterviewComment(String interviewComment) {
+        this.interviewComment = interviewComment;
     }
 
     public RecommendationEnum getRecommendation() {
@@ -149,20 +136,20 @@ public class Assessment {
         this.recommendation = recommendation;
     }
 
-    public LocalDateTime getCreationTimestamp() {
-        return creationTimestamp;
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 
-    public void setCreationTimestamp(LocalDateTime creationTimestamp) {
-        this.creationTimestamp = creationTimestamp;
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
-    public LocalDateTime getLastModifiedTimestamp() {
-        return lastModifiedTimestamp;
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
     }
 
-    public void setLastModifiedTimestamp(LocalDateTime lastModifiedTimestamp) {
-        this.lastModifiedTimestamp = lastModifiedTimestamp;
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
     @Override
@@ -172,7 +159,6 @@ public class Assessment {
                 ", applicationId=" + applicationId +
                 ", resumeScore=" + resumeScore +
                 ", interviewScore=" + interviewScore +
-                ", finalScore=" + finalScore +
                 ", recommendation=" + recommendation +
                 '}';
     }

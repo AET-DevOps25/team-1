@@ -1,4 +1,4 @@
-package de.tum.devops.persistence.enums;
+package de.tum.devops.auth.persistence.enums;
 
 /**
  * User role enum corresponding to 'user_role' type in init.sql

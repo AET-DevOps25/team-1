@@ -1,6 +1,6 @@
-package de.tum.devops.persistence.entity;
+package de.tum.devops.application.persistence.entity;
 
-import de.tum.devops.persistence.enums.MessageSender;
+import de.tum.devops.application.persistence.enums.MessageSender;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
@@ -43,8 +43,8 @@ public class ChatMessage {
     private String content;
 
     @CreationTimestamp
-    @Column(name = "timestamp", updatable = false)
-    private LocalDateTime timestamp;
+    @Column(name = "sent_at", updatable = false)
+    private LocalDateTime sentAt;
 
     // Constructors
     public ChatMessage() {
@@ -91,12 +91,12 @@ public class ChatMessage {
         this.content = content;
     }
 
-    public LocalDateTime getTimestamp() {
-        return timestamp;
+    public LocalDateTime getSentAt() {
+        return sentAt;
     }
 
-    public void setTimestamp(LocalDateTime timestamp) {
-        this.timestamp = timestamp;
+    public void setSentAt(LocalDateTime sentAt) {
+        this.sentAt = sentAt;
     }
 
     @Override
@@ -105,7 +105,7 @@ public class ChatMessage {
                 "messageId=" + messageId +
                 ", sessionId=" + sessionId +
                 ", sender=" + sender +
-                ", timestamp=" + timestamp +
+                ", sentAt=" + sentAt +
                 '}';
     }
 }

@@ -1,4 +1,4 @@
-package de.tum.devops.persistence.enums;
+package de.tum.devops.application.persistence.enums;
 
 /**
  * Message sender enumeration matching database message_sender enum

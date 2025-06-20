@@ -1,4 +1,4 @@
-package de.tum.devops.persistence.enums;
+package de.tum.devops.application.persistence.enums;
 
 /**
  * Application status enumeration matching database application_status enum

@@ -1,4 +1,4 @@
-package de.tum.devops.persistence.enums;
+package de.tum.devops.application.persistence.enums;
 
 /**
  * HR Decision enumeration matching database decision_enum

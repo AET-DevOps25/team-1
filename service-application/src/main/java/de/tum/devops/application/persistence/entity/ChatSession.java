@@ -1,6 +1,6 @@
-package de.tum.devops.persistence.entity;
+package de.tum.devops.application.persistence.entity;
 
-import de.tum.devops.persistence.enums.ChatStatus;
+import de.tum.devops.application.persistence.enums.ChatStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
@@ -40,11 +40,11 @@ public class ChatSession {
     private ChatStatus status = ChatStatus.ACTIVE;
 
     @CreationTimestamp
-    @Column(name = "start_timestamp", updatable = false)
-    private LocalDateTime startTimestamp;
+    @Column(name = "started_at", updatable = false)
+    private LocalDateTime startedAt;
 
-    @Column(name = "end_timestamp")
-    private LocalDateTime endTimestamp;
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
 
     @Column(name = "message_count")
     private Integer messageCount = 0;
@@ -84,20 +84,20 @@ public class ChatSession {
         this.status = status;
     }
 
-    public LocalDateTime getStartTimestamp() {
-        return startTimestamp;
+    public LocalDateTime getStartedAt() {
+        return startedAt;
     }
 
-    public void setStartTimestamp(LocalDateTime startTimestamp) {
-        this.startTimestamp = startTimestamp;
+    public void setStartedAt(LocalDateTime startedAt) {
+        this.startedAt = startedAt;
     }
 
-    public LocalDateTime getEndTimestamp() {
-        return endTimestamp;
+    public LocalDateTime getCompletedAt() {
+        return completedAt;
     }
 
-    public void setEndTimestamp(LocalDateTime endTimestamp) {
-        this.endTimestamp = endTimestamp;
+    public void setCompletedAt(LocalDateTime completedAt) {
+        this.completedAt = completedAt;
     }
 
     public Integer getMessageCount() {

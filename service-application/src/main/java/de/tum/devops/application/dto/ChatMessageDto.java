@@ -1,6 +1,6 @@
 package de.tum.devops.application.dto;
 
-import de.tum.devops.persistence.enums.MessageSender;
+import de.tum.devops.application.persistence.enums.MessageSender;
 
 import java.time.LocalDateTime;
 import java.util.UUID;

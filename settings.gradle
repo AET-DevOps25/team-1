@@ -2,13 +2,13 @@
 rootProject.name = 'ai-hr-system'
 
 // Include Java microservices and shared persistence module
-include 'persistence'
+// include 'persistence'
 include 'service-auth'
 include 'service-job'
 include 'service-application'
 
 // Set project directories
-project(':persistence').projectDir = file('persistence')
+// project(':persistence').projectDir = file('persistence')
 project(':service-auth').projectDir = file('service-auth')
 project(':service-job').projectDir = file('service-job')
 project(':service-application').projectDir = file('service-application')

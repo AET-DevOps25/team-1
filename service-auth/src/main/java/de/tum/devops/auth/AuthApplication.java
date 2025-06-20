@@ -1,15 +1,14 @@
 package de.tum.devops.auth;
 
-import de.tum.devops.persistence.entity.User;
-import de.tum.devops.persistence.enums.UserRole;
-import de.tum.devops.persistence.repository.UserRepository;
+import de.tum.devops.auth.persistence.entity.User;
+import de.tum.devops.auth.persistence.enums.UserRole;
+import de.tum.devops.auth.persistence.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 /**
@@ -26,10 +25,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
  * @version 1.0.0
  */
 @SpringBootApplication
-@ComponentScan(basePackages = {
-        "de.tum.devops.auth",
-        "de.tum.devops.persistence",
-})
 public class AuthApplication {
 
     public static void main(String[] args) {

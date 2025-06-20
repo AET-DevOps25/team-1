@@ -1,12 +1,12 @@
 package de.tum.devops.application.service;
 
 import de.tum.devops.application.dto.*;
-import de.tum.devops.persistence.entity.Application;
+import de.tum.devops.application.persistence.entity.Application;
+import de.tum.devops.application.persistence.enums.ApplicationStatus;
+import de.tum.devops.application.persistence.repository.ApplicationRepository;
 import de.tum.devops.persistence.entity.Job;
 import de.tum.devops.persistence.entity.User;
-import de.tum.devops.persistence.enums.ApplicationStatus;
 import de.tum.devops.persistence.enums.JobStatus;
-import de.tum.devops.persistence.repository.ApplicationRepository;
 import de.tum.devops.persistence.repository.JobRepository;
 import de.tum.devops.persistence.repository.UserRepository;
 import org.slf4j.Logger;

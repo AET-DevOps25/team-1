@@ -1,9 +1,9 @@
 package de.tum.devops.assess.controller;
 
+import de.tum.devops.application.persistence.enums.RecommendationEnum;
 import de.tum.devops.assess.dto.ApiResponse;
 import de.tum.devops.assess.dto.AssessmentDto;
 import de.tum.devops.assess.service.AssessmentService;
-import de.tum.devops.persistence.enums.RecommendationEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;

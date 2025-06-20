@@ -1,11 +1,9 @@
 package de.tum.devops.job.service;
 
 import de.tum.devops.job.dto.*;
-import de.tum.devops.persistence.entity.Job;
-import de.tum.devops.persistence.entity.User;
-import de.tum.devops.persistence.enums.JobStatus;
-import de.tum.devops.persistence.repository.JobRepository;
-import de.tum.devops.persistence.repository.UserRepository;
+import de.tum.devops.job.persistence.entity.Job;
+import de.tum.devops.job.persistence.enums.JobStatus;
+import de.tum.devops.job.persistence.repository.JobRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -27,11 +25,9 @@ public class JobService {
     private static final Logger logger = LoggerFactory.getLogger(JobService.class);
 
     private final JobRepository jobRepository;
-    private final UserRepository userRepository;
 
-    public JobService(JobRepository jobRepository, UserRepository userRepository) {
+    public JobService(JobRepository jobRepository) {
         this.jobRepository = jobRepository;
-        this.userRepository = userRepository;
     }
 
     /**
@@ -136,7 +132,7 @@ public class JobService {
             job.setStatus(request.getStatus());
         }
 
-        job.setLastModifiedTimestamp(LocalDateTime.now());
+        job.setUpdatedAt(LocalDateTime.now());
         job = jobRepository.save(job);
 
         logger.info("Job updated successfully: {}", jobId);
@@ -157,7 +153,7 @@ public class JobService {
         }
 
         job.setStatus(JobStatus.CLOSED);
-        job.setLastModifiedTimestamp(LocalDateTime.now());
+        job.setUpdatedAt(LocalDateTime.now());
         job = jobRepository.save(job);
 
         logger.info("Job closed successfully: {}", jobId);
@@ -176,19 +172,7 @@ public class JobService {
      * Convert Job entity to JobDto
      */
     private JobDto convertToDto(Job job) {
-        // Get HR creator information from UserRepository
-        User hrCreator = userRepository.findById(job.getHrCreatorId())
-                .orElse(null);
-
-        UserDto hrCreatorDto = null;
-        if (hrCreator != null) {
-            hrCreatorDto = new UserDto(
-                    hrCreator.getUserId(),
-                    hrCreator.getFullName(),
-                    hrCreator.getEmail(),
-                    hrCreator.getRole().name(),
-                    hrCreator.getCreationTimestamp());
-        }
+        UserDto hrCreatorDto = null; // placeholder, retrieved via user-service REST in future
 
         return new JobDto(
                 job.getJobId(),
@@ -196,9 +180,9 @@ public class JobService {
                 job.getDescription(),
                 job.getRequirements(),
                 job.getStatus(),
-                job.getCreationTimestamp(),
+                job.getCreatedAt(),
                 job.getClosingDate(),
-                job.getLastModifiedTimestamp(),
+                job.getUpdatedAt(),
                 hrCreatorDto);
     }
 }

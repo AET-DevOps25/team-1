@@ -2,7 +2,6 @@ package de.tum.devops.application;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.ComponentScan;
 
 /**
  * AI-HR Application Management Service
@@ -17,10 +16,6 @@ import org.springframework.context.annotation.ComponentScan;
  * @version 1.0.0
  */
 @SpringBootApplication
-@ComponentScan(basePackages = {
-        "de.tum.devops.application",
-        "de.tum.devops.persistence",
-})
 public class ResumeApplicationService {
 
     public static void main(String[] args) {

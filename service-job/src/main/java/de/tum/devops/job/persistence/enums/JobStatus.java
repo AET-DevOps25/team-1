@@ -1,4 +1,4 @@
-package de.tum.devops.persistence.enums;
+package de.tum.devops.job.persistence.enums;
 
 /**
  * Job status enumeration matching database job_status enum

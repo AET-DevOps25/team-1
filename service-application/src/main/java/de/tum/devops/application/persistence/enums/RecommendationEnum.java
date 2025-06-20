@@ -1,4 +1,4 @@
-package de.tum.devops.persistence.enums;
+package de.tum.devops.application.persistence.enums;
 
 /**
  * Recommendation enumeration matching database recommendation_enum

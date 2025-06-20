@@ -1,7 +1,7 @@
-package de.tum.devops.persistence.entity;
+package de.tum.devops.application.persistence.entity;
 
-import de.tum.devops.persistence.enums.ApplicationStatus;
-import de.tum.devops.persistence.enums.DecisionEnum;
+import de.tum.devops.application.persistence.enums.ApplicationStatus;
+import de.tum.devops.application.persistence.enums.DecisionEnum;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
@@ -39,23 +39,23 @@ public class Application {
     private UUID applicationId;
 
     @CreationTimestamp
-    @Column(name = "submission_timestamp", updatable = false)
-    private LocalDateTime submissionTimestamp;
+    @Column(name = "submitted_at", updatable = false)
+    private LocalDateTime submittedAt;
 
     @NotNull
     @Column(name = "status", nullable = false, columnDefinition = "application_status")
     private ApplicationStatus status = ApplicationStatus.SUBMITTED;
 
     @NotNull
-    @Column(name = "resume_content", nullable = false, columnDefinition = "TEXT")
-    private String resumeContent;
+    @Column(name = "resume_text", nullable = false, columnDefinition = "TEXT")
+    private String resumeText;
 
-    @Column(name = "original_resume_filename", length = 255)
-    private String originalResumeFilename;
+    @Column(name = "resume_file_path", length = 255)
+    private String resumeFilePath;
 
     @UpdateTimestamp
-    @Column(name = "last_modified_timestamp")
-    private LocalDateTime lastModifiedTimestamp;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     @NotNull
     @Column(name = "candidate_id", nullable = false, columnDefinition = "UUID")
@@ -76,12 +76,12 @@ public class Application {
         this.applicationId = UUID.randomUUID();
     }
 
-    public Application(UUID candidateId, UUID jobId, String resumeContent, String originalResumeFilename) {
+    public Application(UUID candidateId, UUID jobId, String resumeText, String resumeFilePath) {
         this();
         this.candidateId = candidateId;
         this.jobId = jobId;
-        this.resumeContent = resumeContent;
-        this.originalResumeFilename = originalResumeFilename;
+        this.resumeText = resumeText;
+        this.resumeFilePath = resumeFilePath;
     }
 
     // Getters and Setters
@@ -93,12 +93,12 @@ public class Application {
         this.applicationId = applicationId;
     }
 
-    public LocalDateTime getSubmissionTimestamp() {
-        return submissionTimestamp;
+    public LocalDateTime getSubmittedAt() {
+        return submittedAt;
     }
 
-    public void setSubmissionTimestamp(LocalDateTime submissionTimestamp) {
-        this.submissionTimestamp = submissionTimestamp;
+    public void setSubmittedAt(LocalDateTime submittedAt) {
+        this.submittedAt = submittedAt;
     }
 
     public ApplicationStatus getStatus() {
@@ -109,28 +109,28 @@ public class Application {
         this.status = status;
     }
 
-    public String getResumeContent() {
-        return resumeContent;
+    public String getResumeText() {
+        return resumeText;
     }
 
-    public void setResumeContent(String resumeContent) {
-        this.resumeContent = resumeContent;
+    public void setResumeText(String resumeText) {
+        this.resumeText = resumeText;
     }
 
-    public String getOriginalResumeFilename() {
-        return originalResumeFilename;
+    public String getResumeFilePath() {
+        return resumeFilePath;
     }
 
-    public void setOriginalResumeFilename(String originalResumeFilename) {
-        this.originalResumeFilename = originalResumeFilename;
+    public void setResumeFilePath(String resumeFilePath) {
+        this.resumeFilePath = resumeFilePath;
     }
 
-    public LocalDateTime getLastModifiedTimestamp() {
-        return lastModifiedTimestamp;
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
     }
 
-    public void setLastModifiedTimestamp(LocalDateTime lastModifiedTimestamp) {
-        this.lastModifiedTimestamp = lastModifiedTimestamp;
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
     public UUID getCandidateId() {
@@ -172,7 +172,7 @@ public class Application {
                 ", candidateId=" + candidateId +
                 ", jobId=" + jobId +
                 ", status=" + status +
-                ", submissionTimestamp=" + submissionTimestamp +
+                ", submittedAt=" + submittedAt +
                 '}';
     }
 }

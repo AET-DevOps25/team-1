@@ -1,6 +1,6 @@
-package de.tum.devops.persistence.entity;
+package de.tum.devops.job.persistence.entity;
 
-import de.tum.devops.persistence.enums.JobStatus;
+import de.tum.devops.job.persistence.enums.JobStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -54,15 +54,15 @@ public class Job {
     private JobStatus status = JobStatus.DRAFT;
 
     @CreationTimestamp
-    @Column(name = "creation_timestamp", updatable = false)
-    private LocalDateTime creationTimestamp;
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
 
     @Column(name = "closing_date")
     private LocalDate closingDate;
 
     @UpdateTimestamp
-    @Column(name = "last_modified_timestamp")
-    private LocalDateTime lastModifiedTimestamp;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     @NotNull
     @Column(name = "hr_creator_id", nullable = false, columnDefinition = "UUID")
@@ -122,12 +122,12 @@ public class Job {
         this.status = status;
     }
 
-    public LocalDateTime getCreationTimestamp() {
-        return creationTimestamp;
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 
-    public void setCreationTimestamp(LocalDateTime creationTimestamp) {
-        this.creationTimestamp = creationTimestamp;
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
     public LocalDate getClosingDate() {
@@ -138,12 +138,12 @@ public class Job {
         this.closingDate = closingDate;
     }
 
-    public LocalDateTime getLastModifiedTimestamp() {
-        return lastModifiedTimestamp;
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
     }
 
-    public void setLastModifiedTimestamp(LocalDateTime lastModifiedTimestamp) {
-        this.lastModifiedTimestamp = lastModifiedTimestamp;
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
     public UUID getHrCreatorId() {

@@ -6,7 +6,7 @@ spring:
     name: job-service
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/hrapp?stringtype=unspecified
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/job_db?stringtype=unspecified
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
