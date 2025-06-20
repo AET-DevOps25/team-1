@@ -81,23 +81,13 @@ public class AuthService {
         return generateAuthResponse(user);
     }
 
-
     /**
-     * Get user profile from access token
+     * Internal fetch user by ID (no auth)
      */
-    public UserDto getProfile(String accessToken) {
-        try {
-            Claims claims = jwtService.parseToken(accessToken);
-            UUID userId = UUID.fromString(claims.getSubject());
-
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
-            return convertToDto(user);
-
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid access token");
-        }
+    public UserDto getUserById(UUID id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        return convertToDto(user);
     }
 
     /**
@@ -105,7 +95,7 @@ public class AuthService {
      */
     public UserDto createHRUser(String fullName, String email, String password, String requestorToken) {
         // Verify requestor is HR
-        UserDto requestor = getProfile(requestorToken);
+        UserDto requestor = getUserById(extractUserIdFromToken(requestorToken));
         if (!requestor.getRole().name().equals("HR")) {
             throw new IllegalArgumentException("Only HR users can create other HR users");
         }
@@ -148,22 +138,6 @@ public class AuthService {
     public UUID extractUserIdFromToken(String token) {
         try {
             return jwtService.extractUserId(token);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid token");
-        }
-    }
-
-    /**
-     * Validate token and return user info
-     */
-    public UserDto validateTokenAndGetUser(String token) {
-        try {
-            UUID userId = jwtService.extractUserId(token);
-
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
-            return convertToDto(user);
         } catch (Exception e) {
             throw new IllegalArgumentException("Invalid token");
         }

@@ -1,8 +1,8 @@
 package de.tum.devops.auth.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Unified API response format according to api-documentation.yaml
@@ -23,6 +23,7 @@ public class ApiResponse<T> {
     private boolean success;
     private String message;
     private T data;
+    private List<FieldErrorItem> errors;
     private LocalDateTime timestamp;
     private int code;
 
@@ -102,6 +103,14 @@ public class ApiResponse<T> {
         this.data = data;
     }
 
+    public List<FieldErrorItem> getErrors() {
+        return errors;
+    }
+
+    public void setErrors(List<FieldErrorItem> errors) {
+        this.errors = errors;
+    }
+
     public LocalDateTime getTimestamp() {
         return timestamp;
     }
@@ -116,5 +125,37 @@ public class ApiResponse<T> {
 
     public void setCode(int code) {
         this.code = code;
+    }
+
+    /**
+     * Validation error object matching ErrorResponse schema
+     */
+    public static class FieldErrorItem {
+        private String field;
+        private String message;
+
+        public FieldErrorItem() {
+        }
+
+        public FieldErrorItem(String field, String message) {
+            this.field = field;
+            this.message = message;
+        }
+
+        public String getField() {
+            return field;
+        }
+
+        public void setField(String field) {
+            this.field = field;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public void setMessage(String message) {
+            this.message = message;
+        }
     }
 }

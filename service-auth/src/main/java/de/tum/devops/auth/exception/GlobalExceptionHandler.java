@@ -13,8 +13,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Global exception handler for the authentication service
@@ -28,20 +28,19 @@ public class GlobalExceptionHandler {
      * Handle validation errors
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationExceptions(
+    public ResponseEntity<ApiResponse<Object>> handleValidationExceptions(
             MethodArgumentNotValidException ex) {
 
-        Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getAllErrors().forEach((error) -> {
-            String fieldName = ((FieldError) error).getField();
-            String errorMessage = error.getDefaultMessage();
-            errors.put(fieldName, errorMessage);
-        });
+        // Build list of field errors
+        List<ApiResponse.FieldErrorItem> errorItems = ex.getBindingResult().getAllErrors()
+                .stream()
+                .map(err -> new ApiResponse.FieldErrorItem(((FieldError) err).getField(), err.getDefaultMessage()))
+                .collect(Collectors.toList());
 
-        logger.warn("Validation failed: {}", errors);
+        logger.warn("Validation failed: {}", errorItems);
 
-        ApiResponse<Map<String, String>> response = ApiResponse.error("Validation failed", 400);
-        response.setData(errors);
+        ApiResponse<Object> response = ApiResponse.badRequest("Validation failed");
+        response.setErrors(errorItems);
 
         return ResponseEntity.badRequest().body(response);
     }

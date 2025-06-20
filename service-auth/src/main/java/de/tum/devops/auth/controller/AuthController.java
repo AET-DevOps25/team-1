@@ -18,8 +18,7 @@ import org.springframework.web.bind.annotation.*;
  * Implements the 4 authentication endpoints from api-documentation.yaml:
  * - POST /api/v1/auth/login
  * - POST /api/v1/auth/register
- * - POST /api/v1/auth/logout
- * - GET /api/v1/auth/profile
+ * - POST /api/v1/auth/hr-register
  */
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -67,49 +66,32 @@ public class AuthController {
                 .body(ApiResponse.created(authResponse));
     }
 
-
     /**
-     * POST /api/v1/auth/logout
-     * User logout (simple response, no token revocation in this implementation)
+     * POST /api/v1/auth/hr-register
+     * Existing HR users create other HR accounts
      */
-    @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Object>> logout(@RequestHeader("Authorization") String authHeader) {
-        logger.info("Logout request received");
+    @PostMapping("/hr-register")
+    public ResponseEntity<ApiResponse<UserDto>> hrRegister(
+            @Valid @RequestBody RegisterRequest request,
+            @RequestHeader("Authorization") String authHeader) {
 
-        // Extract token from Authorization header (format: "Bearer <token>")
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
+        logger.info("HR register attempt for email: {}", request.getEmail());
 
-            // Validate token and get user info for logging
-            try {
-                UserDto user = authService.validateTokenAndGetUser(token);
-                logger.info("Logout successful for user: {}", user.getUserID());
-            } catch (Exception e) {
-                logger.warn("Logout with invalid token");
-            }
-        }
-
-        return ResponseEntity.ok(ApiResponse.success("Logout successful", null));
-    }
-
-    /**
-     * GET /api/v1/auth/profile
-     * Get detailed information of the current logged-in user
-     */
-    @GetMapping("/profile")
-    public ResponseEntity<ApiResponse<UserDto>> getProfile(@RequestHeader("Authorization") String authHeader) {
-        logger.info("Profile request received");
-
-        // Extract token from Authorization header
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             throw new IllegalArgumentException("Authorization header is required");
         }
 
         String token = authHeader.substring(7);
-        UserDto user = authService.getProfile(token);
 
-        logger.info("Profile retrieved for user: {}", user.getUserID());
+        UserDto newHR = authService.createHRUser(
+                request.getFullName(),
+                request.getEmail(),
+                request.getPassword(),
+                token);
 
-        return ResponseEntity.ok(ApiResponse.success("Profile retrieved successfully", user));
+        logger.info("HR user created: {}", newHR.getUserID());
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.created(newHR));
     }
 }

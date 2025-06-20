@@ -46,7 +46,9 @@ public class SecurityConfig {
                         // Auth endpoints - no authentication required
                         .requestMatchers("/api/v1/auth/login").permitAll()
                         .requestMatchers("/api/v1/auth/register").permitAll()
-                        .requestMatchers("/api/v1/auth/refresh").permitAll()
+
+                        // Internal user endpoint (cluster-only)
+                        .requestMatchers("/internal/api/v1/users/**").permitAll()
 
                         // Health check endpoints
                         .requestMatchers("/actuator/health").permitAll()
