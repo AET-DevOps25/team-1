@@ -39,12 +39,10 @@ This system is designed with a layered architecture, consisting of the following
     * Components: Candidate Portal, HR Dashboard
 * **Application Services Layer**
     * Tech: Spring Boot
-    * Components: API Gateway, Job Management Service, Candidate Application Service, Candidate Assessment Service,
-      LangChain GenAI Service
+    * Components: API Gateway, Job Management Service, Application Management Service, LangChain GenAI Service
 * **Data Storage Layer**
     * Tech: PostgreSQL + pgvector
-    * Details: PostgreSQL serves as the relational database for structured data, while pgvector provides vector database
-      capabilities for RAG.
+    * Details: PostgreSQL serves as the relational database for structured data, while pgvector provides vector database capabilities for RAG.
 * **External Services Layer**
     * Details: OpenAI API for LLM capabilities (specific model TBD).
 
@@ -54,8 +52,7 @@ The backend is implemented using **Spring Boot**, exposing RESTful APIs to suppo
 handles business logic, including:
 
 * Job posting and management (via `Job Management Service`).
-* Candidate application processing (via `Candidate Application Service`).
-* Resume filtering, interview generation, and scoring (via `Candidate Assessment Service`).
+* Candidate application processing, resume filtering, interview generation, and scoring (via `Candidate Application Service`).
 * Integration with external services, such as OpenAI, for GenAI tasks (via `LangChain GenAI Service`).
 
 The `API Gateway` serves as the single entry point, routing requests from UI clients to the appropriate services.
