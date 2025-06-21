@@ -1,1 +1,2 @@
-# This file makes the proto directory a Python package
+from .ai_pb2 import *
+from .ai_pb2_grpc import *

@@ -6,8 +6,7 @@ from concurrent import futures
 import grpc
 from prometheus_client import start_http_server, Counter
 
-from app.proto import ai_pb2
-from app.proto import ai_pb2_grpc
+from app.proto import ai_pb2, ai_pb2_grpc
 
 # Ensure the parent directory is in PYTHONPATH so that `proto` is importable when launching
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))

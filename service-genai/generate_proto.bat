@@ -33,6 +33,9 @@ IF %ERRORLEVEL% NEQ 0 (
     EXIT /B %ERRORLEVEL%
 )
 
+REM ---- Fix grpc import for package-based Python usage -------------------------
+powershell -Command "(Get-Content %DST_DIR%\ai_pb2_grpc.py) -replace 'import ai_pb2 as ai__pb2', 'from . import ai_pb2 as ai__pb2' | Set-Content %DST_DIR%\ai_pb2_grpc.py"
+
 echo [OK] Python gRPC stubs generated in %DST_DIR%
 
 ENDLOCAL
