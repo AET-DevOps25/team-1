@@ -3,8 +3,6 @@ package de.tum.devops.job.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-import java.time.LocalDate;
-
 /**
  * Request DTO for creating new jobs
  */
@@ -20,17 +18,14 @@ public class CreateJobRequest {
     @NotBlank(message = "Requirements are required")
     private String requirements;
 
-    private LocalDate closingDate;
-
     // Constructors
     public CreateJobRequest() {
     }
 
-    public CreateJobRequest(String title, String description, String requirements, LocalDate closingDate) {
+    public CreateJobRequest(String title, String description, String requirements) {
         this.title = title;
         this.description = description;
         this.requirements = requirements;
-        this.closingDate = closingDate;
     }
 
     // Getters and Setters
@@ -56,13 +51,5 @@ public class CreateJobRequest {
 
     public void setRequirements(String requirements) {
         this.requirements = requirements;
-    }
-
-    public LocalDate getClosingDate() {
-        return closingDate;
-    }
-
-    public void setClosingDate(LocalDate closingDate) {
-        this.closingDate = closingDate;
     }
 }

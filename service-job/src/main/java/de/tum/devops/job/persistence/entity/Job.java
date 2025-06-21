@@ -7,13 +7,12 @@ import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
  * Job entity mapping to jobs table
- * 
+ * <p>
  * Database schema:
  * CREATE TABLE jobs (
  * job_id UUID PRIMARY KEY,
@@ -50,15 +49,13 @@ public class Job {
     private String requirements;
 
     @NotNull
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, columnDefinition = "job_status")
     private JobStatus status = JobStatus.DRAFT;
 
     @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    @Column(name = "closing_date")
-    private LocalDate closingDate;
 
     @UpdateTimestamp
     @Column(name = "updated_at")
@@ -130,14 +127,6 @@ public class Job {
         this.createdAt = createdAt;
     }
 
-    public LocalDate getClosingDate() {
-        return closingDate;
-    }
-
-    public void setClosingDate(LocalDate closingDate) {
-        this.closingDate = closingDate;
-    }
-
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
@@ -161,6 +150,8 @@ public class Job {
                 ", title='" + title + '\'' +
                 ", status=" + status +
                 ", hrCreatorId=" + hrCreatorId +
+                ", createdAt=" + createdAt +
+                ", updatedAt=" + updatedAt +
                 '}';
     }
 }

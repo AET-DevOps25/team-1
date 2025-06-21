@@ -2,7 +2,6 @@ package de.tum.devops.job.dto;
 
 import de.tum.devops.job.persistence.enums.JobStatus;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -17,7 +16,6 @@ public class JobDto {
     private String requirements;
     private JobStatus status;
     private LocalDateTime createdAt;
-    private LocalDate closingDate;
     private LocalDateTime updatedAt;
     private UserDto hrCreator;
 
@@ -26,15 +24,13 @@ public class JobDto {
     }
 
     public JobDto(UUID jobID, String title, String description, String requirements,
-            JobStatus status, LocalDateTime createdAt, LocalDate closingDate,
-            LocalDateTime updatedAt, UserDto hrCreator) {
+                  JobStatus status, LocalDateTime createdAt, LocalDateTime updatedAt, UserDto hrCreator) {
         this.jobID = jobID;
         this.title = title;
         this.description = description;
         this.requirements = requirements;
         this.status = status;
         this.createdAt = createdAt;
-        this.closingDate = closingDate;
         this.updatedAt = updatedAt;
         this.hrCreator = hrCreator;
     }
@@ -86,14 +82,6 @@ public class JobDto {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
-    }
-
-    public LocalDate getClosingDate() {
-        return closingDate;
-    }
-
-    public void setClosingDate(LocalDate closingDate) {
-        this.closingDate = closingDate;
     }
 
     public LocalDateTime getUpdatedAt() {

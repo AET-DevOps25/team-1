@@ -44,7 +44,7 @@ components:
   schemas:
     ApiResponse:
       type: object
-      required: [success, message, timestamp, code]
+      required: [ success, message, timestamp, code ]
       properties:
         success: { type: boolean }
         message: { type: string }
@@ -80,7 +80,7 @@ components:
         userID: { type: string, format: uuid }
         fullName: { type: string }
         email: { type: string, format: email }
-        role: { type: string, enum: [CANDIDATE, HR] }
+        role: { type: string, enum: [ CANDIDATE, HR ] }
         createdAt: { type: string, format: date-time }
 
     JobDto:
@@ -90,8 +90,7 @@ components:
         title: { type: string }
         description: { type: string }
         requirements: { type: string }
-        status: { type: string, enum: [OPEN, CLOSED, DRAFT] }
-        closingDate: { type: string, format: date }
+        status: { type: string, enum: [ OPEN, CLOSED, DRAFT ] }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
 
@@ -115,9 +114,9 @@ components:
             ]
         resumeText: { type: string }
         resumeFilePath: { type: string }
-        hrDecision: { type: string, enum: [SHORTLISTED, REJECTED, HIRED] }
+        hrDecision: { type: string, enum: [ SHORTLISTED, REJECTED, HIRED ] }
         hrComments: { type: string }
-        chatStatus: { type: string, enum: [ACTIVE, COMPLETE] }
+        chatStatus: { type: string, enum: [ ACTIVE, COMPLETE ] }
         submittedAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
 
@@ -133,21 +132,21 @@ components:
       properties:
         messageID: { type: string, format: uuid }
         sessionID: { type: string, format: uuid }
-        sender: { type: string, enum: [AI, CANDIDATE] }
+        sender: { type: string, enum: [ AI, CANDIDATE ] }
         content: { type: string }
         sentAt: { type: string, format: date-time }
 
     # ── request bodies (minimal) ───────────────────────────────
     LoginRequest:
       type: object
-      required: [email, password]
+      required: [ email, password ]
       properties:
         email: { type: string, format: email }
         password: { type: string }
 
     RegisterRequest:
       type: object
-      required: [fullName, email, password]
+      required: [ fullName, email, password ]
       properties:
         fullName: { type: string }
         email: { type: string, format: email }
@@ -155,12 +154,11 @@ components:
 
     CreateJobRequest:
       type: object
-      required: [title, description, requirements]
+      required: [ title, description, requirements ]
       properties:
         title: { type: string }
         description: { type: string }
         requirements: { type: string }
-        closingDate: { type: string, format: date }
 
     UpdateJobRequest:
       type: object
@@ -168,12 +166,11 @@ components:
         title: { type: string }
         description: { type: string }
         requirements: { type: string }
-        closingDate: { type: string, format: date }
-        status: { type: string, enum: [OPEN, CLOSED, DRAFT] }
+        status: { type: string, enum: [ OPEN, CLOSED, DRAFT ] }
 
     CreateApplicationRequest:
       type: object
-      required: [jobID, resumeText]
+      required: [ jobID, resumeText ]
       properties:
         jobID: { type: string, format: uuid }
         resumeText: { type: string }
@@ -181,28 +178,28 @@ components:
 
     UpdateApplicationRequest:
       type: object
-      required: [hrDecision]
+      required: [ hrDecision ]
       properties:
-        hrDecision: { type: string, enum: [SHORTLISTED, REJECTED, HIRED] }
+        hrDecision: { type: string, enum: [ SHORTLISTED, REJECTED, HIRED ] }
         hrComments: { type: string }
 
     SendChatMessageRequest:
       type: object
-      required: [content]
+      required: [ content ]
       properties:
         content: { type: string }
 
 # ─────────────────────────────────────────────────────────────
 security:
-  - BearerAuth: []
+  - BearerAuth: [ ]
 
 # ─────────────────────────────────────────────────────────────
 paths:
   # ========== AUTH (external) ==========
   /auth/login:
     post:
-      tags: [Auth]
-      security: [] # public
+      tags: [ Auth ]
+      security: [ ] # public
       summary: User login
       requestBody:
         required: true
@@ -220,8 +217,8 @@ paths:
 
   /auth/register:
     post:
-      tags: [Auth]
-      security: [] # public
+      tags: [ Auth ]
+      security: [ ] # public
       summary: Candidate registration
       requestBody:
         required: true
@@ -239,7 +236,7 @@ paths:
 
   /auth/hr-register:
     post:
-      tags: [Auth]
+      tags: [ Auth ]
       summary: HR registers another HR
       requestBody:
         required: true
@@ -263,8 +260,8 @@ paths:
         required: true
         schema: { type: string, format: uuid }
     get:
-      tags: [Internal-User]
-      security: [] # no JWT
+      tags: [ Internal-User ]
+      security: [ ] # no JWT
       summary: Get user by ID (internal)
       responses:
         "200":
@@ -277,24 +274,24 @@ paths:
   # ========== JOB SERVICE (external) ==========
   /jobs:
     get:
-      tags: [Jobs]
+      tags: [ Jobs ]
       summary: Public job list
       parameters:
         - {
-            name: page,
-            in: query,
-            schema: { type: integer, minimum: 0, default: 0 },
-          }
+          name: page,
+          in: query,
+          schema: { type: integer, minimum: 0, default: 0 },
+        }
         - {
-            name: size,
-            in: query,
-            schema: { type: integer, minimum: 1, maximum: 100, default: 10 },
-          }
+          name: size,
+          in: query,
+          schema: { type: integer, minimum: 1, maximum: 100, default: 10 },
+        }
         - {
-            name: status,
-            in: query,
-            schema: { type: string, enum: [OPEN, CLOSED, DRAFT] },
-          }
+          name: status,
+          in: query,
+          schema: { type: string, enum: [ OPEN, CLOSED, DRAFT ] },
+        }
       responses:
         "200":
           description: Job list
@@ -304,7 +301,7 @@ paths:
                 $ref: "#/components/schemas/ApiResponse"
 
     post:
-      tags: [Jobs]
+      tags: [ Jobs ]
       summary: Create job (HR)
       requestBody:
         required: true
@@ -323,14 +320,14 @@ paths:
   /jobs/{jobId}:
     parameters:
       - {
-          name: jobId,
-          in: path,
-          required: true,
-          schema: { type: string, format: uuid },
-        }
+        name: jobId,
+        in: path,
+        required: true,
+        schema: { type: string, format: uuid },
+      }
 
     get:
-      tags: [Jobs]
+      tags: [ Jobs ]
       summary: Job details
       responses:
         "200":
@@ -341,7 +338,7 @@ paths:
                 $ref: "#/components/schemas/ApiResponse"
 
     patch:
-      tags: [Jobs]
+      tags: [ Jobs ]
       summary: Update job (HR)
       requestBody:
         required: true
@@ -358,7 +355,7 @@ paths:
                 $ref: "#/components/schemas/ApiResponse"
 
     delete:
-      tags: [Jobs]
+      tags: [ Jobs ]
       summary: Delete job (HR)
       responses:
         "204":
@@ -373,7 +370,7 @@ paths:
           type: string
           format: uuid
     post:
-      tags: [Jobs]
+      tags: [ Jobs ]
       summary: Close job
       responses:
         "200":
@@ -392,7 +389,7 @@ paths:
           type: string
           format: uuid
     post:
-      tags: [Jobs]
+      tags: [ Jobs ]
       summary: Re-open job
       responses:
         "200":
@@ -406,14 +403,14 @@ paths:
   /internal/api/v1/jobs/{jobId}:
     parameters:
       - {
-          name: jobId,
-          in: path,
-          required: true,
-          schema: { type: string, format: uuid },
-        }
+        name: jobId,
+        in: path,
+        required: true,
+        schema: { type: string, format: uuid },
+      }
     get:
-      tags: [Internal-Job]
-      security: []
+      tags: [ Internal-Job ]
+      security: [ ]
       summary: Get job by ID (internal)
       responses:
         "200":
@@ -426,7 +423,7 @@ paths:
   # ========== APPLICATION SERVICE (external) ==========
   /applications:
     post:
-      tags: [Applications]
+      tags: [ Applications ]
       summary: Apply to a job
       requestBody:
         required: true
@@ -443,21 +440,21 @@ paths:
                 $ref: "#/components/schemas/ApiResponse"
 
     get:
-      tags: [Applications]
+      tags: [ Applications ]
       summary: List applications (candidate / HR)
       parameters:
         - { name: jobId, in: query, schema: { type: string, format: uuid } }
         - { name: status, in: query, schema: { type: string } }
         - {
-            name: page,
-            in: query,
-            schema: { type: integer, minimum: 0, default: 0 },
-          }
+          name: page,
+          in: query,
+          schema: { type: integer, minimum: 0, default: 0 },
+        }
         - {
-            name: size,
-            in: query,
-            schema: { type: integer, minimum: 1, maximum: 100, default: 10 },
-          }
+          name: size,
+          in: query,
+          schema: { type: integer, minimum: 1, maximum: 100, default: 10 },
+        }
       responses:
         "200":
           description: List
@@ -469,14 +466,14 @@ paths:
   /applications/{applicationId}:
     parameters:
       - {
-          name: applicationId,
-          in: path,
-          required: true,
-          schema: { type: string, format: uuid },
-        }
+        name: applicationId,
+        in: path,
+        required: true,
+        schema: { type: string, format: uuid },
+      }
 
     get:
-      tags: [Applications]
+      tags: [ Applications ]
       summary: Application details
       responses:
         "200":
@@ -487,7 +484,7 @@ paths:
                 $ref: "#/components/schemas/ApiResponse"
 
     patch:
-      tags: [Applications]
+      tags: [ Applications ]
       summary: HR decision/comments
       requestBody:
         required: true
@@ -505,25 +502,25 @@ paths:
 
   /applications/{applicationId}/messages:
     get:
-      tags: [Applications]
+      tags: [ Applications ]
       summary: HR fetches chat messages
       parameters:
         - {
-            name: page,
-            in: query,
-            schema: { type: integer, minimum: 0, default: 0 },
-          }
+          name: page,
+          in: query,
+          schema: { type: integer, minimum: 0, default: 0 },
+        }
         - {
-            name: size,
-            in: query,
-            schema: { type: integer, minimum: 1, maximum: 100, default: 100 },
-          }
+          name: size,
+          in: query,
+          schema: { type: integer, minimum: 1, maximum: 100, default: 100 },
+        }
         - {
-            name: applicationId,
-            in: path,
-            required: true,
-            schema: { type: string, format: uuid },
-          }
+          name: applicationId,
+          in: path,
+          required: true,
+          schema: { type: string, format: uuid },
+        }
       responses:
         "200":
           description: Messages
@@ -534,15 +531,15 @@ paths:
 
   /applications/{applicationId}/chat:
     post:
-      tags: [Chat]
+      tags: [ Chat ]
       summary: Create or fetch chat session
       parameters:
         - {
-            name: applicationId,
-            in: path,
-            required: true,
-            schema: { type: string, format: uuid },
-          }
+          name: applicationId,
+          in: path,
+          required: true,
+          schema: { type: string, format: uuid },
+        }
       responses:
         "200":
           description: Session info
@@ -555,14 +552,14 @@ paths:
   /chat/{sessionId}/messages:
     parameters:
       - {
-          name: sessionId,
-          in: path,
-          required: true,
-          schema: { type: string, format: uuid },
-        }
+        name: sessionId,
+        in: path,
+        required: true,
+        schema: { type: string, format: uuid },
+      }
 
     post:
-      tags: [Chat]
+      tags: [ Chat ]
       summary: Candidate sends message
       requestBody:
         required: true
@@ -579,19 +576,19 @@ paths:
                 $ref: "#/components/schemas/ApiResponse"
 
     get:
-      tags: [Chat]
+      tags: [ Chat ]
       summary: Candidate fetches chat history
       parameters:
         - {
-            name: page,
-            in: query,
-            schema: { type: integer, minimum: 0, default: 0 },
-          }
+          name: page,
+          in: query,
+          schema: { type: integer, minimum: 0, default: 0 },
+        }
         - {
-            name: size,
-            in: query,
-            schema: { type: integer, minimum: 1, maximum: 100, default: 100 },
-          }
+          name: size,
+          in: query,
+          schema: { type: integer, minimum: 1, maximum: 100, default: 100 },
+        }
       responses:
         "200":
           description: History
@@ -604,14 +601,14 @@ paths:
   /internal/api/v1/applications/{applicationId}:
     parameters:
       - {
-          name: applicationId,
-          in: path,
-          required: true,
-          schema: { type: string, format: uuid },
-        }
+        name: applicationId,
+        in: path,
+        required: true,
+        schema: { type: string, format: uuid },
+      }
     get:
-      tags: [Internal-Application]
-      security: []
+      tags: [ Internal-Application ]
+      security: [ ]
       summary: Get application + assessment (internal)
       responses:
         "200":

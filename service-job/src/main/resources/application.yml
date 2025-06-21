@@ -20,6 +20,9 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
 
+  profiles:
+    active: dev
+
 # JWT Configuration for token validation
 app:
   jwt:
@@ -40,3 +43,7 @@ cors:
   allowed-methods: GET,POST,PUT,DELETE,OPTIONS
   allowed-headers: "*"
   allow-credentials: true
+
+service:
+  auth:
+    base-url: ${AUTH_BASE_URL:http://auth-service/api/v1}

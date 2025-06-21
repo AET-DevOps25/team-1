@@ -13,7 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -36,7 +36,7 @@ public class JobController {
     }
 
     /**
-     * GET /api/v1/jobs - List jobs with pagination and filtering
+     * GET /jobs - List jobs with pagination and filtering
      */
     @GetMapping
     public ResponseEntity<ApiResponse<Map<String, Object>>> getJobs(
@@ -46,7 +46,7 @@ public class JobController {
             Authentication authentication) {
 
         try {
-            String userRole = extractRoleFromJwt(authentication);
+            String userRole = extractRole(authentication);
             Map<String, Object> result = jobService.getJobs(page, size, status, userRole);
 
             return ResponseEntity.ok(ApiResponse.success("Jobs retrieved successfully", result));
@@ -58,16 +58,16 @@ public class JobController {
     }
 
     /**
-     * POST /api/v1/jobs - Create new job (HR only)
+     * POST /jobs - Create new job (HR only)
      */
     @PostMapping
     @PreAuthorize("hasRole('HR')")
     public ResponseEntity<ApiResponse<JobDto>> createJob(
             @Valid @RequestBody CreateJobRequest request,
-            Authentication authentication) {
+            @AuthenticationPrincipal String userId) {
 
         try {
-            UUID hrCreatorId = extractUserIdFromJwt(authentication);
+            UUID hrCreatorId = UUID.fromString(userId);
             JobDto createdJob = jobService.createJob(request, hrCreatorId);
 
             return ResponseEntity.status(HttpStatus.CREATED)
@@ -84,7 +84,7 @@ public class JobController {
     }
 
     /**
-     * GET /api/v1/jobs/{jobId} - Get job details
+     * GET /jobs/{jobId} - Get job details
      */
     @GetMapping("/{jobId}")
     public ResponseEntity<ApiResponse<JobDto>> getJobById(
@@ -92,7 +92,7 @@ public class JobController {
             Authentication authentication) {
 
         try {
-            String userRole = extractRoleFromJwt(authentication);
+            String userRole = extractRole(authentication);
             JobDto job = jobService.getJobById(jobId, userRole);
 
             return ResponseEntity.ok(ApiResponse.success("Job retrieved successfully", job));
@@ -108,17 +108,17 @@ public class JobController {
     }
 
     /**
-     * PUT /api/v1/jobs/{jobId} - Update job (HR only)
+     * PATCH /jobs/{jobId} - Update job (HR only)
      */
-    @PutMapping("/{jobId}")
+    @PatchMapping("/{jobId}")
     @PreAuthorize("hasRole('HR')")
     public ResponseEntity<ApiResponse<JobDto>> updateJob(
             @PathVariable UUID jobId,
             @Valid @RequestBody UpdateJobRequest request,
-            Authentication authentication) {
+            @AuthenticationPrincipal String userId) {
 
         try {
-            UUID hrUserId = extractUserIdFromJwt(authentication);
+            UUID hrUserId = UUID.fromString(userId);
             JobDto updatedJob = jobService.updateJob(jobId, request, hrUserId);
 
             return ResponseEntity.ok(ApiResponse.success("Job updated successfully", updatedJob));
@@ -134,16 +134,16 @@ public class JobController {
     }
 
     /**
-     * POST /api/v1/jobs/{jobId}/close - Close job (HR only)
+     * POST /jobs/{jobId}/close - Close job (HR only)
      */
     @PostMapping("/{jobId}/close")
     @PreAuthorize("hasRole('HR')")
     public ResponseEntity<ApiResponse<JobDto>> closeJob(
             @PathVariable UUID jobId,
-            Authentication authentication) {
+            @AuthenticationPrincipal String userId) {
 
         try {
-            UUID hrUserId = extractUserIdFromJwt(authentication);
+            UUID hrUserId = UUID.fromString(userId);
             JobDto closedJob = jobService.closeJob(jobId, hrUserId);
 
             return ResponseEntity.ok(ApiResponse.success("Job closed successfully", closedJob));
@@ -159,31 +159,58 @@ public class JobController {
     }
 
     /**
-     * Health check endpoint
+     * POST /jobs/{jobId}/open - Re-open job (HR only)
      */
-    @GetMapping("/health")
-    public ResponseEntity<ApiResponse<String>> healthCheck() {
-        return ResponseEntity.ok(ApiResponse.success("Job service is running", "OK"));
+    @PostMapping("/{jobId}/open")
+    @PreAuthorize("hasRole('HR')")
+    public ResponseEntity<ApiResponse<JobDto>> openJob(
+            @PathVariable UUID jobId,
+            @AuthenticationPrincipal String userId) {
+
+        try {
+            UUID hrUserId = UUID.fromString(userId);
+            JobDto openedJob = jobService.reopenJob(jobId, hrUserId);
+
+            return ResponseEntity.ok(ApiResponse.success("Job reopened successfully", openedJob));
+        } catch (IllegalArgumentException e) {
+            logger.warn("Invalid job reopen request: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.badRequest(e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Error reopening job {}: {}", jobId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.internalError("Failed to reopen job"));
+        }
     }
 
     /**
-     * Extract user ID from JWT token
+     * DELETE /jobs/{jobId} - Delete job (HR only)
      */
-    private UUID extractUserIdFromJwt(Authentication authentication) {
-        if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
-            String userIdStr = jwt.getClaimAsString("sub");
-            return UUID.fromString(userIdStr);
+    @DeleteMapping("/{jobId}")
+    @PreAuthorize("hasRole('HR')")
+    public ResponseEntity<Void> deleteJob(
+            @PathVariable UUID jobId,
+            @AuthenticationPrincipal String userId) {
+
+        try {
+            UUID hrUserId = UUID.fromString(userId);
+            jobService.deleteJob(jobId, hrUserId);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            logger.warn("Invalid job delete request: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        } catch (Exception e) {
+            logger.error("Error deleting job {}: {}", jobId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-        throw new IllegalArgumentException("Invalid authentication token");
     }
 
-    /**
-     * Extract user role from JWT token
-     */
-    private String extractRoleFromJwt(Authentication authentication) {
-        if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
-            return jwt.getClaimAsString("role");
-        }
-        throw new IllegalArgumentException("Invalid authentication token");
+    // helper to get role if needed
+    private String extractRole(Authentication authentication) {
+        if (authentication == null) return null;
+        return authentication.getAuthorities().stream()
+                .findFirst()
+                .map(a -> a.getAuthority().replace("ROLE_", ""))
+                .orElse(null);
     }
 }

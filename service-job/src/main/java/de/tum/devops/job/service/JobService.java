@@ -1,5 +1,6 @@
 package de.tum.devops.job.service;
 
+import de.tum.devops.job.client.AuthWebClient;
 import de.tum.devops.job.dto.*;
 import de.tum.devops.job.persistence.entity.Job;
 import de.tum.devops.job.persistence.enums.JobStatus;
@@ -25,9 +26,11 @@ public class JobService {
     private static final Logger logger = LoggerFactory.getLogger(JobService.class);
 
     private final JobRepository jobRepository;
+    private final AuthWebClient authWebClient;
 
-    public JobService(JobRepository jobRepository) {
+    public JobService(JobRepository jobRepository, AuthWebClient authWebClient) {
         this.jobRepository = jobRepository;
+        this.authWebClient = authWebClient;
     }
 
     /**
@@ -50,7 +53,7 @@ public class JobService {
                 jobPage = jobRepository.findAll(pageable);
             } else {
                 // Candidates can only see OPEN jobs
-                JobStatus[] candidateVisibleStatuses = { JobStatus.OPEN };
+                JobStatus[] candidateVisibleStatuses = {JobStatus.OPEN};
                 jobPage = jobRepository.findByStatusIn(candidateVisibleStatuses, pageable);
             }
         }
@@ -69,6 +72,7 @@ public class JobService {
     /**
      * Create new job (HR only)
      */
+    @Transactional
     public JobDto createJob(CreateJobRequest request, UUID hrCreatorId) {
         logger.info("Creating job: {} by HR: {}", request.getTitle(), hrCreatorId);
 
@@ -78,12 +82,10 @@ public class JobService {
                 request.getRequirements(),
                 hrCreatorId);
 
-        if (request.getClosingDate() != null) {
-            job.setClosingDate(request.getClosingDate());
-        }
-
-        job = jobRepository.save(job);
+        job = jobRepository.saveAndFlush(job);
         logger.info("Job created successfully: {}", job.getJobId());
+        logger.info("Job details: {}", job);
+        logger.info("Job created at: {}", job.getCreatedAt());
 
         return convertToDto(job);
     }
@@ -109,6 +111,7 @@ public class JobService {
     /**
      * Update job (HR only)
      */
+    @Transactional
     public JobDto updateJob(UUID jobId, UpdateJobRequest request, UUID hrUserId) {
         logger.info("Updating job: {} by HR: {}", jobId, hrUserId);
 
@@ -125,9 +128,6 @@ public class JobService {
         if (request.getRequirements() != null) {
             job.setRequirements(request.getRequirements());
         }
-        if (request.getClosingDate() != null) {
-            job.setClosingDate(request.getClosingDate());
-        }
         if (request.getStatus() != null) {
             job.setStatus(request.getStatus());
         }
@@ -142,6 +142,7 @@ public class JobService {
     /**
      * Close job (HR only)
      */
+    @Transactional
     public JobDto closeJob(UUID jobId, UUID hrUserId) {
         logger.info("Closing job: {} by HR: {}", jobId, hrUserId);
 
@@ -161,6 +162,42 @@ public class JobService {
     }
 
     /**
+     * Re-open job (HR only)
+     */
+    @Transactional
+    public JobDto reopenJob(UUID jobId, UUID hrUserId) {
+        logger.info("Re-opening job: {} by HR: {}", jobId, hrUserId);
+
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new IllegalArgumentException("Job not found"));
+
+        if (job.getStatus() == JobStatus.OPEN) {
+            throw new IllegalArgumentException("Job is already open");
+        }
+
+        job.setStatus(JobStatus.OPEN);
+        job.setUpdatedAt(LocalDateTime.now());
+        job = jobRepository.save(job);
+
+        logger.info("Job reopened successfully: {}", jobId);
+        return convertToDto(job);
+    }
+
+    /**
+     * Delete job (HR only)
+     */
+    @Transactional
+    public void deleteJob(UUID jobId, UUID hrUserId) {
+        logger.info("Deleting job: {} by HR: {}", jobId, hrUserId);
+
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new IllegalArgumentException("Job not found"));
+
+        jobRepository.delete(job);
+        logger.info("Job deleted: {}", jobId);
+    }
+
+    /**
      * Check if job exists and is open (for application validation)
      */
     @Transactional(readOnly = true)
@@ -172,7 +209,10 @@ public class JobService {
      * Convert Job entity to JobDto
      */
     private JobDto convertToDto(Job job) {
-        UserDto hrCreatorDto = null; // placeholder, retrieved via user-service REST in future
+        // Synchronously fetch HR creator info via WebClient
+        UserDto hrCreatorDto = authWebClient.fetchUser(job.getHrCreatorId())
+                .blockOptional()
+                .orElse(null);
 
         return new JobDto(
                 job.getJobId(),
@@ -181,7 +221,6 @@ public class JobService {
                 job.getRequirements(),
                 job.getStatus(),
                 job.getCreatedAt(),
-                job.getClosingDate(),
                 job.getUpdatedAt(),
                 hrCreatorDto);
     }

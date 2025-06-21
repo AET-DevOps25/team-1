@@ -2,6 +2,8 @@ package de.tum.devops.auth.persistence.entity;
 
 import de.tum.devops.auth.persistence.enums.UserRole;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -9,7 +11,7 @@ import java.util.UUID;
 
 /**
  * User entity corresponding to the 'users' table in init.sql
- * 
+ * <p>
  * Table definition:
  * CREATE TABLE users (
  * user_id UUID PRIMARY KEY,
@@ -28,15 +30,19 @@ public class User {
     @Column(name = "user_id", columnDefinition = "UUID")
     private UUID userId;
 
+    @NotBlank
     @Column(name = "full_name", nullable = false, length = 255)
     private String fullName;
 
+    @NotBlank
     @Column(name = "email", nullable = false, unique = true, length = 255)
     private String email;
 
+    @NotBlank
     @Column(name = "password_hash", nullable = false, columnDefinition = "TEXT")
     private String passwordHash;
 
+    @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false, columnDefinition = "user_role")
     private UserRole role;

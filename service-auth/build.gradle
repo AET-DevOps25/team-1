@@ -3,7 +3,6 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-security'
 
-    // JWT Support (Spring Security native)
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
 
     implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
@@ -12,6 +11,7 @@ dependencies {
 
     // Argon2 password encoder
     implementation 'org.bouncycastle:bcprov-jdk18on:1.78'
+
     // Database
     runtimeOnly 'org.postgresql:postgresql'
 

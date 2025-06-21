@@ -41,7 +41,6 @@ CREATE TABLE jobs (
     description   TEXT NOT NULL,
     requirements  TEXT NOT NULL,
     status        job_status DEFAULT 'DRAFT',
-    closing_date  DATE,
     created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at    TIMESTAMP,
     hr_creator_id UUID NOT NULL -- logical foreign-key reference
