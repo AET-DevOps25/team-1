@@ -275,6 +275,7 @@ paths:
   /jobs:
     get:
       tags: [ Jobs ]
+      security: [ ] # for public to get open jobs, but when have JWT of HR, can get all jobs
       summary: Public job list
       parameters:
         - {
