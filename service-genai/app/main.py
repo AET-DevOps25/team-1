@@ -1,37 +1,65 @@
 import os
-import uvicorn
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+import sys
+import time
+from concurrent import futures
 
-from app.routers import health, resume, chat, assessment
+import grpc
+from prometheus_client import start_http_server, Counter
 
-# Create FastAPI app
-app = FastAPI(
-    title="AIHR Service",
-    description="AI-powered HR service for resume filtering, interviewing, and assessment",
-    version="0.1.0"
-)
+from app.proto import ai_pb2
+from app.proto import ai_pb2_grpc
 
-# Add CORS middleware
-origins_env = os.environ.get("CORS_ALLOWED_ORIGINS", "")
-allow_origins = [o.strip() for o in origins_env.split(",") if o.strip()] if origins_env else [
-    "http://localhost:3000",
-    "http://localhost:5173",
-    "http://localhost:4200",
-]
-app.add_middleware(
-    CORSMiddleware,     # type: ignore
-    allow_origins=allow_origins,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
-)
+# Ensure the parent directory is in PYTHONPATH so that `proto` is importable when launching
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+if BASE_DIR not in sys.path:
+    sys.path.append(BASE_DIR)
 
-# Include routers
-app.include_router(health.router)
-app.include_router(resume.router)
-app.include_router(chat.router)
-app.include_router(assessment.router)
+
+# Prometheus metrics
+REQUEST_COUNTER = Counter("ai_requests_total", "Total number of requests received by method", ["method"], )
+
+
+class AIService(ai_pb2_grpc.AIServiceServicer):
+    """gRPC service implementation with dummy responses."""
+
+    def ChatReply(self, request: ai_pb2.ChatReplyRequest, context):  # type: ignore
+        REQUEST_COUNTER.labels("ChatReply").inc()
+        # Stream a few dummy tokens back to the client
+        dummy_tokens = ["Hello", "this", "is", "a", "dummy", "response.", ]
+        for token in dummy_tokens:
+            yield ai_pb2.ChatReplyResponse(ai_message=token)
+            time.sleep(0.05)  # Simulate streaming latency
+
+    def ScoreResume(self, request: ai_pb2.ScoreResumeRequest, context):  # type: ignore
+        REQUEST_COUNTER.labels("ScoreResume").inc()
+        return ai_pb2.ScoreResumeResponse(resume_score=0.85, comment="This is a dummy resume score.",
+                                          recommendation=ai_pb2.RecommendationEnum.RECOMMEND, )
+
+    def ScoreInterview(self, request: ai_pb2.ScoreInterviewRequest, context):  # type: ignore
+        REQUEST_COUNTER.labels("ScoreInterview").inc()
+        return ai_pb2.ScoreInterviewResponse(interview_score=0.78, comment="This is a dummy interview score.",
+                                             recommendation=ai_pb2.RecommendationEnum.CONSIDER, )
+
+
+def serve() -> None:
+    """Start Prometheus metrics endpoint and gRPC server."""
+    # Expose Prometheus metrics
+    start_http_server(8000)
+    print("Prometheus metrics available at http://localhost:8000/")
+
+    # Start gRPC server
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    ai_pb2_grpc.add_AIServiceServicer_to_server(AIService(), server)
+    server.add_insecure_port("[::]:8079")
+    server.start()
+    print("gRPC server started on port 8079")
+
+    try:
+        server.wait_for_termination()
+    except KeyboardInterrupt:
+        print("Shutting down gRPC server...")
+        server.stop(0)
+
 
 if __name__ == "__main__":
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8079, reload=True)
+    serve()

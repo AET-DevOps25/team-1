@@ -202,11 +202,11 @@ CREATE INDEX idx_embed_hnsw
 
 ### 3.4 `ai` service (gRPC)
 
-| RPC              | Request                                                         | Response                      |
-|------------------|-----------------------------------------------------------------|-------------------------------|
-| `ChatReply`      | `session_id`, `resume_text`, `job_requirements`, `chat_history` | `ai_message`, `complete_flag` |
-| `ScoreResume`    | `resume_text`, `job_requirements`                               | `resume_score`, `comment`     |
-| `ScoreInterview` | `resume_text`, `job_requirements`, `chat_history`               | `interview_score`, `comment`  |
+| RPC              | Request                                                                           | Response                                       |
+|------------------|-----------------------------------------------------------------------------------|------------------------------------------------|
+| `ChatReply`      | `resume_text`, `job_title`, `job_description`, `job_requirements`, `chat_history` | `ai_message`                                   |
+| `ScoreResume`    | `resume_text`, `job_requirements`                                                 | `resume_score`, `comment`, `recommendation`    |
+| `ScoreInterview` | `resume_text`, `job_requirements`, `chat_history`                                 | `interview_score`, `comment`, `recommendation` |
 
 ### 3.5 Operations Endpoints (all services)
 

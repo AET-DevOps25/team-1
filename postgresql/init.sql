@@ -128,7 +128,7 @@ CREATE EXTENSION IF NOT EXISTS vector;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE embeddings (
-    embedding_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    embedding_id SERIAL PRIMARY KEY,
     document_ref TEXT,
     content      TEXT,
     embedding    VECTOR(1536),
