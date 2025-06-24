@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -115,10 +116,10 @@ public class JobController {
     public ResponseEntity<ApiResponse<JobDto>> updateJob(
             @PathVariable UUID jobId,
             @Valid @RequestBody UpdateJobRequest request,
-            @AuthenticationPrincipal String userId) {
+            @AuthenticationPrincipal Jwt jwt) {
 
         try {
-            UUID hrUserId = UUID.fromString(userId);
+            UUID hrUserId = UUID.fromString(jwt.getSubject());
             JobDto updatedJob = jobService.updateJob(jobId, request, hrUserId);
 
             return ResponseEntity.ok(ApiResponse.success("Job updated successfully", updatedJob));
