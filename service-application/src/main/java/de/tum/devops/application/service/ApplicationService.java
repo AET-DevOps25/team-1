@@ -31,48 +31,66 @@ public class ApplicationService {
     private final AuthWebClient authWebClient;
     private final FileStorageService fileStorageService;
     private final AIIntegrationService aiIntegrationService;
+    private final DocumentTextExtractorService documentTextExtractorService;
 
     public ApplicationService(ApplicationRepository applicationRepository,
                               JobWebClient jobWebClient,
                               AuthWebClient authWebClient,
                               FileStorageService fileStorageService,
-                              AIIntegrationService aiIntegrationService) {
+                              AIIntegrationService aiIntegrationService,
+                              DocumentTextExtractorService documentTextExtractorService) {
         this.applicationRepository = applicationRepository;
         this.jobWebClient = jobWebClient;
         this.authWebClient = authWebClient;
         this.fileStorageService = fileStorageService;
         this.aiIntegrationService = aiIntegrationService;
+        this.documentTextExtractorService = documentTextExtractorService;
     }
 
     public ApplicationDto submitApplication(SubmitApplicationRequest request, UUID candidateId, MultipartFile resumeFile) {
         logger.info("Submitting application for job {} by candidate {}", request.getJobId(), candidateId);
 
-        // 1. Check if candidate has already applied for this job
+        // 1. Validate resume file is provided
+        if (resumeFile == null || resumeFile.isEmpty()) {
+            throw new IllegalArgumentException("Resume file is required");
+        }
+
+        // 2. Check if candidate has already applied for this job
         if (applicationRepository.existsByCandidateIdAndJobId(candidateId, request.getJobId())) {
             throw new IllegalArgumentException("You have already applied for this job");
         }
 
-        // 2. Verify job exists and is open
+        // 3. Verify job exists and is open
         jobWebClient.fetchJob(request.getJobId())
                 .filter(job -> job.getStatus() == JobStatus.OPEN)
                 .blockOptional()
                 .orElseThrow(() -> new IllegalArgumentException("Job is not open for applications"));
 
-        // 3. Store resume file
+        // 4. Extract text from resume file
+        String resumeText;
+        try {
+            resumeText = documentTextExtractorService.extractText(resumeFile);
+            logger.info("Successfully extracted {} characters from resume file", resumeText.length());
+        } catch (Exception e) {
+            logger.error("Failed to extract text from resume file", e);
+            throw new IllegalArgumentException("Failed to process resume file: " + e.getMessage());
+        }
+
+        // 5. Store resume file
         String filePath = fileStorageService.store(resumeFile, candidateId + "_" + request.getJobId());
 
-        // 4. Create and save application
+        // 6. Create and save application
         Application application = new Application();
         application.setJobId(request.getJobId());
         application.setCandidateId(candidateId);
-        application.setResumeText(request.getResumeText());
+        application.setResumeText(resumeText);
         application.setResumeFilePath(filePath);
         application.setStatus(ApplicationStatus.SUBMITTED);
 
         Application savedApplication = applicationRepository.save(application);
         logger.info("Application submitted successfully with ID: {}", savedApplication.getApplicationId());
 
-        // Trigger resume scoring asynchronously
+        // 7. Trigger resume scoring asynchronously
         try {
             // Update status to AI_SCREENING
             savedApplication.setStatus(ApplicationStatus.AI_SCREENING);

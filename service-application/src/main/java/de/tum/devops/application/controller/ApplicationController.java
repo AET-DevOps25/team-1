@@ -48,8 +48,11 @@ public class ApplicationController {
     @PostMapping
     @PreAuthorize("hasRole('CANDIDATE')")
     public ResponseEntity<ApiResponse<ApplicationDto>> submitApplication(@Valid @RequestPart("request") SubmitApplicationRequest request,
-                                                                         @RequestPart(value = "file", required = false) MultipartFile resumeFile,
+                                                                         @RequestPart("resumeFile") MultipartFile resumeFile,
                                                                          @AuthenticationPrincipal Jwt jwt) {
+        if (resumeFile.isEmpty() || !"application/pdf".equals(resumeFile.getContentType())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiRespon.error("Only PDF files are allowed for resume."));
+        }
         logger.info("Candidate {} submitting application for job {}", jwt.getSubject(), request.getJobId());
         ApplicationDto applicationDto = applicationService.submitApplication(request, UUID.fromString(jwt.getSubject()), resumeFile);
         logger.info("Application submitted successfully with ID: {}", applicationDto.getApplicationId());

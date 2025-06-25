@@ -28,6 +28,12 @@ dependencies {
     implementation 'io.grpc:grpc-services'
     implementation 'org.springframework.grpc:spring-grpc-spring-boot-starter'
 
+    // PDF and document processing
+    implementation 'org.apache.pdfbox:pdfbox:3.0.1'
+    implementation 'org.apache.poi:poi:5.4.1'
+    implementation 'org.apache.poi:poi-ooxml:5.4.1'
+    implementation 'org.apache.poi:poi-scratchpad:5.4.1'
+
     // Database
     runtimeOnly 'org.postgresql:postgresql'
 

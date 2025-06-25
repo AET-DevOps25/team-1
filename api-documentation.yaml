@@ -170,10 +170,9 @@ components:
 
     CreateApplicationRequest:
       type: object
-      required: [ jobID, resumeText ]
+      required: [ jobID, resumeFile ]
       properties:
         jobID: { type: string, format: uuid }
-        resumeText: { type: string }
         resumeFile: { type: string, format: binary }
 
     UpdateApplicationRequest:

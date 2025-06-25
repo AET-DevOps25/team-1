@@ -13,24 +13,19 @@ import java.util.UUID;
  * CreateApplicationRequest:
  * properties:
  * jobID: string (uuid)
- * resumeText: string (required)
- * resumeFile: binary (optional)
+ * resumeFile: binary (required)
  */
 public class SubmitApplicationRequest {
 
     @NotNull(message = "Job ID is required")
     private UUID jobId;
 
-    @NotBlank(message = "Resume text is required")
-    private String resumeText;
-
     // Constructors
     public SubmitApplicationRequest() {
     }
 
-    public SubmitApplicationRequest(UUID jobId, String resumeText) {
+    public SubmitApplicationRequest(UUID jobId) {
         this.jobId = jobId;
-        this.resumeText = resumeText;
     }
 
     // Getters and Setters
@@ -40,13 +35,5 @@ public class SubmitApplicationRequest {
 
     public void setJobId(UUID jobId) {
         this.jobId = jobId;
-    }
-
-    public String getResumeText() {
-        return resumeText;
-    }
-
-    public void setResumeText(String resumeText) {
-        this.resumeText = resumeText;
     }
 }
