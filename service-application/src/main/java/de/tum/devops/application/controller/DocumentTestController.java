@@ -13,7 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
  * This can be removed in production
  */
 @RestController
-@RequestMapping("/api/v1/test")
+@RequestMapping("/test")
 @CrossOrigin(origins = "*")
 public class DocumentTestController {
 

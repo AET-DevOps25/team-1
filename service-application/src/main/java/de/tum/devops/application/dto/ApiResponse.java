@@ -95,4 +95,8 @@ public class ApiResponse<T> {
     public void setCode(int code) {
         this.code = code;
     }
+
+    public static <T> ApiResponse<T> error(String message, int code) {
+        return new ApiResponse<>(false, message, null, code);
+    }
 }

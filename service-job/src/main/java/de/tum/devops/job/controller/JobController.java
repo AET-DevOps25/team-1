@@ -62,7 +62,7 @@ public class JobController {
      * POST /jobs - Create new job (HR only)
      */
     @PostMapping
-    @PreAuthorize("hasAuthority('HR')")
+    @PreAuthorize("hasRole('HR')")
     public ResponseEntity<ApiResponse<JobDto>> createJob(
             @Valid @RequestBody CreateJobRequest request,
             @AuthenticationPrincipal String userId) {
@@ -112,7 +112,7 @@ public class JobController {
      * PATCH /jobs/{jobId} - Update job (HR only)
      */
     @PatchMapping("/{jobId}")
-    @PreAuthorize("hasAuthority('HR')")
+    @PreAuthorize("hasRole('HR')")
     public ResponseEntity<ApiResponse<JobDto>> updateJob(
             @PathVariable UUID jobId,
             @Valid @RequestBody UpdateJobRequest request,
@@ -138,7 +138,7 @@ public class JobController {
      * POST /jobs/{jobId}/close - Close job (HR only)
      */
     @PostMapping("/{jobId}/close")
-    @PreAuthorize("hasAuthority('HR')")
+    @PreAuthorize("hasRole('HR')")
     public ResponseEntity<ApiResponse<JobDto>> closeJob(
             @PathVariable UUID jobId,
             @AuthenticationPrincipal String userId) {
@@ -163,7 +163,7 @@ public class JobController {
      * POST /jobs/{jobId}/open - Re-open job (HR only)
      */
     @PostMapping("/{jobId}/open")
-    @PreAuthorize("hasAuthority('HR')")
+    @PreAuthorize("hasRole('HR')")
     public ResponseEntity<ApiResponse<JobDto>> openJob(
             @PathVariable UUID jobId,
             @AuthenticationPrincipal String userId) {
@@ -188,7 +188,7 @@ public class JobController {
      * DELETE /jobs/{jobId} - Delete job (HR only)
      */
     @DeleteMapping("/{jobId}")
-    @PreAuthorize("hasAuthority('HR')")
+    @PreAuthorize("hasRole('HR')")
     public ResponseEntity<Void> deleteJob(
             @PathVariable UUID jobId,
             @AuthenticationPrincipal String userId) {

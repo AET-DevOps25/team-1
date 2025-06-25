@@ -51,7 +51,7 @@ public class ApplicationController {
                                                                          @RequestPart("resumeFile") MultipartFile resumeFile,
                                                                          @AuthenticationPrincipal Jwt jwt) {
         if (resumeFile.isEmpty() || !"application/pdf".equals(resumeFile.getContentType())) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiRespon.error("Only PDF files are allowed for resume."));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error("Only PDF file is allowed for resume.", HttpStatus.BAD_REQUEST.value()));
         }
         logger.info("Candidate {} submitting application for job {}", jwt.getSubject(), request.getJobId());
         ApplicationDto applicationDto = applicationService.submitApplication(request, UUID.fromString(jwt.getSubject()), resumeFile);

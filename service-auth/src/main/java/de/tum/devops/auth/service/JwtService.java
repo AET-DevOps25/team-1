@@ -14,7 +14,6 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.Date;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -100,7 +99,7 @@ public class JwtService {
         return Jwts.builder()
                 .subject(userId.toString())
                 .claim("email", userEmail)
-                .claim("roles", List.of(role))
+                .claim("role", role)
                 .claim("fullName", fullName)
                 .issuedAt(now)
                 .expiration(expiry)
@@ -160,9 +159,7 @@ public class JwtService {
      */
     public String extractRole(String token) {
         Claims claims = parseToken(token);
-        return claims.get("roles", List.class).stream()
-                .findFirst()
-                .toString();
+        return claims.get("role", String.class);
     }
 
     /**
