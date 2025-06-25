@@ -2,23 +2,24 @@ package de.tum.devops.application.persistence.entity;
 
 import de.tum.devops.application.persistence.enums.ChatStatus;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
  * ChatSession entity mapping to chat_sessions table
- * 
+ * <p>
  * Database schema:
  * CREATE TABLE chat_sessions (
- * session_id UUID PRIMARY KEY,
- * application_id UUID REFERENCES applications(application_id) NOT NULL,
+ * session_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+ * application_id UUID NOT NULL UNIQUE,
  * status chat_status DEFAULT 'ACTIVE',
- * start_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
- * end_timestamp TIMESTAMP,
- * message_count INTEGER DEFAULT 0
+ * message_count INTEGER DEFAULT 0,
+ * started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ * completed_at TIMESTAMP
  * );
  */
 @Entity
@@ -28,15 +29,18 @@ import java.util.UUID;
 public class ChatSession {
 
     @Id
-    @Column(name = "session_id", columnDefinition = "UUID")
+    @Column(name = "session_id", columnDefinition = "UUID", updatable = false, nullable = false)
     private UUID sessionId;
 
-    @NotNull
-    @Column(name = "application_id", nullable = false, columnDefinition = "UUID")
-    private UUID applicationId;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "application_id", nullable = false, unique = true)
+    private Application application;
 
-    // Remove @Enumerated to prevent conflict with converter
-    @Column(name = "status", columnDefinition = "chat_status")
+    @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ChatMessage> messages = new ArrayList<>();
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
     private ChatStatus status = ChatStatus.ACTIVE;
 
     @CreationTimestamp
@@ -51,12 +55,11 @@ public class ChatSession {
 
     // Constructors
     public ChatSession() {
-        this.sessionId = UUID.randomUUID();
     }
 
-    public ChatSession(UUID applicationId) {
+    public ChatSession(Application application) {
         this();
-        this.applicationId = applicationId;
+        this.application = application;
     }
 
     // Getters and Setters
@@ -68,12 +71,20 @@ public class ChatSession {
         this.sessionId = sessionId;
     }
 
-    public UUID getApplicationId() {
-        return applicationId;
+    public Application getApplication() {
+        return application;
     }
 
-    public void setApplicationId(UUID applicationId) {
-        this.applicationId = applicationId;
+    public void setApplication(Application application) {
+        this.application = application;
+    }
+
+    public List<ChatMessage> getMessages() {
+        return messages;
+    }
+
+    public void setMessages(List<ChatMessage> messages) {
+        this.messages = messages;
     }
 
     public ChatStatus getStatus() {
@@ -112,7 +123,7 @@ public class ChatSession {
     public String toString() {
         return "ChatSession{" +
                 "sessionId=" + sessionId +
-                ", applicationId=" + applicationId +
+                ", application=" + application +
                 ", status=" + status +
                 ", messageCount=" + messageCount +
                 '}';

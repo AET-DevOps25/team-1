@@ -31,6 +31,11 @@ public class ChatSessionDto {
     public ChatSessionDto() {
     }
 
+    public ChatSessionDto(UUID sessionID, UUID applicationID) {
+        this.sessionID = sessionID;
+        this.applicationID = applicationID;
+    }
+
     public ChatSessionDto(UUID sessionID, UUID applicationID, ChatStatus status,
             LocalDateTime startTimestamp, LocalDateTime endTimestamp,
             Integer messageCount) {

@@ -1,21 +1,29 @@
 package de.tum.devops.application.controller;
 
-import de.tum.devops.application.dto.ApiResponse;
-import de.tum.devops.application.dto.ApplicationDto;
-import de.tum.devops.application.dto.SubmitApplicationRequest;
+import de.tum.devops.application.dto.*;
+import de.tum.devops.application.persistence.entity.ChatSession;
 import de.tum.devops.application.persistence.enums.ApplicationStatus;
 import de.tum.devops.application.service.ApplicationService;
+import de.tum.devops.application.service.ChatService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -24,181 +32,87 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/applications")
 @CrossOrigin(origins = "*")
+@Validated
 public class ApplicationController {
 
     private static final Logger logger = LoggerFactory.getLogger(ApplicationController.class);
 
     private final ApplicationService applicationService;
+    private final ChatService chatService;
 
-    public ApplicationController(ApplicationService applicationService) {
+    public ApplicationController(ApplicationService applicationService, ChatService chatService) {
         this.applicationService = applicationService;
+        this.chatService = chatService;
     }
 
-    /**
-     * POST /api/v1/applications - Submit new application (Candidates only)
-     */
     @PostMapping
     @PreAuthorize("hasRole('CANDIDATE')")
-    public ResponseEntity<ApiResponse<ApplicationDto>> submitApplication(
-            @Valid @RequestBody SubmitApplicationRequest request,
-            Authentication authentication) {
-
-        try {
-            UUID candidateId = extractUserIdFromJwt(authentication);
-            ApplicationDto submittedApplication = applicationService.submitApplication(request, candidateId);
-
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponse.created(submittedApplication));
-        } catch (IllegalArgumentException e) {
-            logger.warn("Invalid application submission: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.badRequest(e.getMessage()));
-        } catch (Exception e) {
-            logger.error("Error submitting application: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.internalError("Failed to submit application"));
-        }
+    public ResponseEntity<ApiResponse<ApplicationDto>> submitApplication(@Valid @RequestPart("request") SubmitApplicationRequest request,
+                                                                         @RequestPart(value = "file", required = false) MultipartFile resumeFile,
+                                                                         @AuthenticationPrincipal Jwt jwt) {
+        logger.info("Candidate {} submitting application for job {}", jwt.getSubject(), request.getJobId());
+        ApplicationDto applicationDto = applicationService.submitApplication(request, UUID.fromString(jwt.getSubject()), resumeFile);
+        logger.info("Application submitted successfully with ID: {}", applicationDto.getApplicationId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(applicationDto));
     }
 
-    /**
-     * GET /api/v1/applications - Get applications (role-based)
-     */
     @GetMapping
-    public ResponseEntity<ApiResponse<Map<String, Object>>> getApplications(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) ApplicationStatus status,
-            Authentication authentication) {
-
-        try {
-            String userRole = extractRoleFromJwt(authentication);
-            UUID userId = extractUserIdFromJwt(authentication);
-
-            Map<String, Object> result;
-            if ("CANDIDATE".equals(userRole)) {
-                // Candidates see only their own applications
-                result = applicationService.getCandidateApplications(userId, page, size);
-            } else {
-                // HR sees all applications for review
-                result = applicationService.getApplicationsForReview(status, page, size);
-            }
-
-            return ResponseEntity.ok(ApiResponse.success("Applications retrieved successfully", result));
-        } catch (Exception e) {
-            logger.error("Error retrieving applications: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.internalError("Failed to retrieve applications"));
-        }
+    @PreAuthorize("hasRole('HR') or hasRole('CANDIDATE')")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getApplications(@RequestParam(defaultValue = "0") @Min(0) int page,
+                                                                            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
+                                                                            @RequestParam(required = false) UUID jobId,
+                                                                            @RequestParam(required = false) ApplicationStatus status,
+                                                                            Authentication authentication,
+                                                                            @AuthenticationPrincipal Jwt jwt) {
+        Optional<? extends GrantedAuthority> userRoleOptional = authentication.getAuthorities().stream().findFirst();
+        String userRole = userRoleOptional.map(grantedAuthority -> grantedAuthority.getAuthority().replace("ROLE_", "")).orElse(null);
+        Map<String, Object> result = applicationService.getApplications(page, size, jobId, status, userRole, UUID.fromString(jwt.getSubject()));
+        return ResponseEntity.ok(ApiResponse.success("Applications retrieved", result));
     }
 
-    /**
-     * GET /api/v1/applications/{applicationId} - Get application details
-     */
     @GetMapping("/{applicationId}")
-    public ResponseEntity<ApiResponse<ApplicationDto>> getApplicationById(
-            @PathVariable UUID applicationId,
-            Authentication authentication) {
-
-        try {
-            UUID userId = extractUserIdFromJwt(authentication);
-            String userRole = extractRoleFromJwt(authentication);
-
-            ApplicationDto application = applicationService.getApplicationById(applicationId, userId, userRole);
-
-            return ResponseEntity.ok(ApiResponse.success("Application retrieved successfully", application));
-        } catch (IllegalArgumentException e) {
-            logger.warn("Application not found or not accessible: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(ApiResponse.notFound(e.getMessage()));
-        } catch (Exception e) {
-            logger.error("Error retrieving application {}: {}", applicationId, e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.internalError("Failed to retrieve application"));
-        }
+    @PreAuthorize("hasRole('HR') or hasRole('CANDIDATE')")
+    public ResponseEntity<ApiResponse<ApplicationDto>> getApplicationById(@PathVariable UUID applicationId,
+                                                                          Authentication authentication,
+                                                                          @AuthenticationPrincipal Jwt jwt) {
+        Optional<? extends GrantedAuthority> userRoleOptional = authentication.getAuthorities().stream().findFirst();
+        String userRole = userRoleOptional.map(grantedAuthority -> grantedAuthority.getAuthority().replace("ROLE_", "")).orElse(null);
+        ApplicationDto applicationDto = applicationService.getApplicationById(applicationId, userRole, UUID.fromString(jwt.getSubject()));
+        return ResponseEntity.ok(ApiResponse.success("Application retrieved", applicationDto));
     }
 
-    /**
-     * PUT /api/v1/applications/{applicationId}/status - Update application status
-     * (HR only)
-     */
-    @PutMapping("/{applicationId}/status")
+    @PatchMapping("/{applicationId}")
     @PreAuthorize("hasRole('HR')")
-    public ResponseEntity<ApiResponse<ApplicationDto>> updateApplicationStatus(
-            @PathVariable UUID applicationId,
-            @RequestParam ApplicationStatus status,
-            @RequestParam(required = false) String feedback,
-            Authentication authentication) {
-
-        try {
-            UUID hrUserId = extractUserIdFromJwt(authentication);
-            ApplicationDto updatedApplication = applicationService.updateApplicationStatus(
-                    applicationId, status, feedback, hrUserId);
-
-            return ResponseEntity
-                    .ok(ApiResponse.success("Application status updated successfully", updatedApplication));
-        } catch (IllegalArgumentException e) {
-            logger.warn("Invalid application status update: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.badRequest(e.getMessage()));
-        } catch (Exception e) {
-            logger.error("Error updating application status {}: {}", applicationId, e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.internalError("Failed to update application status"));
-        }
+    public ResponseEntity<ApiResponse<ApplicationDto>> updateApplication(@PathVariable UUID applicationId,
+                                                                         @Valid @RequestBody UpdateApplicationRequest request,
+                                                                         @AuthenticationPrincipal Jwt jwt) {
+        logger.info("HR {} updating application {} with decision: {}", jwt.getSubject(), applicationId, request.getHrDecision());
+        ApplicationDto applicationDto = applicationService.updateApplication(applicationId, request.getHrDecision(), request.getHrComments(), UUID.fromString(jwt.getSubject()));
+        return ResponseEntity.ok(ApiResponse.success("Application updated", applicationDto));
     }
 
-    /**
-     * DELETE /api/v1/applications/{applicationId} - Withdraw application
-     * (Candidates only)
-     */
-    @DeleteMapping("/{applicationId}")
+    @GetMapping("/{applicationId}/messages")
+    @PreAuthorize("hasRole('HR')")
+    public ResponseEntity<ApiResponse<Object>> getMessagesForApplication(@PathVariable UUID applicationId,
+                                                                         @RequestParam(defaultValue = "0") @Min(0) int page,
+                                                                         @RequestParam(defaultValue = "100") @Min(1) @Max(100) int size) {
+        Object messages = chatService.getMessagesByApplication(applicationId, PageRequest.of(page, size));
+        return ResponseEntity.ok(ApiResponse.success("Messages retrieved", messages));
+    }
+
+    @PostMapping("/{applicationId}/chat")
     @PreAuthorize("hasRole('CANDIDATE')")
-    public ResponseEntity<ApiResponse<String>> withdrawApplication(
-            @PathVariable UUID applicationId,
-            Authentication authentication) {
-
-        try {
-            UUID candidateId = extractUserIdFromJwt(authentication);
-            applicationService.withdrawApplication(applicationId, candidateId);
-
-            return ResponseEntity.ok(ApiResponse.success("Application withdrawn successfully", "OK"));
-        } catch (IllegalArgumentException e) {
-            logger.warn("Invalid application withdrawal: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.badRequest(e.getMessage()));
-        } catch (Exception e) {
-            logger.error("Error withdrawing application {}: {}", applicationId, e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.internalError("Failed to withdraw application"));
-        }
-    }
-
-    /**
-     * Health check endpoint
-     */
-    @GetMapping("/health")
-    public ResponseEntity<ApiResponse<String>> healthCheck() {
-        return ResponseEntity.ok(ApiResponse.success("Application service is running", "OK"));
-    }
-
-    /**
-     * Extract user ID from JWT token
-     */
-    private UUID extractUserIdFromJwt(Authentication authentication) {
-        if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
-            String userIdStr = jwt.getClaimAsString("sub");
-            return UUID.fromString(userIdStr);
-        }
-        throw new IllegalArgumentException("Invalid authentication token");
-    }
-
-    /**
-     * Extract user role from JWT token
-     */
-    private String extractRoleFromJwt(Authentication authentication) {
-        if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
-            return jwt.getClaimAsString("role");
-        }
-        throw new IllegalArgumentException("Invalid authentication token");
+    public ResponseEntity<ApiResponse<ChatSessionDto>> createOrGetChatSession(@PathVariable UUID applicationId,
+                                                                              @AuthenticationPrincipal Jwt jwt) {
+        ChatSession session = chatService.createOrGetSession(applicationId, UUID.fromString(jwt.getSubject()));
+        ChatSessionDto sessionDto = new ChatSessionDto(
+                session.getSessionId(),
+                session.getApplication().getApplicationId(),
+                session.getStatus(),
+                session.getStartedAt(),
+                session.getCompletedAt(),
+                session.getMessageCount()
+        );
+        return ResponseEntity.ok(ApiResponse.success("Session retrieved", sessionDto));
     }
 }

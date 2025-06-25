@@ -1,14 +1,15 @@
 package de.tum.devops.application.persistence.repository;
 
+import de.tum.devops.application.persistence.entity.Application;
 import de.tum.devops.application.persistence.entity.Assessment;
 import de.tum.devops.application.persistence.enums.RecommendationEnum;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -16,30 +17,58 @@ import java.util.UUID;
  */
 @Repository
 public interface AssessmentRepository extends JpaRepository<Assessment, UUID> {
-
+    
     /**
-     * Find assessments by application ID
+     * Find assessment by application ID
      */
-    Page<Assessment> findByApplicationId(UUID applicationId, Pageable pageable);
-
+    Optional<Assessment> findByApplicationApplicationId(UUID applicationId);
+    
     /**
-     * Find assessments by recommendation with pagination
+     * Find assessment by application
      */
-    Page<Assessment> findByRecommendation(RecommendationEnum recommendation, Pageable pageable);
-
+    Optional<Assessment> findByApplication(Application application);
+    
     /**
-     * Find assessments by candidate ID through application relationship
+     * Find assessments by recommendation
      */
-    @Query("SELECT a FROM Assessment a JOIN Application app ON a.applicationId = app.applicationId WHERE app.candidateId = :candidateId")
-    Page<Assessment> findByApplicationCandidateId(@Param("candidateId") UUID candidateId, Pageable pageable);
-
+    List<Assessment> findByRecommendation(RecommendationEnum recommendation);
+    
+    /**
+     * Find assessments with resume score above threshold
+     */
+    List<Assessment> findByResumeScoreGreaterThanEqual(Float minScore);
+    
+    /**
+     * Find assessments with interview score above threshold
+     */
+    List<Assessment> findByInterviewScoreGreaterThanEqual(Float minScore);
+    
+    /**
+     * Find assessments with both scores above thresholds
+     */
+    @Query("SELECT a FROM Assessment a WHERE a.resumeScore >= :minResumeScore AND a.interviewScore >= :minInterviewScore")
+    List<Assessment> findByScoresAboveThreshold(@Param("minResumeScore") Float minResumeScore, 
+                                               @Param("minInterviewScore") Float minInterviewScore);
+    
+    /**
+     * Check if assessment exists for application
+     */
+    boolean existsByApplicationApplicationId(UUID applicationId);
+    
+    /**
+     * Find assessments ordered by overall performance (average of scores)
+     */
+    @Query("SELECT a FROM Assessment a WHERE a.resumeScore IS NOT NULL AND a.interviewScore IS NOT NULL ORDER BY (a.resumeScore + a.interviewScore) DESC")
+    List<Assessment> findAllOrderByOverallScoreDesc();
+    
     /**
      * Count assessments by recommendation
      */
     long countByRecommendation(RecommendationEnum recommendation);
-
+    
     /**
-     * Check if assessment exists for application
+     * Find top performing assessments (for analytics)
      */
-    boolean existsByApplicationId(UUID applicationId);
+    @Query("SELECT a FROM Assessment a WHERE a.resumeScore IS NOT NULL AND a.interviewScore IS NOT NULL AND (a.resumeScore + a.interviewScore) / 2 >= :threshold ORDER BY (a.resumeScore + a.interviewScore) DESC")
+    List<Assessment> findTopPerformers(@Param("threshold") Float threshold);
 }

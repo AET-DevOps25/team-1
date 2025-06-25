@@ -4,7 +4,6 @@ import de.tum.devops.application.persistence.enums.RecommendationEnum;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -13,19 +12,18 @@ import java.util.UUID;
 
 /**
  * Assessment entity mapping to assessments table
- * 
+ * <p>
  * Database schema:
  * CREATE TABLE assessments (
- * assessment_id UUID PRIMARY KEY,
- * application_id UUID REFERENCES applications(application_id) NOT NULL,
+ * assessment_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+ * application_id UUID NOT NULL,
  * resume_score FLOAT CHECK (resume_score BETWEEN 0 AND 100),
  * interview_score FLOAT CHECK (interview_score BETWEEN 0 AND 100),
- * final_score FLOAT CHECK (final_score BETWEEN 0 AND 100),
- * resume_analysis TEXT,
- * interview_summary TEXT,
+ * resume_comment TEXT,
+ * interview_comment TEXT,
  * recommendation recommendation_enum,
- * creation_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
- * last_modified_timestamp TIMESTAMP
+ * created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ * updated_at TIMESTAMP
  * );
  */
 @Entity
@@ -35,12 +33,12 @@ import java.util.UUID;
 public class Assessment {
 
     @Id
-    @Column(name = "assessment_id", columnDefinition = "UUID")
+    @Column(name = "assessment_id", columnDefinition = "UUID", updatable = false, nullable = false)
     private UUID assessmentId;
 
-    @NotNull
-    @Column(name = "application_id", nullable = false, columnDefinition = "UUID")
-    private UUID applicationId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "application_id", nullable = false)
+    private Application application;
 
     @DecimalMin("0.0")
     @DecimalMax("100.0")
@@ -58,6 +56,7 @@ public class Assessment {
     @Column(name = "interview_comment", columnDefinition = "TEXT")
     private String interviewComment;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "recommendation", columnDefinition = "recommendation_enum")
     private RecommendationEnum recommendation;
 
@@ -71,12 +70,11 @@ public class Assessment {
 
     // Constructors
     public Assessment() {
-        this.assessmentId = UUID.randomUUID();
     }
 
-    public Assessment(UUID applicationId) {
+    public Assessment(Application application) {
         this();
-        this.applicationId = applicationId;
+        this.application = application;
     }
 
     // Getters and Setters
@@ -88,12 +86,12 @@ public class Assessment {
         this.assessmentId = assessmentId;
     }
 
-    public UUID getApplicationId() {
-        return applicationId;
+    public Application getApplication() {
+        return application;
     }
 
-    public void setApplicationId(UUID applicationId) {
-        this.applicationId = applicationId;
+    public void setApplication(Application application) {
+        this.application = application;
     }
 
     public Float getResumeScore() {
@@ -156,7 +154,7 @@ public class Assessment {
     public String toString() {
         return "Assessment{" +
                 "assessmentId=" + assessmentId +
-                ", applicationId=" + applicationId +
+                ", application=" + application +
                 ", resumeScore=" + resumeScore +
                 ", interviewScore=" + interviewScore +
                 ", recommendation=" + recommendation +

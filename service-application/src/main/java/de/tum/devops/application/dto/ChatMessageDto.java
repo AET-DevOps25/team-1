@@ -1,5 +1,6 @@
 package de.tum.devops.application.dto;
 
+import de.tum.devops.application.persistence.entity.ChatMessage;
 import de.tum.devops.application.persistence.enums.MessageSender;
 
 import java.time.LocalDateTime;
@@ -27,6 +28,14 @@ public class ChatMessageDto {
 
     // Constructors
     public ChatMessageDto() {
+    }
+
+    public ChatMessageDto(ChatMessage chatMessage) {
+        this.messageID = chatMessage.getMessageId();
+        this.sessionID = chatMessage.getSession().getSessionId();
+        this.sender = chatMessage.getSender();
+        this.content = chatMessage.getContent();
+        this.timestamp = chatMessage.getSentAt();
     }
 
     public ChatMessageDto(UUID messageID, UUID sessionID, MessageSender sender,

@@ -2,6 +2,7 @@ package de.tum.devops.application;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 /**
  * AI-HR Application Management Service
@@ -16,9 +17,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @version 1.0.0
  */
 @SpringBootApplication
-public class ResumeApplicationService {
+@EnableAsync
+public class ApplicationApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(ResumeApplicationService.class, args);
+        SpringApplication.run(ApplicationApplication.class, args);
     }
 }

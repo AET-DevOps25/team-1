@@ -1,16 +1,57 @@
 // service-application specific dependencies
+repositories {
+    mavenCentral()
+    maven { url = 'https://repo.spring.io/milestone' }
+    maven { url = 'https://repo.spring.io/snapshot' }
+}
+
+ext {
+    set('springGrpcVersion', "0.8.0")
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.grpc:spring-grpc-dependencies:${springGrpcVersion}"
+    }
+}
+
 dependencies {
-    // Shared persistence module
-    // implementation project(':persistence')
-    
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-security'
+
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
-    
+
+    // Reactive WebClient for inter-service calls
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+    // gRPC dependencies
+    implementation 'io.grpc:grpc-services'
+    implementation 'org.springframework.grpc:spring-grpc-spring-boot-starter'
+
     // Database
     runtimeOnly 'org.postgresql:postgresql'
-    
+
     // Testing
     testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'org.testcontainers:postgresql'
-} 
+    testImplementation 'org.springframework.grpc:spring-grpc-test'
+}
+
+protobuf {
+    protoc {
+        artifact = 'com.google.protobuf:protoc'
+    }
+    plugins {
+        grpc {
+            artifact = 'io.grpc:protoc-gen-grpc-java'
+        }
+    }
+    generateProtoTasks {
+        all()*.plugins {
+            grpc {
+                option 'jakarta_omit'
+                option '@generated=omit'
+            }
+        }
+    }
+}

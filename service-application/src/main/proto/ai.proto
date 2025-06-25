@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+package ai;
+
+option java_package = "de.tum.devops.grpc.ai";
+option java_outer_classname = "AIServiceProto";
+option java_multiple_files = true;
+
+import "google/protobuf/timestamp.proto";
+
+// Represents a single chat message exchanged between AI and candidate
+message ChatMessage {
+  enum Sender {
+    SENDER_UNSPECIFIED = 0;
+    SENDER_AI = 1;
+    SENDER_CANDIDATE = 2;
+  }
+
+  Sender sender = 1;
+  string content = 2;
+}
+
+// --------------------------- ChatReply ---------------------------
+message ChatReplyRequest {
+  string resume_text = 1;
+  string job_title = 2;
+  string job_description = 3;
+  string job_requirements = 4;
+  repeated ChatMessage chat_history = 5;
+}
+
+message ChatReplyResponse {
+  string ai_message = 1;
+}
+
+// --------------------------- ScoreResume ---------------------------
+message ScoreResumeRequest {
+  string resume_text = 1;
+  string job_requirements = 2;
+}
+
+message ScoreResumeResponse {
+  double resume_score = 1;
+  string comment = 2;
+  RecommendationEnum recommendation = 3;
+}
+
+// --------------------------- ScoreInterview ---------------------------
+message ScoreInterviewRequest {
+  string resume_text = 1;
+  string job_requirements = 2;
+  repeated ChatMessage chat_history = 3;
+}
+
+message ScoreInterviewResponse {
+  double interview_score = 1;
+  string comment = 2;
+  RecommendationEnum recommendation = 3;
+}
+
+// Recommendation enum to indicate overall suggestion based on scores
+enum RecommendationEnum {
+  RECOMMEND = 0;
+  CONSIDER = 1;
+  NOT_RECOMMEND = 2;
+}
+
+// --------------------------- AI Service ---------------------------
+service AIService {
+  // Streamed chat with AI assistant. Server streams incremental ai_message tokens.
+  rpc ChatReply(ChatReplyRequest) returns (stream ChatReplyResponse);
+
+  // Scores a resume against job requirements.
+  rpc ScoreResume(ScoreResumeRequest) returns (ScoreResumeResponse);
+
+  // Scores an interview chat against resume and job requirements.
+  rpc ScoreInterview(ScoreInterviewRequest) returns (ScoreInterviewResponse);
+}

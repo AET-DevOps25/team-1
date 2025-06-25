@@ -8,23 +8,25 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
  * Application entity mapping to applications table
- * 
+ * <p>
  * Database schema:
  * CREATE TABLE applications (
- * application_id UUID PRIMARY KEY,
- * submission_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
- * status application_status NOT NULL DEFAULT 'SUBMITTED',
- * resume_content TEXT NOT NULL,
- * original_resume_filename VARCHAR(255),
- * last_modified_timestamp TIMESTAMP,
- * candidate_id UUID REFERENCES users(user_id) NOT NULL,
- * job_id UUID REFERENCES jobs(job_id) NOT NULL,
+ * application_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+ * job_id UUID NOT NULL,
+ * candidate_id UUID NOT NULL,
+ * status application_status DEFAULT 'SUBMITTED',
+ * resume_text TEXT NOT NULL,
+ * resume_file_path TEXT,
  * hr_decision decision_enum,
- * hr_comments TEXT
+ * hr_comments TEXT,
+ * submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ * updated_at TIMESTAMP
  * );
  */
 @Entity
@@ -35,7 +37,7 @@ import java.util.UUID;
 public class Application {
 
     @Id
-    @Column(name = "application_id", columnDefinition = "UUID")
+    @Column(name = "application_id", columnDefinition = "UUID", updatable = false, nullable = false)
     private UUID applicationId;
 
     @CreationTimestamp
@@ -65,15 +67,21 @@ public class Application {
     @Column(name = "job_id", nullable = false, columnDefinition = "UUID")
     private UUID jobId;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "hr_decision", columnDefinition = "decision_enum")
     private DecisionEnum hrDecision;
 
     @Column(name = "hr_comments", columnDefinition = "TEXT")
     private String hrComments;
 
+    @OneToMany(mappedBy = "application", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Assessment> assessments = new ArrayList<>();
+
+    @OneToOne(mappedBy = "application", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private ChatSession chatSession;
+
     // Constructors
     public Application() {
-        this.applicationId = UUID.randomUUID();
     }
 
     public Application(UUID candidateId, UUID jobId, String resumeText, String resumeFilePath) {
@@ -163,6 +171,22 @@ public class Application {
 
     public void setHrComments(String hrComments) {
         this.hrComments = hrComments;
+    }
+
+    public List<Assessment> getAssessments() {
+        return assessments;
+    }
+
+    public void setAssessments(List<Assessment> assessments) {
+        this.assessments = assessments;
+    }
+
+    public ChatSession getChatSession() {
+        return chatSession;
+    }
+
+    public void setChatSession(ChatSession chatSession) {
+        this.chatSession = chatSession;
     }
 
     @Override

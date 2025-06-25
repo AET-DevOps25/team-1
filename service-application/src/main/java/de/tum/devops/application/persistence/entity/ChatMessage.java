@@ -10,14 +10,14 @@ import java.util.UUID;
 
 /**
  * ChatMessage entity mapping to chat_messages table
- * 
+ * <p>
  * Database schema:
  * CREATE TABLE chat_messages (
- * message_id UUID PRIMARY KEY,
- * session_id UUID REFERENCES chat_sessions(session_id) NOT NULL,
+ * message_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+ * session_id UUID NOT NULL,
  * sender message_sender NOT NULL,
  * content TEXT NOT NULL,
- * timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+ * sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
  * );
  */
 @Entity
@@ -27,12 +27,12 @@ import java.util.UUID;
 public class ChatMessage {
 
     @Id
-    @Column(name = "message_id", columnDefinition = "UUID")
+    @Column(name = "message_id", columnDefinition = "UUID", updatable = false, nullable = false)
     private UUID messageId;
 
-    @NotNull
-    @Column(name = "session_id", nullable = false, columnDefinition = "UUID")
-    private UUID sessionId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "session_id", nullable = false)
+    private ChatSession session;
 
     @NotNull
     @Column(name = "sender", nullable = false, columnDefinition = "message_sender")
@@ -48,12 +48,11 @@ public class ChatMessage {
 
     // Constructors
     public ChatMessage() {
-        this.messageId = UUID.randomUUID();
     }
 
-    public ChatMessage(UUID sessionId, MessageSender sender, String content) {
+    public ChatMessage(ChatSession session, MessageSender sender, String content) {
         this();
-        this.sessionId = sessionId;
+        this.session = session;
         this.sender = sender;
         this.content = content;
     }
@@ -67,12 +66,12 @@ public class ChatMessage {
         this.messageId = messageId;
     }
 
-    public UUID getSessionId() {
-        return sessionId;
+    public ChatSession getSession() {
+        return session;
     }
 
-    public void setSessionId(UUID sessionId) {
-        this.sessionId = sessionId;
+    public void setSession(ChatSession session) {
+        this.session = session;
     }
 
     public MessageSender getSender() {
@@ -103,7 +102,7 @@ public class ChatMessage {
     public String toString() {
         return "ChatMessage{" +
                 "messageId=" + messageId +
-                ", sessionId=" + sessionId +
+                ", session=" + session +
                 ", sender=" + sender +
                 ", sentAt=" + sentAt +
                 '}';

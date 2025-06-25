@@ -79,6 +79,42 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle security exceptions
+     */
+    @ExceptionHandler(SecurityException.class)
+    public ResponseEntity<ApiResponse<String>> handleSecurityException(
+            SecurityException ex) {
+
+        logger.warn("Security violation: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.forbidden(ex.getMessage()));
+    }
+
+    /**
+     * Handle file storage exceptions
+     */
+    @ExceptionHandler(FileStorageException.class)
+    public ResponseEntity<ApiResponse<String>> handleFileStorageException(
+            FileStorageException ex) {
+
+        logger.error("File storage error: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.internalError("File storage error: " + ex.getMessage()));
+    }
+
+    /**
+     * Handle file not found exceptions
+     */
+    @ExceptionHandler(FileNotFoundException.class)
+    public ResponseEntity<ApiResponse<String>> handleFileNotFoundException(
+            FileNotFoundException ex) {
+
+        logger.warn("File not found: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.notFound(ex.getMessage()));
+    }
+
+    /**
      * Handle all other exceptions
      */
     @ExceptionHandler(Exception.class)

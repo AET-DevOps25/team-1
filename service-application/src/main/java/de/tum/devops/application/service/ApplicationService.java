@@ -1,14 +1,13 @@
 package de.tum.devops.application.service;
 
+import de.tum.devops.application.client.AuthWebClient;
+import de.tum.devops.application.client.JobWebClient;
 import de.tum.devops.application.dto.*;
 import de.tum.devops.application.persistence.entity.Application;
 import de.tum.devops.application.persistence.enums.ApplicationStatus;
+import de.tum.devops.application.persistence.enums.ChatStatus;
+import de.tum.devops.application.persistence.enums.DecisionEnum;
 import de.tum.devops.application.persistence.repository.ApplicationRepository;
-import de.tum.devops.persistence.entity.Job;
-import de.tum.devops.persistence.entity.User;
-import de.tum.devops.persistence.enums.JobStatus;
-import de.tum.devops.persistence.repository.JobRepository;
-import de.tum.devops.persistence.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -16,14 +15,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Service layer for application management operations
- */
 @Service
 @Transactional
 public class ApplicationService {
@@ -31,215 +27,156 @@ public class ApplicationService {
     private static final Logger logger = LoggerFactory.getLogger(ApplicationService.class);
 
     private final ApplicationRepository applicationRepository;
-    private final UserRepository userRepository;
-    private final JobRepository jobRepository;
+    private final JobWebClient jobWebClient;
+    private final AuthWebClient authWebClient;
+    private final FileStorageService fileStorageService;
+    private final AIIntegrationService aiIntegrationService;
 
     public ApplicationService(ApplicationRepository applicationRepository,
-            UserRepository userRepository,
-            JobRepository jobRepository) {
+                              JobWebClient jobWebClient,
+                              AuthWebClient authWebClient,
+                              FileStorageService fileStorageService,
+                              AIIntegrationService aiIntegrationService) {
         this.applicationRepository = applicationRepository;
-        this.userRepository = userRepository;
-        this.jobRepository = jobRepository;
+        this.jobWebClient = jobWebClient;
+        this.authWebClient = authWebClient;
+        this.fileStorageService = fileStorageService;
+        this.aiIntegrationService = aiIntegrationService;
     }
 
-    /**
-     * Submit new application (Candidates only)
-     */
-    public ApplicationDto submitApplication(SubmitApplicationRequest request, UUID candidateId) {
-        logger.info("Submitting application for job: {} by candidate: {}", request.getJobID(), candidateId);
+    public ApplicationDto submitApplication(SubmitApplicationRequest request, UUID candidateId, MultipartFile resumeFile) {
+        logger.info("Submitting application for job {} by candidate {}", request.getJobId(), candidateId);
 
-        // Check if job exists and is open
-        if (!jobRepository.existsByJobIdAndStatus(request.getJobID(), JobStatus.OPEN)) {
-            throw new IllegalArgumentException("Job is not available for applications");
-        }
-
-        // Check for duplicate application
-        if (applicationRepository.existsByCandidateIdAndJobId(candidateId, request.getJobID())) {
+        // 1. Check if candidate has already applied for this job
+        if (applicationRepository.existsByCandidateIdAndJobId(candidateId, request.getJobId())) {
             throw new IllegalArgumentException("You have already applied for this job");
         }
 
-        // Create application with resume content
-        Application application = new Application(
-                candidateId,
-                request.getJobID(),
-                request.getResumeContent(),
-                request.getOriginalResumeFilename());
+        // 2. Verify job exists and is open
+        jobWebClient.fetchJob(request.getJobId())
+                .filter(job -> job.getStatus() == JobStatus.OPEN)
+                .blockOptional()
+                .orElseThrow(() -> new IllegalArgumentException("Job is not open for applications"));
 
-        application = applicationRepository.save(application);
-        logger.info("Application submitted successfully: {}", application.getApplicationId());
+        // 3. Store resume file
+        String filePath = fileStorageService.store(resumeFile, candidateId + "_" + request.getJobId());
 
-        return convertToDto(application);
+        // 4. Create and save application
+        Application application = new Application();
+        application.setJobId(request.getJobId());
+        application.setCandidateId(candidateId);
+        application.setResumeText(request.getResumeText());
+        application.setResumeFilePath(filePath);
+        application.setStatus(ApplicationStatus.SUBMITTED);
+
+        Application savedApplication = applicationRepository.save(application);
+        logger.info("Application submitted successfully with ID: {}", savedApplication.getApplicationId());
+
+        // Trigger resume scoring asynchronously
+        try {
+            // Update status to AI_SCREENING
+            savedApplication.setStatus(ApplicationStatus.AI_SCREENING);
+            savedApplication = applicationRepository.save(savedApplication);
+
+            // Score resume
+            aiIntegrationService.scoreResumeAsync(savedApplication.getApplicationId());
+        } catch (Exception e) {
+            logger.error("Failed to score resume for application {}", savedApplication.getApplicationId(), e);
+            // Don't fail the application submission if scoring fails
+        }
+
+        return convertToDto(savedApplication);
     }
 
-    /**
-     * Get applications for candidate (own applications)
-     */
     @Transactional(readOnly = true)
-    public Map<String, Object> getCandidateApplications(UUID candidateId, int page, int size) {
-        logger.info("Getting applications for candidate: {}", candidateId);
-
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Application> applicationPage = applicationRepository.findByCandidateId(candidateId, pageable);
-
-        Page<ApplicationDto> applicationDtoPage = applicationPage.map(this::convertToDto);
-
-        return Map.of(
-                "content", applicationDtoPage.getContent(),
-                "pageInfo", new PageInfo(
-                        applicationDtoPage.getNumber(),
-                        applicationDtoPage.getSize(),
-                        applicationDtoPage.getTotalElements(),
-                        applicationDtoPage.getTotalPages()));
-    }
-
-    /**
-     * Get applications for HR review (all applications or filtered)
-     */
-    @Transactional(readOnly = true)
-    public Map<String, Object> getApplicationsForReview(ApplicationStatus status, int page, int size) {
-        logger.info("Getting applications for HR review with status: {}", status);
-
+    public Map<String, Object> getApplications(int page, int size, UUID jobId, ApplicationStatus status, String userRole, UUID userId) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Application> applicationPage;
 
-        if (status != null) {
-            applicationPage = applicationRepository.findByStatus(status, pageable);
+        if ("HR".equals(userRole)) {
+            // HR can see all applications with optional filtering
+            if (jobId != null && status != null) {
+                applicationPage = applicationRepository.findByJobIdAndStatus(jobId, status, pageable);
+            } else if (jobId != null) {
+                applicationPage = applicationRepository.findByJobId(jobId, pageable);
+            } else if (status != null) {
+                applicationPage = applicationRepository.findByStatus(status, pageable);
+            } else {
+                applicationPage = applicationRepository.findAll(pageable);
+            }
         } else {
-            applicationPage = applicationRepository.findAll(pageable);
+            // Candidates can only see their own applications with optional filtering
+            if (jobId != null && status != null) {
+                applicationPage = applicationRepository.findByCandidateIdAndJobIdAndStatus(userId, jobId, status, pageable);
+            } else if (jobId != null) {
+                applicationPage = applicationRepository.findByCandidateIdAndJobId(userId, jobId, pageable);
+            } else if (status != null) {
+                applicationPage = applicationRepository.findByCandidateIdAndStatus(userId, status, pageable);
+            } else {
+                applicationPage = applicationRepository.findByCandidateId(userId, pageable);
+            }
         }
 
-        Page<ApplicationDto> applicationDtoPage = applicationPage.map(this::convertToDto);
+        Page<ApplicationDto> dtoPage = applicationPage.map(this::convertToDto);
 
         return Map.of(
-                "content", applicationDtoPage.getContent(),
-                "pageInfo", new PageInfo(
-                        applicationDtoPage.getNumber(),
-                        applicationDtoPage.getSize(),
-                        applicationDtoPage.getTotalElements(),
-                        applicationDtoPage.getTotalPages()));
+                "content", dtoPage.getContent(),
+                "pageInfo", new PageInfo(dtoPage.getNumber(), dtoPage.getSize(), dtoPage.getTotalElements(), dtoPage.getTotalPages())
+        );
     }
 
-    /**
-     * Get application details by ID
-     */
     @Transactional(readOnly = true)
-    public ApplicationDto getApplicationById(UUID applicationId, UUID userId, String userRole) {
-        logger.info("Getting application details: {} for user: {} with role: {}", applicationId, userId, userRole);
-
-        Application application = applicationRepository.findById(applicationId)
+    public ApplicationDto getApplicationById(UUID applicationId, String userRole, UUID userId) {
+        // Use the enhanced query to fetch application with all related entities
+        Application application = applicationRepository.findByIdWithRelations(applicationId)
                 .orElseThrow(() -> new IllegalArgumentException("Application not found"));
 
-        // Role-based access control
+        // Skip security check for internal calls
         if ("CANDIDATE".equals(userRole) && !application.getCandidateId().equals(userId)) {
-            throw new IllegalArgumentException("Access denied: You can only view your own applications");
+            throw new SecurityException("Access denied");
         }
 
         return convertToDto(application);
     }
 
-    /**
-     * Update application status (HR only)
-     */
-    public ApplicationDto updateApplicationStatus(UUID applicationId,
-            ApplicationStatus newStatus,
-            String hrComments,
-            UUID hrUserId) {
-        logger.info("Updating application status: {} to {} by HR: {}", applicationId, newStatus, hrUserId);
-
+    public ApplicationDto updateApplication(UUID applicationId, DecisionEnum hrDecision, String hrComments, UUID hrUserId) {
         Application application = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new IllegalArgumentException("Application not found"));
 
-        application.setStatus(newStatus);
-        if (hrComments != null) {
-            application.setHrComments(hrComments);
+        application.setHrDecision(hrDecision);
+        application.setHrComments(hrComments);
+        // Potentially update status based on decision
+        if (hrDecision == DecisionEnum.HIRED) {
+            application.setStatus(ApplicationStatus.HIRED);
+        } else if (hrDecision == DecisionEnum.REJECTED) {
+            application.setStatus(ApplicationStatus.REJECTED);
         }
-        application.setLastModifiedTimestamp(LocalDateTime.now());
 
-        application = applicationRepository.save(application);
-
-        logger.info("Application status updated successfully: {}", applicationId);
-        return convertToDto(application);
+        Application updatedApplication = applicationRepository.save(application);
+        return convertToDto(updatedApplication);
     }
 
-    /**
-     * Delete/withdraw application (Candidates only, if pending)
-     */
-    public void withdrawApplication(UUID applicationId, UUID candidateId) {
-        logger.info("Withdrawing application: {} by candidate: {}", applicationId, candidateId);
-
-        Application application = applicationRepository.findById(applicationId)
-                .orElseThrow(() -> new IllegalArgumentException("Application not found"));
-
-        // Verify ownership
-        if (!application.getCandidateId().equals(candidateId)) {
-            throw new IllegalArgumentException("You can only withdraw your own applications");
-        }
-
-        // Only allow withdrawal if submitted (pending review)
-        if (application.getStatus() != ApplicationStatus.SUBMITTED) {
-            throw new IllegalArgumentException("You can only withdraw submitted applications");
-        }
-
-        applicationRepository.delete(application);
-        logger.info("Application withdrawn successfully: {}", applicationId);
-    }
-
-    /**
-     * Convert Application entity to ApplicationDto
-     */
     private ApplicationDto convertToDto(Application application) {
-        // Get user and job information
-        User user = userRepository.findById(application.getCandidateId())
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        // Fetch related data if needed, e.g., user details
+        UserDto candidate = authWebClient.fetchUser(application.getCandidateId()).block();
+        JobDto job = jobWebClient.fetchJob(application.getJobId()).block();
 
-        Job job = jobRepository.findById(application.getJobId())
-                .orElseThrow(() -> new IllegalArgumentException("Job not found"));
-
-        // Convert User to UserDto
-        UserDto candidate = new UserDto(
-                user.getUserId(),
-                user.getFullName(),
-                user.getEmail(),
-                user.getRole().toString(),
-                user.getCreationTimestamp()
-        );
-
-        // Get HR creator information for JobDto
-        User hrCreator = userRepository.findById(job.getHrCreatorId())
-                .orElseThrow(() -> new IllegalArgumentException("HR creator not found"));
-
-        // Convert HR creator to UserDto
-        UserDto hrCreatorDto = new UserDto(
-                hrCreator.getUserId(),
-                hrCreator.getFullName(),
-                hrCreator.getEmail(),
-                hrCreator.getRole().toString(),
-                hrCreator.getCreationTimestamp()
-        );
-
-        // Convert Job to JobDto
-        JobDto jobDto = new JobDto(
-                job.getJobId(),
-                job.getTitle(),
-                job.getDescription(),
-                job.getRequirements(),
-                job.getStatus().toString(),
-                job.getCreationTimestamp(),
-                job.getClosingDate(),
-                job.getLastModifiedTimestamp(),
-                hrCreatorDto
-        );
+        ChatStatus chatStatus = application.getChatSession() != null ? application.getChatSession().getStatus() : null;
 
         return new ApplicationDto(
                 application.getApplicationId(),
-                application.getSubmissionTimestamp(),
+                application.getJobId(),
+                application.getCandidateId(),
                 application.getStatus(),
-                application.getResumeContent(),
-                application.getOriginalResumeFilename(),
-                application.getLastModifiedTimestamp(),
-                candidate,
-                jobDto,
-                null // assessment will be populated separately if needed
+                application.getResumeText(),
+                application.getResumeFilePath(),
+                application.getHrDecision(),
+                application.getHrComments(),
+                chatStatus,
+                application.getSubmittedAt(),
+                application.getUpdatedAt(),
+                candidate, // assuming ApplicationDto is updated to hold UserDto
+                job // assuming ApplicationDto is updated to hold JobDto
         );
     }
 }

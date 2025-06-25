@@ -13,51 +13,40 @@ import java.util.UUID;
  * CreateApplicationRequest:
  * properties:
  * jobID: string (uuid)
- * resumeContent: string (required)
- * originalResumeFilename: string (optional)
+ * resumeText: string (required)
+ * resumeFile: binary (optional)
  */
 public class SubmitApplicationRequest {
 
     @NotNull(message = "Job ID is required")
-    private UUID jobID;
+    private UUID jobId;
 
-    @NotBlank(message = "Resume content is required")
-    private String resumeContent;
-
-    private String originalResumeFilename;
+    @NotBlank(message = "Resume text is required")
+    private String resumeText;
 
     // Constructors
     public SubmitApplicationRequest() {
     }
 
-    public SubmitApplicationRequest(UUID jobID, String resumeContent, String originalResumeFilename) {
-        this.jobID = jobID;
-        this.resumeContent = resumeContent;
-        this.originalResumeFilename = originalResumeFilename;
+    public SubmitApplicationRequest(UUID jobId, String resumeText) {
+        this.jobId = jobId;
+        this.resumeText = resumeText;
     }
 
     // Getters and Setters
-    public UUID getJobID() {
-        return jobID;
+    public UUID getJobId() {
+        return jobId;
     }
 
-    public void setJobID(UUID jobID) {
-        this.jobID = jobID;
+    public void setJobId(UUID jobId) {
+        this.jobId = jobId;
     }
 
-    public String getResumeContent() {
-        return resumeContent;
+    public String getResumeText() {
+        return resumeText;
     }
 
-    public void setResumeContent(String resumeContent) {
-        this.resumeContent = resumeContent;
-    }
-
-    public String getOriginalResumeFilename() {
-        return originalResumeFilename;
-    }
-
-    public void setOriginalResumeFilename(String originalResumeFilename) {
-        this.originalResumeFilename = originalResumeFilename;
+    public void setResumeText(String resumeText) {
+        this.resumeText = resumeText;
     }
 }

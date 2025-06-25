@@ -13,7 +13,7 @@ public class JobDto {
     private String title;
     private String description;
     private String requirements;
-    private String status;
+    private JobStatus status;
     private LocalDateTime creationTimestamp;
     private LocalDate closingDate;
     private LocalDateTime lastModifiedTimestamp;
@@ -24,8 +24,8 @@ public class JobDto {
     }
 
     public JobDto(UUID jobID, String title, String description, String requirements,
-            String status, LocalDateTime creationTimestamp, LocalDate closingDate,
-            LocalDateTime lastModifiedTimestamp, UserDto hrCreator) {
+                  JobStatus status, LocalDateTime creationTimestamp, LocalDate closingDate,
+                  LocalDateTime lastModifiedTimestamp, UserDto hrCreator) {
         this.jobID = jobID;
         this.title = title;
         this.description = description;
@@ -70,11 +70,11 @@ public class JobDto {
         this.requirements = requirements;
     }
 
-    public String getStatus() {
+    public JobStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(JobStatus status) {
         this.status = status;
     }
 
