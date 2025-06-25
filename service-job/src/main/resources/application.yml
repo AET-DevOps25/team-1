@@ -46,4 +46,4 @@ cors:
 
 service:
   auth:
-    base-url: ${AUTH_BASE_URL:http://auth-service/api/v1}
+    base-url: ${AUTH_BASE_URL:http://ai-hr-dev-auth:8080}
