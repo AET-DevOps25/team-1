@@ -44,6 +44,8 @@ public class SecurityConfig {
                         // Health check endpoints
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/actuator/info").permitAll()
+                        .requestMatchers("/test/**").permitAll()
+
                         // All other requests require authentication
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
