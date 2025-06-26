@@ -65,10 +65,10 @@ public class JobController {
     @PreAuthorize("hasRole('HR')")
     public ResponseEntity<ApiResponse<JobDto>> createJob(
             @Valid @RequestBody CreateJobRequest request,
-            @AuthenticationPrincipal String userId) {
+            @AuthenticationPrincipal Jwt jwt) {
 
         try {
-            UUID hrCreatorId = UUID.fromString(userId);
+            UUID hrCreatorId = UUID.fromString(jwt.getSubject());
             JobDto createdJob = jobService.createJob(request, hrCreatorId);
 
             return ResponseEntity.status(HttpStatus.CREATED)
@@ -91,7 +91,6 @@ public class JobController {
     public ResponseEntity<ApiResponse<JobDto>> getJobById(
             @PathVariable UUID jobId,
             Authentication authentication) {
-
         try {
             String userRole = extractRole(authentication);
             JobDto job = jobService.getJobById(jobId, userRole);
@@ -141,10 +140,10 @@ public class JobController {
     @PreAuthorize("hasRole('HR')")
     public ResponseEntity<ApiResponse<JobDto>> closeJob(
             @PathVariable UUID jobId,
-            @AuthenticationPrincipal String userId) {
+            @AuthenticationPrincipal Jwt jwt) {
 
         try {
-            UUID hrUserId = UUID.fromString(userId);
+            UUID hrUserId = UUID.fromString(jwt.getSubject());
             JobDto closedJob = jobService.closeJob(jobId, hrUserId);
 
             return ResponseEntity.ok(ApiResponse.success("Job closed successfully", closedJob));
@@ -166,10 +165,10 @@ public class JobController {
     @PreAuthorize("hasRole('HR')")
     public ResponseEntity<ApiResponse<JobDto>> openJob(
             @PathVariable UUID jobId,
-            @AuthenticationPrincipal String userId) {
+            @AuthenticationPrincipal Jwt jwt) {
 
         try {
-            UUID hrUserId = UUID.fromString(userId);
+            UUID hrUserId = UUID.fromString(jwt.getSubject());
             JobDto openedJob = jobService.reopenJob(jobId, hrUserId);
 
             return ResponseEntity.ok(ApiResponse.success("Job reopened successfully", openedJob));
@@ -191,10 +190,9 @@ public class JobController {
     @PreAuthorize("hasRole('HR')")
     public ResponseEntity<Void> deleteJob(
             @PathVariable UUID jobId,
-            @AuthenticationPrincipal String userId) {
-
+            @AuthenticationPrincipal Jwt jwt) {
         try {
-            UUID hrUserId = UUID.fromString(userId);
+            UUID hrUserId = UUID.fromString(jwt.getSubject());
             jobService.deleteJob(jobId, hrUserId);
             return ResponseEntity.noContent().build();
         } catch (IllegalArgumentException e) {

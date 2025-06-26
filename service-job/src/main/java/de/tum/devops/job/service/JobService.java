@@ -20,7 +20,6 @@ import java.util.UUID;
  * Service layer for job management operations
  */
 @Service
-@Transactional
 public class JobService {
 
     private static final Logger logger = LoggerFactory.getLogger(JobService.class);
@@ -43,19 +42,19 @@ public class JobService {
         Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
         Page<Job> jobPage;
 
-        if (status != null) {
-            // Filter by specific status
-            jobPage = jobRepository.findByStatus(status, pageable);
-        } else {
-            // Role-based filtering
-            if ("HR".equals(userRole)) {
-                // HR can see all jobs
-                jobPage = jobRepository.findAll(pageable);
+        // Role-based filtering
+        if ("HR".equals(userRole)) {
+            // HR can see all jobs
+            if (status != null) {
+                // Filter by specific status
+                jobPage = jobRepository.findByStatus(status, pageable);
             } else {
-                // Candidates can only see OPEN jobs
-                JobStatus[] candidateVisibleStatuses = {JobStatus.OPEN};
-                jobPage = jobRepository.findByStatusIn(candidateVisibleStatuses, pageable);
+                jobPage = jobRepository.findAll(pageable);
             }
+        } else {
+            // Candidates can only see OPEN jobs
+            JobStatus[] candidateVisibleStatuses = {JobStatus.OPEN};
+            jobPage = jobRepository.findByStatusIn(candidateVisibleStatuses, pageable);
         }
 
         Page<JobDto> jobDtoPage = jobPage.map(this::convertToDto);
