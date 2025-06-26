@@ -26,6 +26,7 @@ tags:
   - name: Jobs
   - name: Applications
   - name: Chat
+  - name: Assessments
   - name: Internal-User
   - name: Internal-Job
   - name: Internal-Application
@@ -187,6 +188,19 @@ components:
       required: [ content ]
       properties:
         content: { type: string }
+
+    Assessment:
+      type: object
+      properties:
+        assessmentId: { type: string, format: uuid }
+        applicationId: { type: string, format: uuid }
+        resumeScore: { type: number, format: float, minimum: 0, maximum: 100 }
+        interviewScore: { type: number, format: float, minimum: 0, maximum: 100 }
+        resumeComment: { type: string }
+        interviewComment: { type: string }
+        recommendation: { type: string, enum: [ RECOMMEND, CONSIDER, NOT_RECOMMEND ] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
 
 # ─────────────────────────────────────────────────────────────
 security:
@@ -596,6 +610,114 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiResponse"
+
+  # ========== ASSESSMENT SERVICE ==========
+  /assessments/applications/{applicationId}/score-resume:
+    parameters:
+      - {
+        name: applicationId,
+        in: path,
+        required: true,
+        schema: { type: string, format: uuid },
+      }
+    post:
+      tags: [ Assessments ]
+      security: [ { BearerAuth: [ ] } ]
+      summary: Trigger AI resume scoring for an application
+      description: >
+        HR can manually trigger resume scoring for a specific application.
+        This will use AI to analyze the candidate's resume against job requirements
+        and generate a score, comment, and recommendation.
+      responses:
+        "200":
+          description: Resume scored successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Assessment"
+        "400":
+          description: Bad request (invalid application ID, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden (not HR role)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Application not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /assessments/applications/{applicationId}/score-interview:
+    parameters:
+      - {
+        name: applicationId,
+        in: path,
+        required: true,
+        schema: { type: string, format: uuid },
+      }
+    post:
+      tags: [ Assessments ]
+      security: [ { BearerAuth: [ ] } ]
+      summary: Trigger AI interview scoring for an application
+      description: >
+        HR can manually trigger interview scoring for a specific application.
+        This will use AI to analyze the chat history between the candidate and AI
+        to generate an interview score, comment, and recommendation.
+        Requires that the candidate has completed at least one chat session.
+      responses:
+        "200":
+          description: Interview scored successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Assessment"
+        "400":
+          description: Bad request (no chat history, invalid application ID, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden (not HR role)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Application not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   # ========== APPLICATION SERVICE (internal) ==========
   /internal/api/v1/applications/{applicationId}:
