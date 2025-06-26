@@ -57,9 +57,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // If token is valid, and there's no authentication in the context
             if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 // Extract role from claims
-                String roleClaim = claims.get("roles", List.class).stream()
-                        .findFirst()
-                        .toString();
+                String roleClaim = claims.get("role", String.class);
                 List<GrantedAuthority> authorities;
                 if (!roleClaim.isBlank()) {
                     // Spring Security expects roles to be prefixed with "ROLE_"
