@@ -1,6 +1,8 @@
 package de.tum.devops.application.service;
 
+import de.tum.devops.application.dto.ChatInitializationDto;
 import de.tum.devops.application.dto.ChatMessageDto;
+import de.tum.devops.application.dto.ChatSessionDto;
 import de.tum.devops.application.persistence.entity.Application;
 import de.tum.devops.application.persistence.entity.ChatMessage;
 import de.tum.devops.application.persistence.entity.ChatSession;
@@ -21,6 +23,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -42,6 +45,37 @@ public class ChatService {
         this.chatMessageRepository = chatMessageRepository;
         this.applicationRepository = applicationRepository;
         this.aiIntegrationService = aiIntegrationService;
+    }
+
+    @Transactional
+    public ChatInitializationDto initiateChatSession(UUID applicationId, UUID candidateId) {
+        ChatSession session = createOrGetSession(applicationId, candidateId);
+        ChatMessage initialMessage;
+
+        List<ChatMessage> aiMessages = chatMessageRepository.findBySessionIdAndSenderOrderBySentAtAsc(session.getSessionId(), MessageSender.AI);
+
+        if (aiMessages.isEmpty()) {
+            logger.info("No AI messages found for session {}, generating initial question.", session.getSessionId());
+            initialMessage = addInitialAiMessage(session);
+        } else {
+            initialMessage = aiMessages.getLast();
+            logger.info("Found existing initial AI message {} for session {}.", initialMessage.getMessageId(), session.getSessionId());
+        }
+
+        return new ChatInitializationDto(new ChatSessionDto(session), new ChatMessageDto(initialMessage));
+    }
+
+    private ChatMessage addInitialAiMessage(ChatSession session) {
+        // Create a dummy message to trigger the AI's first question
+        ChatMessage triggerMessage = new ChatMessage();
+        triggerMessage.setMessageId(UUID.randomUUID());
+        triggerMessage.setSession(session);
+        triggerMessage.setSender(MessageSender.CANDIDATE);
+        triggerMessage.setContent("generate first question");
+        chatMessageRepository.save(triggerMessage);
+
+        // Get the AI's first response
+        return aiIntegrationService.processAndGetAIResponse(session.getSessionId(), session);
     }
 
     public ChatSession createOrGetSession(UUID applicationId, UUID candidateId) {

@@ -116,18 +116,10 @@ public class ApplicationController {
 
     @PostMapping("/{applicationId}/chat")
     @PreAuthorize("hasRole('CANDIDATE')")
-    public ResponseEntity<ApiResponse<ChatSessionDto>> createOrGetChatSession(@PathVariable UUID applicationId,
-                                                                              @AuthenticationPrincipal Jwt jwt) {
-        ChatSession session = chatService.createOrGetSession(applicationId, UUID.fromString(jwt.getSubject()));
-        ChatSessionDto sessionDto = new ChatSessionDto(
-                session.getSessionId(),
-                session.getApplication().getApplicationId(),
-                session.getStatus(),
-                session.getStartedAt(),
-                session.getCompletedAt(),
-                session.getMessageCount()
-        );
-        return ResponseEntity.ok(ApiResponse.success("Session retrieved", sessionDto));
+    public ResponseEntity<ApiResponse<ChatInitializationDto>> createOrGetChatSession(@PathVariable UUID applicationId,
+                                                                               @AuthenticationPrincipal Jwt jwt) {
+        ChatInitializationDto chatInitializationDto = chatService.initiateChatSession(applicationId, UUID.fromString(jwt.getSubject()));
+        return ResponseEntity.ok(ApiResponse.success("Session retrieved", chatInitializationDto));
     }
 
     @PostMapping("/{applicationId}/chat/complete")

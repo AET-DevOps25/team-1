@@ -51,8 +51,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, UUID> 
     /**
      * Find latest message in a session
      */
-    @Query("SELECT m FROM ChatMessage m WHERE m.session.sessionId = :sessionId ORDER BY m.sentAt DESC LIMIT 1")
-    ChatMessage findLatestMessageBySessionId(@Param("sessionId") UUID sessionId);
+    ChatMessage findFirstBySessionSessionIdOrderBySentAtDesc(UUID sessionId);
 
     /**
      * Find messages by application ID (through session relationship)
