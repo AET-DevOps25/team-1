@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -104,7 +103,7 @@ public class ApplicationService {
     }
 
     @Transactional(readOnly = true)
-    public Map<String, Object> getApplications(int page, int size, UUID jobId, ApplicationStatus status, String userRole, UUID userId) {
+    public Page<ApplicationDto> getApplications(int page, int size, UUID jobId, ApplicationStatus status, String userRole, UUID userId) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Application> applicationPage;
 
@@ -138,10 +137,7 @@ public class ApplicationService {
             dtoPage.getContent().forEach(this::hideImportantFieldsForCandidate);
         }
 
-        return Map.of(
-                "content", dtoPage.getContent(),
-                "pageInfo", new PageInfo(dtoPage.getNumber(), dtoPage.getSize(), dtoPage.getTotalElements(), dtoPage.getTotalPages())
-        );
+        return dtoPage;
     }
 
     @Transactional(readOnly = true)

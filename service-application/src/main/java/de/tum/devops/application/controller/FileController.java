@@ -1,6 +1,7 @@
 package de.tum.devops.application.controller;
 
 import de.tum.devops.application.dto.ApiResponse;
+import de.tum.devops.application.dto.FileInfoDto;
 import de.tum.devops.application.persistence.entity.Application;
 import de.tum.devops.application.service.ApplicationService;
 import de.tum.devops.application.service.FileStorageService;
@@ -119,7 +120,7 @@ public class FileController {
      */
     @GetMapping("/applications/{applicationId}/resume/info")
     @PreAuthorize("hasRole('HR')")
-    public ResponseEntity<ApiResponse<Object>> getResumeFileInfo(@PathVariable UUID applicationId) {
+    public ResponseEntity<ApiResponse<FileInfoDto>> getResumeFileInfo(@PathVariable UUID applicationId) {
         try {
             // Get application
             Application application = applicationService.getById(applicationId);
@@ -138,20 +139,20 @@ public class FileController {
             long fileSize = fileStorageService.getFileSize(filename);
             String fileContentType = fileStorageService.getContentType(filename);
 
-            Object fileInfo = new Object() {
-                public final UUID applicationId = application.getApplicationId();
-                public final String originalFileName = filename;
-                public final String downloadFileName = "resume_" + application.getApplicationId() + getFileExtension(filename);
-                public final long size = fileSize;
-                public final String contentType = fileContentType;
-                public final boolean exists = true;
-                public final String resumeTextPreview = application.getResumeText() != null ?
-                        (application.getResumeText().length() > 200 ?
-                                application.getResumeText().substring(0, 200) + "..." :
-                                application.getResumeText()) : null;
-                public final int resumeTextLength = application.getResumeText() != null ?
-                        application.getResumeText().length() : 0;
-            };
+            FileInfoDto fileInfo = new FileInfoDto(
+                    application.getApplicationId(),
+                    filename,
+                    "resume_" + application.getApplicationId() + getFileExtension(filename),
+                    fileSize,
+                    fileContentType,
+                    true,
+                    application.getResumeText() != null ?
+                            (application.getResumeText().length() > 200 ?
+                                    application.getResumeText().substring(0, 200) + "..." :
+                                    application.getResumeText()) : null,
+                    application.getResumeText() != null ?
+                            application.getResumeText().length() : 0
+            );
 
             return ResponseEntity.ok(ApiResponse.success("Resume file info retrieved", fileInfo));
 
