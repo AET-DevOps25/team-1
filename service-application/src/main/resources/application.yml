@@ -65,3 +65,10 @@ service:
     base-url: ${AUTH_BASE_URL:http://localhost:8080}
   job:
     base-url: ${JOB_BASE_URL:http://localhost:8081}
+
+# Management endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus

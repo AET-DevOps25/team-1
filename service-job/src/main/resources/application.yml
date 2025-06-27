@@ -47,3 +47,10 @@ cors:
 service:
   auth:
     base-url: ${AUTH_BASE_URL:http://ai-hr-dev-auth:8080}
+
+# Management endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
