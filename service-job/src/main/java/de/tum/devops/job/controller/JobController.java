@@ -3,6 +3,7 @@ package de.tum.devops.job.controller;
 import de.tum.devops.job.dto.ApiResponse;
 import de.tum.devops.job.dto.CreateJobRequest;
 import de.tum.devops.job.dto.JobDto;
+import de.tum.devops.job.dto.PagedResponseDto;
 import de.tum.devops.job.dto.UpdateJobRequest;
 import de.tum.devops.job.persistence.enums.JobStatus;
 import de.tum.devops.job.service.JobService;
@@ -40,7 +41,7 @@ public class JobController {
      * GET /jobs - List jobs with pagination and filtering
      */
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<JobDto>>> getJobs(
+    public ResponseEntity<ApiResponse<PagedResponseDto<JobDto>>> getJobs(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) JobStatus status,
@@ -48,9 +49,10 @@ public class JobController {
 
         try {
             String userRole = extractRole(authentication);
-            Page<JobDto> result = jobService.getJobs(page, size, status, userRole);
+            Page<JobDto> resultPage = jobService.getJobs(page, size, status, userRole);
+            PagedResponseDto<JobDto> pagedResponse = new PagedResponseDto<>(resultPage);
 
-            return ResponseEntity.ok(ApiResponse.success("Jobs retrieved successfully", result));
+            return ResponseEntity.ok(ApiResponse.success("Jobs retrieved successfully", pagedResponse));
         } catch (Exception e) {
             logger.error("Error retrieving jobs: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

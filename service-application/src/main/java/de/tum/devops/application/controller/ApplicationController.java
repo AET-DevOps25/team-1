@@ -73,7 +73,7 @@ public class ApplicationController {
 
     @GetMapping
     @PreAuthorize("hasRole('HR') or hasRole('CANDIDATE')")
-    public ResponseEntity<ApiResponse<Page<ApplicationDto>>> getApplications(@RequestParam(defaultValue = "0") @Min(0) int page,
+    public ResponseEntity<ApiResponse<PagedResponseDto<ApplicationDto>>> getApplications(@RequestParam(defaultValue = "0") @Min(0) int page,
                                                                              @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
                                                                              @RequestParam(required = false) UUID jobId,
                                                                              @RequestParam(required = false) ApplicationStatus status,
@@ -81,8 +81,9 @@ public class ApplicationController {
                                                                              @AuthenticationPrincipal Jwt jwt) {
         Optional<? extends GrantedAuthority> userRoleOptional = authentication.getAuthorities().stream().findFirst();
         String userRole = userRoleOptional.map(grantedAuthority -> grantedAuthority.getAuthority().replace("ROLE_", "")).orElse(null);
-        Page<ApplicationDto> result = applicationService.getApplications(page, size, jobId, status, userRole, UUID.fromString(jwt.getSubject()));
-        return ResponseEntity.ok(ApiResponse.success("Applications retrieved", result));
+        Page<ApplicationDto> resultPage = applicationService.getApplications(page, size, jobId, status, userRole, UUID.fromString(jwt.getSubject()));
+        PagedResponseDto<ApplicationDto> pagedResponse = new PagedResponseDto<>(resultPage);
+        return ResponseEntity.ok(ApiResponse.success("Applications retrieved", pagedResponse));
     }
 
     @GetMapping("/{applicationId}")
@@ -108,11 +109,12 @@ public class ApplicationController {
 
     @GetMapping("/{applicationId}/messages")
     @PreAuthorize("hasRole('HR')")
-    public ResponseEntity<ApiResponse<Page<ChatMessage>>> getMessagesForApplication(@PathVariable UUID applicationId,
+    public ResponseEntity<ApiResponse<PagedResponseDto<ChatMessage>>> getMessagesForApplication(@PathVariable UUID applicationId,
                                                                                     @RequestParam(defaultValue = "0") @Min(0) int page,
                                                                                     @RequestParam(defaultValue = "100") @Min(1) @Max(100) int size) {
-        Page<ChatMessage> messages = chatService.getMessagesByApplication(applicationId, page, size);
-        return ResponseEntity.ok(ApiResponse.success("Messages retrieved", messages));
+        Page<ChatMessage> messagesPage = chatService.getMessagesByApplication(applicationId, page, size);
+        PagedResponseDto<ChatMessage> pagedResponse = new PagedResponseDto<>(messagesPage);
+        return ResponseEntity.ok(ApiResponse.success("Messages retrieved", pagedResponse));
     }
 
     @PostMapping("/{applicationId}/chat")

@@ -2,6 +2,7 @@ package de.tum.devops.application.controller;
 
 import de.tum.devops.application.dto.ApiResponse;
 import de.tum.devops.application.dto.ChatMessageDto;
+import de.tum.devops.application.dto.PagedResponseDto;
 import de.tum.devops.application.dto.SendChatMessageRequest;
 import de.tum.devops.application.service.ChatService;
 import jakarta.validation.Valid;
@@ -62,7 +63,7 @@ public class ChatController {
 
     @GetMapping("/{sessionId}/messages")
     @PreAuthorize("hasRole('CANDIDATE') or hasRole('HR')")
-    public ResponseEntity<ApiResponse<Page<ChatMessageDto>>> getMessages(@PathVariable UUID sessionId,
+    public ResponseEntity<ApiResponse<PagedResponseDto<ChatMessageDto>>> getMessages(@PathVariable UUID sessionId,
                                                                          @RequestParam(defaultValue = "0") @Min(0) int page,
                                                                          @RequestParam(defaultValue = "100") @Min(1) @Max(100) int size,
                                                                          Authentication authentication,
@@ -74,7 +75,8 @@ public class ChatController {
         if (userRole == null) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.forbidden("Access denied"));
         }
-        Page<ChatMessageDto> messages = chatService.getMessagesBySession(sessionId, UUID.fromString(userId), page, size, userRole);
-        return ResponseEntity.ok(ApiResponse.success("Messages retrieved", messages));
+        Page<ChatMessageDto> messagesPage = chatService.getMessagesBySession(sessionId, UUID.fromString(userId), page, size, userRole);
+        PagedResponseDto<ChatMessageDto> pagedResponse = new PagedResponseDto<>(messagesPage);
+        return ResponseEntity.ok(ApiResponse.success("Messages retrieved", pagedResponse));
     }
 }
