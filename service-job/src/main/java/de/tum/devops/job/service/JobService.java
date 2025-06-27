@@ -1,19 +1,23 @@
 package de.tum.devops.job.service;
 
 import de.tum.devops.job.client.AuthWebClient;
-import de.tum.devops.job.dto.*;
+import de.tum.devops.job.dto.CreateJobRequest;
+import de.tum.devops.job.dto.JobDto;
+import de.tum.devops.job.dto.UpdateJobRequest;
+import de.tum.devops.job.dto.UserDto;
 import de.tum.devops.job.persistence.entity.Job;
 import de.tum.devops.job.persistence.enums.JobStatus;
 import de.tum.devops.job.persistence.repository.JobRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -36,10 +40,10 @@ public class JobService {
      * Get paginated job list with filtering based on user role
      */
     @Transactional(readOnly = true)
-    public Map<String, Object> getJobs(int page, int size, JobStatus status, String userRole) {
+    public Page<JobDto> getJobs(int page, int size, JobStatus status, String userRole) {
         logger.info("Getting jobs - page: {}, size: {}, status: {}, userRole: {}", page, size, status, userRole);
 
-        Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.Direction.DESC, "createdAt");
         Page<Job> jobPage;
 
         // Role-based filtering
@@ -58,14 +62,11 @@ public class JobService {
         }
 
         Page<JobDto> jobDtoPage = jobPage.map(this::convertToDto);
+        if (!"HR".equals(userRole)) {
+            jobDtoPage.map(this::hideSensitiveData);
+        }
 
-        return Map.of(
-                "content", jobDtoPage.getContent(),
-                "pageInfo", new PageInfo(
-                        jobDtoPage.getNumber(),
-                        jobDtoPage.getSize(),
-                        jobDtoPage.getTotalElements(),
-                        jobDtoPage.getTotalPages()));
+        return jobDtoPage;
     }
 
     /**
@@ -222,5 +223,10 @@ public class JobService {
                 job.getCreatedAt(),
                 job.getUpdatedAt(),
                 hrCreatorDto);
+    }
+
+    private JobDto hideSensitiveData(JobDto jobDto) {
+        jobDto.getHrCreator().setUserID(null);
+        return jobDto;
     }
 }

@@ -9,6 +9,7 @@ import de.tum.devops.job.service.JobService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,7 +18,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -40,7 +40,7 @@ public class JobController {
      * GET /jobs - List jobs with pagination and filtering
      */
     @GetMapping
-    public ResponseEntity<ApiResponse<Map<String, Object>>> getJobs(
+    public ResponseEntity<ApiResponse<Page<JobDto>>> getJobs(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) JobStatus status,
@@ -48,7 +48,7 @@ public class JobController {
 
         try {
             String userRole = extractRole(authentication);
-            Map<String, Object> result = jobService.getJobs(page, size, status, userRole);
+            Page<JobDto> result = jobService.getJobs(page, size, status, userRole);
 
             return ResponseEntity.ok(ApiResponse.success("Jobs retrieved successfully", result));
         } catch (Exception e) {

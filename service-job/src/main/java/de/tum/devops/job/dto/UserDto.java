@@ -1,6 +1,5 @@
 package de.tum.devops.job.dto;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -12,18 +11,16 @@ public class UserDto {
     private String fullName;
     private String email;
     private String role;
-    private LocalDateTime creationTimestamp;
 
     // Constructors
     public UserDto() {
     }
 
-    public UserDto(UUID userID, String fullName, String email, String role, LocalDateTime creationTimestamp) {
+    public UserDto(UUID userID, String fullName, String email, String role) {
         this.userID = userID;
         this.fullName = fullName;
         this.email = email;
         this.role = role;
-        this.creationTimestamp = creationTimestamp;
     }
 
     // Getters and Setters
@@ -57,13 +54,5 @@ public class UserDto {
 
     public void setRole(String role) {
         this.role = role;
-    }
-
-    public LocalDateTime getCreationTimestamp() {
-        return creationTimestamp;
-    }
-
-    public void setCreationTimestamp(LocalDateTime creationTimestamp) {
-        this.creationTimestamp = creationTimestamp;
     }
 }

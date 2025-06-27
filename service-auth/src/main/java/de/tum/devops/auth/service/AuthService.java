@@ -40,7 +40,7 @@ public class AuthService {
                 user.getFullName(),
                 user.getEmail(),
                 user.getRole(),
-                user.getCreationTimestamp());
+                user.getCreatedAt());
     }
 
     /**
@@ -79,7 +79,7 @@ public class AuthService {
         user.setPasswordHash(passwordEncoder.encode(password));
         user.setRole(UserRole.CANDIDATE);
 
-        user = userRepository.save(user);
+        user = userRepository.saveAndFlush(user);
         return generateAuthResponse(user);
     }
 

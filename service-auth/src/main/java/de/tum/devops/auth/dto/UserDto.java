@@ -7,7 +7,7 @@ import java.util.UUID;
 
 /**
  * User DTO according to api-documentation.yaml
- * 
+ * <p>
  * Schema definition:
  * UserDto:
  * properties:
@@ -23,18 +23,18 @@ public class UserDto {
     private String fullName;
     private String email;
     private UserRole role;
-    private LocalDateTime creationTimestamp;
+    private LocalDateTime createdAt;
 
     // Constructors
     public UserDto() {
     }
 
-    public UserDto(UUID userID, String fullName, String email, UserRole role, LocalDateTime creationTimestamp) {
+    public UserDto(UUID userID, String fullName, String email, UserRole role, LocalDateTime createdAt) {
         this.userID = userID;
         this.fullName = fullName;
         this.email = email;
         this.role = role;
-        this.creationTimestamp = creationTimestamp;
+        this.createdAt = createdAt;
     }
 
     // Getters and Setters
@@ -70,11 +70,11 @@ public class UserDto {
         this.role = role;
     }
 
-    public LocalDateTime getCreationTimestamp() {
-        return creationTimestamp;
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 
-    public void setCreationTimestamp(LocalDateTime creationTimestamp) {
-        this.creationTimestamp = creationTimestamp;
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 }

@@ -100,7 +100,7 @@ public class UserService {
                 user.getFullName(),
                 user.getEmail(),
                 user.getRole(),
-                user.getCreationTimestamp());
+                user.getCreatedAt());
     }
 
     /**

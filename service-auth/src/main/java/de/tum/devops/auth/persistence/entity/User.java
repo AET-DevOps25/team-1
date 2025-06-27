@@ -49,7 +49,7 @@ public class User {
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
-    private LocalDateTime creationTimestamp;
+    private LocalDateTime createdAt;
 
     // Constructors
     public User() {
@@ -105,12 +105,12 @@ public class User {
         this.role = role;
     }
 
-    public LocalDateTime getCreationTimestamp() {
-        return creationTimestamp;
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 
-    public void setCreationTimestamp(LocalDateTime creationTimestamp) {
-        this.creationTimestamp = creationTimestamp;
+    public void setCreatedAt(LocalDateTime creationTimestamp) {
+        this.createdAt = creationTimestamp;
     }
 
     @Override
@@ -120,7 +120,7 @@ public class User {
                 ", fullName='" + fullName + '\'' +
                 ", email='" + email + '\'' +
                 ", role=" + role +
-                ", creationTimestamp=" + creationTimestamp +
+                ", creationTimestamp=" + createdAt +
                 '}';
     }
 }
