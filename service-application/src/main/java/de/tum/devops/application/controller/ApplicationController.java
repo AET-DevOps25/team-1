@@ -14,7 +14,6 @@ import jakarta.validation.constraints.Null;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -112,7 +111,7 @@ public class ApplicationController {
     public ResponseEntity<ApiResponse<Page<ChatMessage>>> getMessagesForApplication(@PathVariable UUID applicationId,
                                                                                     @RequestParam(defaultValue = "0") @Min(0) int page,
                                                                                     @RequestParam(defaultValue = "100") @Min(1) @Max(100) int size) {
-        Page<ChatMessage> messages = chatService.getMessagesByApplication(applicationId, PageRequest.of(page, size));
+        Page<ChatMessage> messages = chatService.getMessagesByApplication(applicationId, page, size);
         return ResponseEntity.ok(ApiResponse.success("Messages retrieved", messages));
     }
 

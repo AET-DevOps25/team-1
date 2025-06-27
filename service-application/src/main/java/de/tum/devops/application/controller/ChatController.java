@@ -10,7 +10,6 @@ import jakarta.validation.constraints.Min;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -75,7 +74,7 @@ public class ChatController {
         if (userRole == null) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.forbidden("Access denied"));
         }
-        Page<ChatMessageDto> messages = chatService.getMessagesBySession(sessionId, UUID.fromString(userId), PageRequest.of(page, size), userRole);
+        Page<ChatMessageDto> messages = chatService.getMessagesBySession(sessionId, UUID.fromString(userId), page, size, userRole);
         return ResponseEntity.ok(ApiResponse.success("Messages retrieved", messages));
     }
 }

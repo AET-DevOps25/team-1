@@ -16,7 +16,9 @@ import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -263,7 +265,7 @@ public class ChatService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ChatMessageDto> getMessagesBySession(UUID sessionId, UUID candidateId, Pageable pageable, String role) {
+    public Page<ChatMessageDto> getMessagesBySession(UUID sessionId, UUID candidateId, int page, int size, String role) {
         ChatSession session = chatSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Chat session not found"));
 
@@ -272,19 +274,19 @@ public class ChatService {
                 throw new SecurityException("Access denied to this chat's history");
             }
         }
-
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "sentAt"));
         Page<ChatMessage> messages = chatMessageRepository.findBySessionIdOrderBySentAtAsc(sessionId, pageable);
         // transform messages to ChatMessageDto
         return messages.map(ChatMessageDto::new);
     }
 
     @Transactional(readOnly = true)
-    public Page<ChatMessage> getMessagesByApplication(UUID applicationId, Pageable pageable) {
+    public Page<ChatMessage> getMessagesByApplication(UUID applicationId, int page, int size) {
         // Verify application exists
         if (!applicationRepository.existsById(applicationId)) {
             throw new IllegalArgumentException("Application not found");
         }
-
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "sentAt"));
         // Use the direct query method for better performance
         return chatMessageRepository.findByApplicationIdOrderBySentAtAsc(applicationId, pageable);
     }
