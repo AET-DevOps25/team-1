@@ -1,5 +1,7 @@
 package de.tum.devops.job.dto;
 
+import jakarta.annotation.Nullable;
+
 import java.util.UUID;
 
 /**
@@ -7,6 +9,7 @@ import java.util.UUID;
  */
 public class UserDto {
 
+    @Nullable
     private UUID userID;
     private String fullName;
     private String email;
@@ -16,7 +19,7 @@ public class UserDto {
     public UserDto() {
     }
 
-    public UserDto(UUID userID, String fullName, String email, String role) {
+    public UserDto(@Nullable UUID userID, String fullName, String email, String role) {
         this.userID = userID;
         this.fullName = fullName;
         this.email = email;
@@ -24,11 +27,12 @@ public class UserDto {
     }
 
     // Getters and Setters
+    @Nullable
     public UUID getUserID() {
         return userID;
     }
 
-    public void setUserID(UUID userID) {
+    public void setUserID(@Nullable UUID userID) {
         this.userID = userID;
     }
 

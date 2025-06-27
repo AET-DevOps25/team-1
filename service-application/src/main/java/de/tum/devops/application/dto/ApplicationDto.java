@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import de.tum.devops.application.persistence.enums.ApplicationStatus;
 import de.tum.devops.application.persistence.enums.ChatStatus;
 import de.tum.devops.application.persistence.enums.DecisionEnum;
+import jakarta.annotation.Nullable;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -36,7 +37,9 @@ public class ApplicationDto {
     private UUID jobId;
     private UUID candidateId;
     private ApplicationStatus status;
+    @Nullable
     private String resumeText;
+    @Nullable
     private String resumeFilePath;
     private DecisionEnum hrDecision;
     private String hrComments;
@@ -47,12 +50,13 @@ public class ApplicationDto {
     // Optional fields for rich response
     private UserDto candidate;
     private JobDto job;
+    @Nullable
     private AssessmentDto assessment;
 
     public ApplicationDto() {
     }
 
-    public ApplicationDto(UUID applicationId, UUID jobId, UUID candidateId, ApplicationStatus status, String resumeText, String resumeFilePath, DecisionEnum hrDecision, String hrComments, ChatStatus chatStatus, LocalDateTime submittedAt, LocalDateTime updatedAt, UserDto candidate, JobDto job, AssessmentDto assessment) {
+    public ApplicationDto(UUID applicationId, UUID jobId, UUID candidateId, ApplicationStatus status, @Nullable String resumeText, @Nullable String resumeFilePath, DecisionEnum hrDecision, String hrComments, ChatStatus chatStatus, LocalDateTime submittedAt, LocalDateTime updatedAt, UserDto candidate, JobDto job, @Nullable AssessmentDto assessment) {
         this.applicationId = applicationId;
         this.jobId = jobId;
         this.candidateId = candidateId;
@@ -103,19 +107,21 @@ public class ApplicationDto {
         this.status = status;
     }
 
+    @Nullable
     public String getResumeText() {
         return resumeText;
     }
 
-    public void setResumeText(String resumeText) {
+    public void setResumeText(@Nullable String resumeText) {
         this.resumeText = resumeText;
     }
 
+    @Nullable
     public String getResumeFilePath() {
         return resumeFilePath;
     }
 
-    public void setResumeFilePath(String resumeFilePath) {
+    public void setResumeFilePath(@Nullable String resumeFilePath) {
         this.resumeFilePath = resumeFilePath;
     }
 
@@ -175,11 +181,12 @@ public class ApplicationDto {
         this.job = job;
     }
 
+    @Nullable
     public AssessmentDto getAssessment() {
         return assessment;
     }
 
-    public void setAssessment(AssessmentDto assessment) {
+    public void setAssessment(@Nullable AssessmentDto assessment) {
         this.assessment = assessment;
     }
 }
