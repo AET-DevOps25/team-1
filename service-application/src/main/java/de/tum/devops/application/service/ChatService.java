@@ -1,5 +1,6 @@
 package de.tum.devops.application.service;
 
+import de.tum.devops.application.dto.ChatMessageDto;
 import de.tum.devops.application.persistence.entity.Application;
 import de.tum.devops.application.persistence.entity.ChatMessage;
 import de.tum.devops.application.persistence.entity.ChatSession;
@@ -53,6 +54,7 @@ public class ChatService {
                 .orElseGet(() -> {
                     logger.info("Creating new chat session for application {}", applicationId);
                     ChatSession newSession = new ChatSession();
+                    newSession.setSessionId(UUID.randomUUID());
                     newSession.setApplication(application);
                     return chatSessionRepository.save(newSession);
                 });
@@ -68,6 +70,7 @@ public class ChatService {
 
         // Save candidate's message
         ChatMessage userMessage = new ChatMessage();
+        userMessage.setMessageId(UUID.randomUUID());
         userMessage.setSession(session);
         userMessage.setSender(MessageSender.CANDIDATE);
         userMessage.setContent(content);
@@ -121,15 +124,19 @@ public class ChatService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ChatMessage> getMessagesBySession(UUID sessionId, UUID candidateId, Pageable pageable) {
+    public Page<ChatMessageDto> getMessagesBySession(UUID sessionId, UUID candidateId, Pageable pageable, String role) {
         ChatSession session = chatSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Chat session not found"));
 
-        if (!session.getApplication().getCandidateId().equals(candidateId)) {
-            throw new SecurityException("Access denied to this chat's history");
+        if (role.equals("CANDIDATE")) {
+            if (!session.getApplication().getCandidateId().equals(candidateId)) {
+                throw new SecurityException("Access denied to this chat's history");
+            }
         }
 
-        return chatMessageRepository.findBySessionIdOrderBySentAtAsc(sessionId, pageable);
+        Page<ChatMessage> messages = chatMessageRepository.findBySessionIdOrderBySentAtAsc(sessionId, pageable);
+        // transform messages to ChatMessageDto
+        return messages.map(ChatMessageDto::new);
     }
 
     @Transactional(readOnly = true)

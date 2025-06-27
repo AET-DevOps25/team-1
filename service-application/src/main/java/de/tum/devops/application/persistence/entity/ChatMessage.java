@@ -35,6 +35,7 @@ public class ChatMessage {
     private ChatSession session;
 
     @NotNull
+    @Enumerated(EnumType.STRING)
     @Column(name = "sender", nullable = false, columnDefinition = "message_sender")
     private MessageSender sender;
 

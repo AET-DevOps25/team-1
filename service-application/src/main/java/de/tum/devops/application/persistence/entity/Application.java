@@ -45,6 +45,7 @@ public class Application {
     private LocalDateTime submittedAt;
 
     @NotNull
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, columnDefinition = "application_status")
     private ApplicationStatus status = ApplicationStatus.SUBMITTED;
 

@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.UUID;
 
 @Service
-@Transactional
 public class ApplicationService {
 
     private static final Logger logger = LoggerFactory.getLogger(ApplicationService.class);
@@ -30,23 +29,21 @@ public class ApplicationService {
     private final JobWebClient jobWebClient;
     private final AuthWebClient authWebClient;
     private final FileStorageService fileStorageService;
-    private final AIIntegrationService aiIntegrationService;
     private final DocumentTextExtractorService documentTextExtractorService;
 
     public ApplicationService(ApplicationRepository applicationRepository,
                               JobWebClient jobWebClient,
                               AuthWebClient authWebClient,
                               FileStorageService fileStorageService,
-                              AIIntegrationService aiIntegrationService,
                               DocumentTextExtractorService documentTextExtractorService) {
         this.applicationRepository = applicationRepository;
         this.jobWebClient = jobWebClient;
         this.authWebClient = authWebClient;
         this.fileStorageService = fileStorageService;
-        this.aiIntegrationService = aiIntegrationService;
         this.documentTextExtractorService = documentTextExtractorService;
     }
 
+    @Transactional
     public ApplicationDto submitApplication(SubmitApplicationRequest request, UUID candidateId, MultipartFile resumeFile) {
         logger.info("Submitting application for job {} by candidate {}", request.getJobId(), candidateId);
 
@@ -81,6 +78,7 @@ public class ApplicationService {
 
         // 6. Create and save application
         Application application = new Application();
+        application.setApplicationId(UUID.randomUUID());
         application.setJobId(request.getJobId());
         application.setCandidateId(candidateId);
         application.setResumeText(resumeText);
@@ -90,20 +88,14 @@ public class ApplicationService {
         Application savedApplication = applicationRepository.save(application);
         logger.info("Application submitted successfully with ID: {}", savedApplication.getApplicationId());
 
-        // 7. Trigger resume scoring asynchronously
-        try {
-            // Update status to AI_SCREENING
-            savedApplication.setStatus(ApplicationStatus.AI_SCREENING);
-            savedApplication = applicationRepository.save(savedApplication);
+        // 7. save application
+        // Update status to AI_SCREENING
+        savedApplication.setStatus(ApplicationStatus.AI_SCREENING);
+        savedApplication = applicationRepository.save(savedApplication);
 
-            // Score resume
-            aiIntegrationService.scoreResumeAsync(savedApplication.getApplicationId());
-        } catch (Exception e) {
-            logger.error("Failed to score resume for application {}", savedApplication.getApplicationId(), e);
-            // Don't fail the application submission if scoring fails
-        }
-
-        return convertToDto(savedApplication);
+        ApplicationDto applicationDto = convertToDto(savedApplication);
+        hideImportantFieldsForCandidate(applicationDto);
+        return applicationDto;
     }
 
     @Transactional(readOnly = true)
@@ -137,6 +129,10 @@ public class ApplicationService {
 
         Page<ApplicationDto> dtoPage = applicationPage.map(this::convertToDto);
 
+        if (userRole != null && userRole.equals("CANDIDATE")) {
+            dtoPage.getContent().forEach(this::hideImportantFieldsForCandidate);
+        }
+
         return Map.of(
                 "content", dtoPage.getContent(),
                 "pageInfo", new PageInfo(dtoPage.getNumber(), dtoPage.getSize(), dtoPage.getTotalElements(), dtoPage.getTotalPages())
@@ -154,9 +150,16 @@ public class ApplicationService {
             throw new SecurityException("Access denied");
         }
 
-        return convertToDto(application);
+        ApplicationDto applicationDto = convertToDto(application);
+
+        if ("CANDIDATE".equals(userRole)) {
+            hideImportantFieldsForCandidate(applicationDto);
+        }
+
+        return applicationDto;
     }
 
+    @Transactional
     public ApplicationDto updateApplication(UUID applicationId, DecisionEnum hrDecision, String hrComments, UUID hrUserId) {
         Application application = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new IllegalArgumentException("Application not found"));
@@ -196,5 +199,11 @@ public class ApplicationService {
                 candidate, // assuming ApplicationDto is updated to hold UserDto
                 job // assuming ApplicationDto is updated to hold JobDto
         );
+    }
+
+    private void hideImportantFieldsForCandidate(ApplicationDto applicationDto) {
+        applicationDto.setResumeText(null);
+        applicationDto.setResumeFilePath(null);
+        applicationDto.getJob().getHrCreator().setUserID(null);
     }
 }

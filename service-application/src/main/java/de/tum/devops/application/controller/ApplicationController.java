@@ -3,6 +3,7 @@ package de.tum.devops.application.controller;
 import de.tum.devops.application.dto.*;
 import de.tum.devops.application.persistence.entity.ChatSession;
 import de.tum.devops.application.persistence.enums.ApplicationStatus;
+import de.tum.devops.application.service.AIIntegrationService;
 import de.tum.devops.application.service.ApplicationService;
 import de.tum.devops.application.service.ChatService;
 import jakarta.validation.Valid;
@@ -39,10 +40,12 @@ public class ApplicationController {
 
     private final ApplicationService applicationService;
     private final ChatService chatService;
+    private final AIIntegrationService aiIntegrationService;
 
-    public ApplicationController(ApplicationService applicationService, ChatService chatService) {
+    public ApplicationController(ApplicationService applicationService, ChatService chatService, AIIntegrationService aiIntegrationService) {
         this.applicationService = applicationService;
         this.chatService = chatService;
+        this.aiIntegrationService = aiIntegrationService;
     }
 
     @PostMapping
@@ -55,6 +58,14 @@ public class ApplicationController {
         }
         logger.info("Candidate {} submitting application for job {}", jwt.getSubject(), request.getJobId());
         ApplicationDto applicationDto = applicationService.submitApplication(request, UUID.fromString(jwt.getSubject()), resumeFile);
+
+        // Score resume
+        try {
+            aiIntegrationService.scoreResumeAsync(applicationDto.getApplicationId());
+        } catch (Exception e) {
+            logger.error("Failed to score resume for application {}", applicationDto.getApplicationId(), e);
+            // Don't fail the application submission if scoring fails
+        }
         logger.info("Application submitted successfully with ID: {}", applicationDto.getApplicationId());
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(applicationDto));
     }

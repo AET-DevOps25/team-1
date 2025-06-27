@@ -80,6 +80,7 @@ public class AIIntegrationService {
 
         // Create and save AI response message
         ChatMessage aiMessage = new ChatMessage();
+        aiMessage.setMessageId(UUID.randomUUID());
         aiMessage.setSession(session);
         aiMessage.setSender(MessageSender.AI);
         aiMessage.setContent(aiResponse);
@@ -145,7 +146,9 @@ public class AIIntegrationService {
         // Create or update assessment
         Assessment assessment = assessmentRepository.findByApplication(application)
                 .orElse(new Assessment(application));
-
+        if (assessment.getAssessmentId() == null) {
+            assessment.setAssessmentId(UUID.randomUUID());
+        }
         assessment.setResumeScore((float) scoreResponse.getResumeScore());
         assessment.setResumeComment(scoreResponse.getComment());
         assessment.setRecommendation(aiServiceClient.convertToRecommendationEnum(scoreResponse.getRecommendation()));
