@@ -85,7 +85,7 @@ CREATE INDEX idx_app_user ON applications(candidate_id);
 -- Assessments
 CREATE TABLE assessments (
     assessment_id     UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    application_id    UUID NOT NULL,
+    application_id    UUID NOT NULL UNIQUE,
     resume_score      FLOAT CHECK (resume_score BETWEEN 0 AND 100),
     interview_score   FLOAT CHECK (interview_score BETWEEN 0 AND 100),
     resume_comment    TEXT,

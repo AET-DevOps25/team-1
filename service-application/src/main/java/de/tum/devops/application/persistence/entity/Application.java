@@ -8,8 +8,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -75,10 +73,10 @@ public class Application {
     @Column(name = "hr_comments", columnDefinition = "TEXT")
     private String hrComments;
 
-    @OneToMany(mappedBy = "application", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Assessment> assessments = new ArrayList<>();
+    @OneToOne(mappedBy = "application", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Assessment assessment;
 
-    @OneToOne(mappedBy = "application", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "application", cascade = CascadeType.ALL, orphanRemoval = true)
     private ChatSession chatSession;
 
     // Constructors
@@ -174,12 +172,12 @@ public class Application {
         this.hrComments = hrComments;
     }
 
-    public List<Assessment> getAssessments() {
-        return assessments;
+    public Assessment getAssessment() {
+        return assessment;
     }
 
-    public void setAssessments(List<Assessment> assessments) {
-        this.assessments = assessments;
+    public void setAssessment(Assessment assessment) {
+        this.assessment = assessment;
     }
 
     public ChatSession getChatSession() {

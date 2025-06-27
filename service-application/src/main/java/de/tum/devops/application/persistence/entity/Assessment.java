@@ -36,8 +36,8 @@ public class Assessment {
     @Column(name = "assessment_id", columnDefinition = "UUID", updatable = false, nullable = false)
     private UUID assessmentId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "application_id", nullable = false)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "application_id", nullable = false, unique = true)
     private Application application;
 
     @DecimalMin("0.0")
