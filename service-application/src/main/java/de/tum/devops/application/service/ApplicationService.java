@@ -43,6 +43,11 @@ public class ApplicationService {
         this.documentTextExtractorService = documentTextExtractorService;
     }
 
+    public Application getById(UUID applicationId) {
+        return applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new IllegalArgumentException("Application not found"));
+    }
+
     @Transactional
     public ApplicationDto submitApplication(SubmitApplicationRequest request, UUID candidateId, MultipartFile resumeFile) {
         logger.info("Submitting application for job {} by candidate {}", request.getJobId(), candidateId);

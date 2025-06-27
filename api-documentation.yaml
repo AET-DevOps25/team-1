@@ -202,6 +202,18 @@ components:
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
 
+    ResumeFileInfo:
+      type: object
+      properties:
+        applicationId: { type: string, format: uuid }
+        originalFileName: { type: string }
+        downloadFileName: { type: string }
+        size: { type: integer, format: int64 }
+        contentType: { type: string }
+        exists: { type: boolean }
+        resumeTextPreview: { type: string, nullable: true }
+        resumeTextLength: { type: integer }
+
 # ─────────────────────────────────────────────────────────────
 security:
   - BearerAuth: [ ]
@@ -714,6 +726,124 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: Application not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ========== FILE SERVICE ==========
+  /files/applications/{applicationId}/resume:
+    parameters:
+      - {
+        name: applicationId,
+        in: path,
+        required: true,
+        schema: { type: string, format: uuid },
+      }
+    get:
+      tags: [ Applications ]
+      security: [ { BearerAuth: [ ] } ]
+      summary: Download resume file for an application
+      description: >
+        Download the resume file for a specific application.
+        HR can download any resume file, candidates can only download their own.
+      responses:
+        "200":
+          description: Resume file downloaded successfully
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            application/msword:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              description: Attachment filename
+              schema:
+                type: string
+            Content-Length:
+              description: File size in bytes
+              schema:
+                type: integer
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden (candidate accessing other's resume)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Application or resume file not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /files/applications/{applicationId}/resume/info:
+    parameters:
+      - {
+        name: applicationId,
+        in: path,
+        required: true,
+        schema: { type: string, format: uuid },
+      }
+    get:
+      tags: [ Applications ]
+      security: [ { BearerAuth: [ ] } ]
+      summary: Get resume file information for an application
+      description: >
+        Get detailed information about the resume file for a specific application.
+        Only HR can access this endpoint.
+      responses:
+        "200":
+          description: Resume file information retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/ResumeFileInfo"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden (not HR role)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Application or resume file not found
           content:
             application/json:
               schema:
