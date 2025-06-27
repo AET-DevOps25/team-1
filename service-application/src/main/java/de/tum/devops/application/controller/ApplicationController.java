@@ -129,4 +129,17 @@ public class ApplicationController {
         );
         return ResponseEntity.ok(ApiResponse.success("Session retrieved", sessionDto));
     }
+
+    @PostMapping("/{applicationId}/chat/complete")
+    @PreAuthorize("hasRole('CANDIDATE')")
+    public ResponseEntity<ApiResponse<Object>> completeChatSession(@PathVariable UUID applicationId,
+                                                                   @AuthenticationPrincipal Jwt jwt) {
+        logger.info("Candidate {} attempting to complete chat for application {}", jwt.getSubject(), applicationId);
+        // Get session (also performs security check)
+        ChatSession session = chatService.createOrGetSession(applicationId, UUID.fromString(jwt.getSubject()));
+        // Mark interview as complete
+        chatService.completeInterview(session);
+        logger.info("Chat session for application {} completed successfully", applicationId);
+        return ResponseEntity.ok(ApiResponse.success("Chat session completed successfully.", null));
+    }
 }
