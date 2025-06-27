@@ -46,6 +46,9 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/prometheus").permitAll()
                         .requestMatchers("/test/**").permitAll()
 
+                        // Internal API (no auth)
+                        .requestMatchers("/internal/api/v1/**").permitAll()
+
                         // All other requests require authentication
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2

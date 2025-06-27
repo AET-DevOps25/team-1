@@ -26,7 +26,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Controller for file operations (download, etc.)
+ * Application - Resume File Controller
  */
 @RestController
 @RequestMapping("/api/v1/files")

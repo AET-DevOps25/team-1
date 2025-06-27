@@ -16,10 +16,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Authentication Controller
- * Implements the 4 authentication endpoints from api-documentation.yaml:
- * - POST /api/v1/auth/login
- * - POST /api/v1/auth/register
- * - POST /api/v1/auth/hr-register
  */
 @RestController
 @RequestMapping("/api/v1/auth")

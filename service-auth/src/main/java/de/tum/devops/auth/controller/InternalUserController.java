@@ -15,7 +15,6 @@ import java.util.UUID;
 
 /**
  * Internal user info endpoint (cluster-internal, no auth).
- * GET /internal/api/v1/users/{id}
  */
 @RestController
 @RequestMapping("/internal/api/v1/users")

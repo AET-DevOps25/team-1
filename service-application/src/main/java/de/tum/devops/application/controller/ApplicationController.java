@@ -30,7 +30,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * REST controller for application management endpoints
+ * Application - application controller
  */
 @RestController
 @RequestMapping("/api/v1/applications")

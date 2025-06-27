@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * REST controller for job management endpoints
+ * Job controller
  */
 @RestController
 @RequestMapping("/api/v1/jobs")

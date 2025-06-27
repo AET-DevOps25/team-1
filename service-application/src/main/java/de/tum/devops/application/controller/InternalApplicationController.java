@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
+/**
+ * Internal application info endpoint (cluster-internal, no auth).
+ */
 @RestController
 @RequestMapping("/internal/api/v1/applications")
 public class InternalApplicationController {
@@ -32,15 +35,15 @@ public class InternalApplicationController {
 
     @PostMapping("/{applicationId}/chat")
     public ResponseEntity<ApiResponse<ChatSessionDto>> createOrGetChatSession(@PathVariable UUID applicationId,
-                                                                                @RequestParam UUID candidateId) {
+                                                                              @RequestParam UUID candidateId) {
         ChatSession session = chatService.createOrGetSession(applicationId, candidateId);
         ChatSessionDto sessionDto = new ChatSessionDto(
-            session.getSessionId(), 
-            session.getApplication().getApplicationId(),
-            session.getStatus(),
-            session.getStartedAt(),
-            session.getCompletedAt(),
-            session.getMessageCount()
+                session.getSessionId(),
+                session.getApplication().getApplicationId(),
+                session.getStatus(),
+                session.getStartedAt(),
+                session.getCompletedAt(),
+                session.getMessageCount()
         );
         return ResponseEntity.ok(ApiResponse.success("Session retrieved", sessionDto));
     }

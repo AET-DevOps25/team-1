@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * Test controller for document text extraction functionality
+ * Test controller for developers
  * This can be removed in production
  */
 @RestController

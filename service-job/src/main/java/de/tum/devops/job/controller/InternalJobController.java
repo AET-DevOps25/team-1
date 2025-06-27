@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 /**
- * Internal, cluster-only API (no authentication) for other micro-services.
+ * Internal job info endpoint (cluster-internal, no auth).
  */
 @RestController
 @RequestMapping("/internal/api/v1/jobs")

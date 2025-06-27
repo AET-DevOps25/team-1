@@ -25,6 +25,9 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Application - chat controller
+ */
 @RestController
 @RequestMapping("/api/v1/chat")
 @CrossOrigin(origins = "*")

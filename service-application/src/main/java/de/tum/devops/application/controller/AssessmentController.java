@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 /**
- * Controller for assessment operations
+ * Application - assessment controller
  */
 @RestController
 @RequestMapping("/api/v1/assessments")
