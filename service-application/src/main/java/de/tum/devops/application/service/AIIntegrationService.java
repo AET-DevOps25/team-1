@@ -14,6 +14,7 @@ import de.tum.devops.application.persistence.repository.AssessmentRepository;
 import de.tum.devops.application.persistence.repository.ChatMessageRepository;
 import de.tum.devops.grpc.ai.ScoreInterviewResponse;
 import de.tum.devops.grpc.ai.ScoreResumeResponse;
+import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Service for AI integration
@@ -89,6 +91,39 @@ public class AIIntegrationService {
         session.setMessageCount(session.getMessageCount() + 1);
 
         return chatMessageRepository.save(aiMessage);
+    }
+
+    @Transactional
+    public void processAndGetAIResponseStream(UUID sessionId, ChatSession session, StreamObserver<de.tum.devops.grpc.ai.ChatReplyResponse> responseObserver) {
+        // Get application and job details
+        Application application = session.getApplication();
+        JobDto job = jobWebClient.fetchJob(application.getJobId()).block();
+
+        if (job == null) {
+            logger.error("Failed to fetch job details for application {}", application.getApplicationId());
+            // Handle error through the stream
+            responseObserver.onError(new IllegalStateException("Could not fetch job details."));
+            return;
+        }
+
+        // Get chat history
+        List<ChatMessage> chatHistory = chatMessageRepository.findBySessionIdOrderBySentAtAsc(sessionId);
+
+        // Build gRPC request
+        List<de.tum.devops.grpc.ai.ChatMessage> grpcMessages = chatHistory.stream()
+                .map(aiServiceClient::convertToGrpcChatMessage)
+                .collect(Collectors.toList());
+
+        de.tum.devops.grpc.ai.ChatReplyRequest request = de.tum.devops.grpc.ai.ChatReplyRequest.newBuilder()
+                .setResumeText(application.getResumeText())
+                .setJobTitle(job.getTitle())
+                .setJobDescription(job.getDescription())
+                .setJobRequirements(job.getRequirements())
+                .addAllChatHistory(grpcMessages)
+                .build();
+
+        // Start the stream
+        aiServiceClient.chatReplyStream(request, responseObserver);
     }
 
     /**

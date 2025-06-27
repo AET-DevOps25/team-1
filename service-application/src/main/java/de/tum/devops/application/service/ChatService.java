@@ -10,13 +10,16 @@ import de.tum.devops.application.persistence.enums.MessageSender;
 import de.tum.devops.application.persistence.repository.ApplicationRepository;
 import de.tum.devops.application.persistence.repository.ChatMessageRepository;
 import de.tum.devops.application.persistence.repository.ChatSessionRepository;
+import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -97,6 +100,108 @@ public class ChatService {
             completeInterview(session);
         }
 
+        return aiMessage;
+    }
+
+    public void addCandidateMessageAndGetAiResponseStream(UUID sessionId, String content, UUID candidateId, SseEmitter emitter) {
+        // Step 1: Prepare session and save user message (transactional part)
+        ChatSession session = prepareForStreaming(sessionId, content, candidateId);
+
+        // Step 2: Set up and start the stream (non-transactional part)
+        StringBuilder fullAiResponse = new StringBuilder();
+
+        StreamObserver<de.tum.devops.grpc.ai.ChatReplyResponse> responseObserver = new StreamObserver<>() {
+            @Override
+            public void onNext(de.tum.devops.grpc.ai.ChatReplyResponse response) {
+                try {
+                    String chunk = response.getAiMessage();
+                    if (!chunk.isEmpty()) {
+                        fullAiResponse.append(chunk);
+                        // Send a partial DTO for the chunk
+                        ChatMessageDto chunkDto = new ChatMessageDto(null, session.getSessionId(), MessageSender.AI, chunk, LocalDateTime.now());
+                        emitter.send(SseEmitter.event().name("message-chunk").data(chunkDto));
+                    }
+                } catch (IOException e) {
+                    logger.error("Error sending SSE event for session {}", sessionId, e);
+                }
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                logger.error("Error from AI service stream for session {}", sessionId, t);
+                try {
+                    emitter.send(SseEmitter.event().name("error").data("An error occurred while communicating with the AI service."));
+                } catch (IOException e) {
+                    // Ignore, client likely disconnected.
+                } finally {
+                    emitter.completeWithError(t);
+                }
+            }
+
+            @Override
+            public void onCompleted() {
+                logger.info("AI stream completed for session {}.", sessionId);
+                try {
+                    // Save the final message and get the entity back
+                    ChatMessage finalMessage = saveFinalAiMessage(session.getSessionId(), fullAiResponse.toString());
+                    // Send the final, complete DTO
+                    emitter.send(SseEmitter.event().name("stream-end").data(new ChatMessageDto(finalMessage)));
+                    emitter.complete();
+                } catch (Exception e) {
+                    logger.error("Error during stream completion for session {}", sessionId, e);
+                    emitter.completeWithError(e);
+                }
+            }
+        };
+
+        aiIntegrationService.processAndGetAIResponseStream(sessionId, session, responseObserver);
+    }
+
+    @Transactional
+    public ChatSession prepareForStreaming(UUID sessionId, String content, UUID candidateId) {
+        ChatSession session = chatSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new IllegalArgumentException("Chat session not found"));
+
+        if (!session.getApplication().getCandidateId().equals(candidateId)) {
+            throw new SecurityException("Access denied to this chat session");
+        }
+
+        ChatMessage userMessage = new ChatMessage();
+        userMessage.setMessageId(UUID.randomUUID());
+        userMessage.setSession(session);
+        userMessage.setSender(MessageSender.CANDIDATE);
+        userMessage.setContent(content);
+        chatMessageRepository.save(userMessage);
+
+        Application application = session.getApplication();
+        if (application.getStatus() == ApplicationStatus.AI_SCREENING) {
+            application.setStatus(ApplicationStatus.AI_INTERVIEW);
+            applicationRepository.save(application);
+        }
+        return session;
+    }
+
+    @Transactional
+    public ChatMessage saveFinalAiMessage(UUID sessionId, String content) {
+        ChatSession session = chatSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new IllegalArgumentException("Chat session not found during final save."));
+
+        logger.info("Saving full AI response for session {}", sessionId);
+        ChatMessage aiMessage = new ChatMessage();
+        aiMessage.setMessageId(UUID.randomUUID());
+        aiMessage.setSession(session);
+        aiMessage.setSender(MessageSender.AI);
+        aiMessage.setContent(content);
+        chatMessageRepository.save(aiMessage);
+
+        Integer aiMessageCount = session.getMessageCount();
+        session.setMessageCount(aiMessageCount + 1);
+
+        if (aiMessageCount + 1 >= 20) { // Assuming 10 messages (5 exchanges) completes an interview
+            completeInterview(session);
+        } else {
+            chatSessionRepository.save(session);
+        }
         return aiMessage;
     }
 

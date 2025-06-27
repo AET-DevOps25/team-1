@@ -94,6 +94,15 @@ public class AIServiceGrpcClient {
         }
     }
 
+    public void chatReplyStream(ChatReplyRequest request, StreamObserver<ChatReplyResponse> responseObserver) {
+        try {
+            asyncStub.chatReply(request, responseObserver);
+        } catch (Exception e) {
+            logger.error("Error starting chat reply stream", e);
+            responseObserver.onError(e);
+        }
+    }
+
     /**
      * Score a resume against job requirements
      *
@@ -156,7 +165,7 @@ public class AIServiceGrpcClient {
     /**
      * Convert domain chat message to gRPC chat message
      */
-    private de.tum.devops.grpc.ai.ChatMessage convertToGrpcChatMessage(ChatMessage message) {
+    public de.tum.devops.grpc.ai.ChatMessage convertToGrpcChatMessage(ChatMessage message) {
         de.tum.devops.grpc.ai.ChatMessage.Sender sender;
 
         if (message.getSender() == MessageSender.AI) {
