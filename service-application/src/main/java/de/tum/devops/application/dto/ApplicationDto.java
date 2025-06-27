@@ -10,7 +10,7 @@ import java.util.UUID;
 
 /**
  * Application DTO according to api-documentation.yaml
- * 
+ * <p>
  * Schema definition:
  * ApplicationDto:
  * properties:
@@ -47,11 +47,12 @@ public class ApplicationDto {
     // Optional fields for rich response
     private UserDto candidate;
     private JobDto job;
+    private AssessmentDto assessment;
 
     public ApplicationDto() {
     }
 
-    public ApplicationDto(UUID applicationId, UUID jobId, UUID candidateId, ApplicationStatus status, String resumeText, String resumeFilePath, DecisionEnum hrDecision, String hrComments, ChatStatus chatStatus, LocalDateTime submittedAt, LocalDateTime updatedAt, UserDto candidate, JobDto job) {
+    public ApplicationDto(UUID applicationId, UUID jobId, UUID candidateId, ApplicationStatus status, String resumeText, String resumeFilePath, DecisionEnum hrDecision, String hrComments, ChatStatus chatStatus, LocalDateTime submittedAt, LocalDateTime updatedAt, UserDto candidate, JobDto job, AssessmentDto assessment) {
         this.applicationId = applicationId;
         this.jobId = jobId;
         this.candidateId = candidateId;
@@ -65,6 +66,7 @@ public class ApplicationDto {
         this.updatedAt = updatedAt;
         this.candidate = candidate;
         this.job = job;
+        this.assessment = assessment;
     }
 
     // Getters and Setters
@@ -171,5 +173,13 @@ public class ApplicationDto {
 
     public void setJob(JobDto job) {
         this.job = job;
+    }
+
+    public AssessmentDto getAssessment() {
+        return assessment;
+    }
+
+    public void setAssessment(AssessmentDto assessment) {
+        this.assessment = assessment;
     }
 }

@@ -189,6 +189,8 @@ public class ApplicationService {
 
         ChatStatus chatStatus = application.getChatSession() != null ? application.getChatSession().getStatus() : null;
 
+        AssessmentDto assessment = new AssessmentDto(application.getAssessment());
+
         return new ApplicationDto(
                 application.getApplicationId(),
                 application.getJobId(),
@@ -202,7 +204,8 @@ public class ApplicationService {
                 application.getSubmittedAt(),
                 application.getUpdatedAt(),
                 candidate, // assuming ApplicationDto is updated to hold UserDto
-                job // assuming ApplicationDto is updated to hold JobDto
+                job, // assuming ApplicationDto is updated to hold JobDto
+                assessment
         );
     }
 
@@ -210,5 +213,6 @@ public class ApplicationService {
         applicationDto.setResumeText(null);
         applicationDto.setResumeFilePath(null);
         applicationDto.getJob().getHrCreator().setUserID(null);
+        applicationDto.setAssessment(null);
     }
 }
