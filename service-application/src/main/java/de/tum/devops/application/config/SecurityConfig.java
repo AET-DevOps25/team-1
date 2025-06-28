@@ -24,7 +24,7 @@ import java.util.Base64;
 import java.util.List;
 
 /**
- * Security configuration for JWT authentication and authorization
+ * Security configuration for JWT authentication and CORS
  */
 @Configuration
 @EnableWebSecurity
