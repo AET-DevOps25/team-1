@@ -1,10 +1,6 @@
 package de.tum.devops.job.controller;
 
-import de.tum.devops.job.dto.ApiResponse;
-import de.tum.devops.job.dto.CreateJobRequest;
-import de.tum.devops.job.dto.JobDto;
-import de.tum.devops.job.dto.PagedResponseDto;
-import de.tum.devops.job.dto.UpdateJobRequest;
+import de.tum.devops.job.dto.*;
 import de.tum.devops.job.persistence.enums.JobStatus;
 import de.tum.devops.job.service.JobService;
 import jakarta.validation.Valid;
@@ -38,7 +34,7 @@ public class JobController {
     }
 
     /**
-     * GET /jobs - List jobs with pagination and filtering
+     * List jobs with pagination and filtering
      */
     @GetMapping
     public ResponseEntity<ApiResponse<PagedResponseDto<JobDto>>> getJobs(
@@ -61,7 +57,7 @@ public class JobController {
     }
 
     /**
-     * POST /jobs - Create new job (HR only)
+     * Create new job (HR only)
      */
     @PostMapping
     @PreAuthorize("hasRole('HR')")
@@ -136,7 +132,7 @@ public class JobController {
     }
 
     /**
-     * POST /jobs/{jobId}/close - Close job (HR only)
+     * Close job (HR only)
      */
     @PostMapping("/{jobId}/close")
     @PreAuthorize("hasRole('HR')")
@@ -161,7 +157,7 @@ public class JobController {
     }
 
     /**
-     * POST /jobs/{jobId}/open - Re-open job (HR only)
+     * Re-open job (HR only)
      */
     @PostMapping("/{jobId}/open")
     @PreAuthorize("hasRole('HR')")
@@ -186,7 +182,7 @@ public class JobController {
     }
 
     /**
-     * DELETE /jobs/{jobId} - Delete job (HR only)
+     * Delete job (HR only)
      */
     @DeleteMapping("/{jobId}")
     @PreAuthorize("hasRole('HR')")
