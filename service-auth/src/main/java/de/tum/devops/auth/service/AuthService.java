@@ -114,7 +114,7 @@ public class AuthService {
         newHRUser.setPasswordHash(passwordEncoder.encode(password));
         newHRUser.setRole(UserRole.HR);
 
-        newHRUser = userRepository.save(newHRUser);
+        newHRUser = userRepository.saveAndFlush(newHRUser);
         return convertToDto(newHRUser);
     }
 
