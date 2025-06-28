@@ -4,6 +4,7 @@ import de.tum.devops.application.client.AuthWebClient;
 import de.tum.devops.application.client.JobWebClient;
 import de.tum.devops.application.dto.*;
 import de.tum.devops.application.persistence.entity.Application;
+import de.tum.devops.application.persistence.entity.Assessment;
 import de.tum.devops.application.persistence.enums.ApplicationStatus;
 import de.tum.devops.application.persistence.enums.ChatStatus;
 import de.tum.devops.application.persistence.enums.DecisionEnum;
@@ -49,8 +50,8 @@ public class ApplicationService {
     }
 
     @Transactional
-    public ApplicationDto submitApplication(SubmitApplicationRequest request, UUID candidateId, MultipartFile resumeFile) {
-        logger.info("Submitting application for job {} by candidate {}", request.getJobId(), candidateId);
+    public ApplicationDto submitApplication(UUID jobId, UUID candidateId, MultipartFile resumeFile) {
+        logger.info("Submitting application for job {} by candidate {}", jobId, candidateId);
 
         // 1. Validate resume file is provided
         if (resumeFile == null || resumeFile.isEmpty()) {
@@ -58,12 +59,12 @@ public class ApplicationService {
         }
 
         // 2. Check if candidate has already applied for this job
-        if (applicationRepository.existsByCandidateIdAndJobId(candidateId, request.getJobId())) {
+        if (applicationRepository.existsByCandidateIdAndJobId(candidateId, jobId)) {
             throw new IllegalArgumentException("You have already applied for this job");
         }
 
         // 3. Verify job exists and is open
-        jobWebClient.fetchJob(request.getJobId())
+        jobWebClient.fetchJob(jobId)
                 .filter(job -> job.getStatus() == JobStatus.OPEN)
                 .blockOptional()
                 .orElseThrow(() -> new IllegalArgumentException("Job is not open for applications"));
@@ -79,12 +80,12 @@ public class ApplicationService {
         }
 
         // 5. Store resume file
-        String filePath = fileStorageService.store(resumeFile, candidateId + "_" + request.getJobId());
+        String filePath = fileStorageService.store(resumeFile, candidateId + "_" + jobId);
 
         // 6. Create and save application
         Application application = new Application();
         application.setApplicationId(UUID.randomUUID());
-        application.setJobId(request.getJobId());
+        application.setJobId(jobId);
         application.setCandidateId(candidateId);
         application.setResumeText(resumeText);
         application.setResumeFilePath(filePath);
@@ -96,7 +97,11 @@ public class ApplicationService {
         // 7. save application
         // Update status to AI_SCREENING
         savedApplication.setStatus(ApplicationStatus.AI_SCREENING);
-        savedApplication = applicationRepository.save(savedApplication);
+        // create assessment
+        Assessment assessment = new Assessment(savedApplication);
+        assessment.setAssessmentId(UUID.randomUUID());
+        savedApplication.setAssessment(assessment);
+        savedApplication = applicationRepository.saveAndFlush(savedApplication);
 
         ApplicationDto applicationDto = convertToDto(savedApplication);
         hideImportantFieldsForCandidate(applicationDto);
@@ -166,13 +171,11 @@ public class ApplicationService {
         Application application = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new IllegalArgumentException("Application not found"));
 
-        application.setHrDecision(hrDecision);
-        application.setHrComments(hrComments);
-        // Potentially update status based on decision
-        if (hrDecision == DecisionEnum.HIRED) {
-            application.setStatus(ApplicationStatus.HIRED);
-        } else if (hrDecision == DecisionEnum.REJECTED) {
-            application.setStatus(ApplicationStatus.REJECTED);
+        if (application.getHrDecision() != null) {
+            application.setHrDecision(hrDecision);
+        }
+        if (application.getHrComments() != null) {
+            application.setHrComments(hrComments);
         }
 
         Application updatedApplication = applicationRepository.save(application);

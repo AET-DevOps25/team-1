@@ -58,7 +58,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TYPE application_status AS ENUM (
     'SUBMITTED', 'AI_SCREENING', 'AI_INTERVIEW',
-    'COMPLETED', 'SHORTLISTED', 'REJECTED', 'HIRED'
+    'COMPLETED'
 );
 CREATE TYPE chat_status         AS ENUM ('ACTIVE', 'COMPLETE');
 CREATE TYPE message_sender      AS ENUM ('AI', 'CANDIDATE');

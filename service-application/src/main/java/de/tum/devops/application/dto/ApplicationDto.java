@@ -18,8 +18,7 @@ import java.util.UUID;
  * applicationId: string (uuid)
  * jobId: string (uuid)
  * candidateId: string (uuid)
- * status: string (enum: [SUBMITTED, AI_SCREENING, AI_INTERVIEW, COMPLETED,
- * SHORTLISTED, REJECTED, HIRED])
+ * status: string (enum: [SUBMITTED, AI_SCREENING, AI_INTERVIEW, COMPLETED])
  * resumeText: string
  * resumeFilePath: string
  * hrDecision: string (enum: [APPROVED, REJECTED])

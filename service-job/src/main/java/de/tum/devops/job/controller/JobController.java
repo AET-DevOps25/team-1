@@ -83,7 +83,7 @@ public class JobController {
     }
 
     /**
-     * GET /jobs/{jobId} - Get job details
+     * Get job details
      */
     @GetMapping("/{jobId}")
     public ResponseEntity<ApiResponse<JobDto>> getJobById(
@@ -106,7 +106,7 @@ public class JobController {
     }
 
     /**
-     * PATCH /jobs/{jobId} - Update job (HR only)
+     * Update job (HR only)
      */
     @PatchMapping("/{jobId}")
     @PreAuthorize("hasRole('HR')")

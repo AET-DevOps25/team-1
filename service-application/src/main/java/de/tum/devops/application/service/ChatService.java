@@ -99,49 +99,32 @@ public class ChatService {
                 });
     }
 
-    public ChatMessage addCandidateMessageAndGetAiResponse(UUID sessionId, String content, UUID candidateId) {
-        ChatSession session = chatSessionRepository.findById(sessionId)
-                .orElseThrow(() -> new IllegalArgumentException("Chat session not found"));
-
-        if (!session.getApplication().getCandidateId().equals(candidateId)) {
-            throw new SecurityException("Access denied to this chat session");
-        }
-
-        // Save candidate's message
-        ChatMessage userMessage = new ChatMessage();
-        userMessage.setMessageId(UUID.randomUUID());
-        userMessage.setSession(session);
-        userMessage.setSender(MessageSender.CANDIDATE);
-        userMessage.setContent(content);
-        chatMessageRepository.save(userMessage);
-
-        // Update application status to AI_INTERVIEW if it's still in AI_SCREENING
-        Application application = session.getApplication();
-        if (application.getStatus() == ApplicationStatus.AI_SCREENING) {
-            application.setStatus(ApplicationStatus.AI_INTERVIEW);
-            applicationRepository.save(application);
-        }
-
-        // Get AI response using AI integration service
-        ChatMessage aiMessage = aiIntegrationService.processAndGetAIResponse(sessionId, session);
-
-        logger.info("Saved user message and generated AI response for session {}", sessionId);
-
-        // Update session message count (only for AI messages)
-        Integer aiMessageCount = session.getMessageCount();
-        session.setMessageCount(aiMessageCount + 1);
-
-        // Check if this is the last message (interview completion)
-        if (aiMessageCount + 1 >= 20) { // Assuming 10 messages (5 exchanges) completes an interview
-            completeInterview(session);
-        }
-
-        return aiMessage;
-    }
-
     public void addCandidateMessageAndGetAiResponseStream(UUID sessionId, String content, UUID candidateId, SseEmitter emitter) {
         // Step 1: Prepare session and save user message (transactional part)
         ChatSession session = prepareForStreaming(sessionId, content, candidateId);
+
+        if (session.getStatus() == ChatStatus.COMPLETE) {
+            logger.warn("Chat session {} is already complete.", sessionId);
+            try {
+                emitter.send(SseEmitter.event().name("error").data("Interview session is already complete."));
+                emitter.complete();
+            } catch (Exception e) {
+                logger.error("Error during stream completion for session {}", sessionId, e);
+                emitter.completeWithError(e);
+            }
+            return;
+        }
+        if (session.getMessageCount() >= 20) {
+            logger.warn("Chat session {} has reached the maximum message limit.", sessionId);
+            try {
+                emitter.send(SseEmitter.event().name("error").data("Interview session has reached the interview message limit."));
+                emitter.complete();
+            } catch (Exception e) {
+                logger.error("Error during stream completion for session {}", sessionId, e);
+                emitter.completeWithError(e);
+            }
+            return;
+        }
 
         // Step 2: Set up and start the stream (non-transactional part)
         StringBuilder fullAiResponse = new StringBuilder();
@@ -209,6 +192,12 @@ public class ChatService {
         userMessage.setContent(content);
         chatMessageRepository.save(userMessage);
 
+        if (session.getMessageCount() >= 20) {
+            logger.info("Chat session {} has reached the maximum AI message count. Setting status to complete.", sessionId);
+            completeInterview(session);
+            return session;
+        }
+
         Application application = session.getApplication();
         if (application.getStatus() == ApplicationStatus.AI_SCREENING) {
             application.setStatus(ApplicationStatus.AI_INTERVIEW);
@@ -233,11 +222,7 @@ public class ChatService {
         Integer aiMessageCount = session.getMessageCount();
         session.setMessageCount(aiMessageCount + 1);
 
-        if (aiMessageCount + 1 >= 20) { // Assuming 10 messages (5 exchanges) completes an interview
-            completeInterview(session);
-        } else {
-            chatSessionRepository.save(session);
-        }
+        chatSessionRepository.save(session);
         return aiMessage;
     }
 
@@ -281,13 +266,15 @@ public class ChatService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ChatMessage> getMessagesByApplication(UUID applicationId, int page, int size) {
+    public Page<ChatMessageDto> getMessagesByApplication(UUID applicationId, int page, int size) {
         // Verify application exists
         if (!applicationRepository.existsById(applicationId)) {
             throw new IllegalArgumentException("Application not found");
         }
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "sentAt"));
         // Use the direct query method for better performance
-        return chatMessageRepository.findByApplicationIdOrderBySentAtAsc(applicationId, pageable);
+        Page<ChatMessage> messages = chatMessageRepository.findByApplicationIdOrderBySentAtAsc(applicationId, pageable);
+        // transform messages to ChatMessageDto
+        return messages.map(ChatMessageDto::new);
     }
 }

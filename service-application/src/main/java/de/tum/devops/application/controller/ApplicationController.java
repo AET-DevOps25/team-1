@@ -1,7 +1,6 @@
 package de.tum.devops.application.controller;
 
 import de.tum.devops.application.dto.*;
-import de.tum.devops.application.persistence.entity.ChatMessage;
 import de.tum.devops.application.persistence.entity.ChatSession;
 import de.tum.devops.application.persistence.enums.ApplicationStatus;
 import de.tum.devops.application.service.AIIntegrationService;
@@ -51,14 +50,14 @@ public class ApplicationController {
 
     @PostMapping
     @PreAuthorize("hasRole('CANDIDATE')")
-    public ResponseEntity<ApiResponse<ApplicationDto>> submitApplication(@Valid @RequestPart("request") SubmitApplicationRequest request,
-                                                                         @RequestPart("resumeFile") MultipartFile resumeFile,
+    public ResponseEntity<ApiResponse<ApplicationDto>> submitApplication(@RequestParam UUID jobId,
+                                                                         @RequestParam MultipartFile resumeFile,
                                                                          @AuthenticationPrincipal Jwt jwt) {
         if (resumeFile.isEmpty() || !"application/pdf".equals(resumeFile.getContentType())) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.badRequest("Only PDF file is allowed for resume."));
         }
-        logger.info("Candidate {} submitting application for job {}", jwt.getSubject(), request.getJobId());
-        ApplicationDto applicationDto = applicationService.submitApplication(request, UUID.fromString(jwt.getSubject()), resumeFile);
+        logger.info("Candidate {} submitting application for job {}", jwt.getSubject(), jobId);
+        ApplicationDto applicationDto = applicationService.submitApplication(jobId, UUID.fromString(jwt.getSubject()), resumeFile);
 
         // Score resume
         try {
@@ -74,11 +73,11 @@ public class ApplicationController {
     @GetMapping
     @PreAuthorize("hasRole('HR') or hasRole('CANDIDATE')")
     public ResponseEntity<ApiResponse<PagedResponseDto<ApplicationDto>>> getApplications(@RequestParam(defaultValue = "0") @Min(0) int page,
-                                                                             @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
-                                                                             @RequestParam(required = false) UUID jobId,
-                                                                             @RequestParam(required = false) ApplicationStatus status,
-                                                                             Authentication authentication,
-                                                                             @AuthenticationPrincipal Jwt jwt) {
+                                                                                         @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
+                                                                                         @RequestParam(required = false) UUID jobId,
+                                                                                         @RequestParam(required = false) ApplicationStatus status,
+                                                                                         Authentication authentication,
+                                                                                         @AuthenticationPrincipal Jwt jwt) {
         Optional<? extends GrantedAuthority> userRoleOptional = authentication.getAuthorities().stream().findFirst();
         String userRole = userRoleOptional.map(grantedAuthority -> grantedAuthority.getAuthority().replace("ROLE_", "")).orElse(null);
         Page<ApplicationDto> resultPage = applicationService.getApplications(page, size, jobId, status, userRole, UUID.fromString(jwt.getSubject()));
@@ -107,13 +106,16 @@ public class ApplicationController {
         return ResponseEntity.ok(ApiResponse.success("Application updated", applicationDto));
     }
 
+    /**
+     * Get messages for application - only accessible by HR
+     */
     @GetMapping("/{applicationId}/messages")
     @PreAuthorize("hasRole('HR')")
-    public ResponseEntity<ApiResponse<PagedResponseDto<ChatMessage>>> getMessagesForApplication(@PathVariable UUID applicationId,
-                                                                                    @RequestParam(defaultValue = "0") @Min(0) int page,
-                                                                                    @RequestParam(defaultValue = "100") @Min(1) @Max(100) int size) {
-        Page<ChatMessage> messagesPage = chatService.getMessagesByApplication(applicationId, page, size);
-        PagedResponseDto<ChatMessage> pagedResponse = new PagedResponseDto<>(messagesPage);
+    public ResponseEntity<ApiResponse<PagedResponseDto<ChatMessageDto>>> getMessagesForApplication(@PathVariable UUID applicationId,
+                                                                                                   @RequestParam(defaultValue = "0") @Min(0) int page,
+                                                                                                   @RequestParam(defaultValue = "100") @Min(1) @Max(100) int size) {
+        Page<ChatMessageDto> messagesPage = chatService.getMessagesByApplication(applicationId, page, size);
+        PagedResponseDto<ChatMessageDto> pagedResponse = new PagedResponseDto<>(messagesPage);
         return ResponseEntity.ok(ApiResponse.success("Messages retrieved", pagedResponse));
     }
 
