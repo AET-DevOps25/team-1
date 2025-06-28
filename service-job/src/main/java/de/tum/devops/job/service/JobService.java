@@ -94,7 +94,7 @@ public class JobService {
      * Get job details by ID
      */
     @Transactional(readOnly = true)
-    public JobDto getJobById(UUID jobId, String userRole) {
+    public JobDto getJobById(UUID jobId, String userRole, boolean internal) {
         logger.info("Getting job details: {} for user role: {}", jobId, userRole);
 
         Job job = jobRepository.findById(jobId)
@@ -105,7 +105,11 @@ public class JobService {
             throw new IllegalArgumentException("Job not accessible");
         }
 
-        return convertToDto(job);
+        if (internal || "HR".equals(userRole)) {
+            return convertToDto(job);
+        }
+
+        return hideSensitiveData(convertToDto(job));
     }
 
     /**

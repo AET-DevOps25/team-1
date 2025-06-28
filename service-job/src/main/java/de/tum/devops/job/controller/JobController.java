@@ -91,7 +91,7 @@ public class JobController {
             Authentication authentication) {
         try {
             String userRole = extractRole(authentication);
-            JobDto job = jobService.getJobById(jobId, userRole);
+            JobDto job = jobService.getJobById(jobId, userRole, false);
 
             return ResponseEntity.ok(ApiResponse.success("Job retrieved successfully", job));
         } catch (IllegalArgumentException e) {

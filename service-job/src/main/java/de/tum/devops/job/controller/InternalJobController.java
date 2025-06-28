@@ -34,7 +34,7 @@ public class InternalJobController {
     @GetMapping("/{jobId}")
     public ResponseEntity<ApiResponse<JobDto>> getJobInternal(@PathVariable UUID jobId) {
         try {
-            JobDto dto = jobService.getJobById(jobId, null);
+            JobDto dto = jobService.getJobById(jobId, null, true);
             return ResponseEntity.ok(ApiResponse.success("OK", dto));
         } catch (IllegalArgumentException ex) {
             logger.warn("Job not found: {}", ex.getMessage());
