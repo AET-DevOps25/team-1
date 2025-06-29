@@ -24,8 +24,8 @@ public class ChatSessionDto {
     private UUID sessionId;
     private UUID applicationId;
     private ChatStatus status;
-    private LocalDateTime startTimestamp;
-    private LocalDateTime endTimestamp;
+    private LocalDateTime startedAt;
+    private LocalDateTime completedAt;
     private Integer messageCount;
 
     // Constructors
@@ -38,13 +38,13 @@ public class ChatSessionDto {
     }
 
     public ChatSessionDto(UUID sessionId, UUID applicationId, ChatStatus status,
-                          LocalDateTime startTimestamp, LocalDateTime endTimestamp,
+                          LocalDateTime startedAt, LocalDateTime completedAt,
                           Integer messageCount) {
         this.sessionId = sessionId;
         this.applicationId = applicationId;
         this.status = status;
-        this.startTimestamp = startTimestamp;
-        this.endTimestamp = endTimestamp;
+        this.startedAt = startedAt;
+        this.completedAt = completedAt;
         this.messageCount = messageCount;
     }
 
@@ -52,6 +52,8 @@ public class ChatSessionDto {
         this.sessionId = session.getSessionId();
         this.applicationId = session.getApplication().getApplicationId();
         this.status = session.getStatus();
+        this.startedAt = session.getStartedAt();
+        this.completedAt = session.getCompletedAt();
         this.messageCount = session.getMessageCount();
     }
 
@@ -80,20 +82,20 @@ public class ChatSessionDto {
         this.status = status;
     }
 
-    public LocalDateTime getStartTimestamp() {
-        return startTimestamp;
+    public LocalDateTime getStartedAt() {
+        return startedAt;
     }
 
-    public void setStartTimestamp(LocalDateTime startTimestamp) {
-        this.startTimestamp = startTimestamp;
+    public void setStartedAt(LocalDateTime startedAt) {
+        this.startedAt = startedAt;
     }
 
-    public LocalDateTime getEndTimestamp() {
-        return endTimestamp;
+    public LocalDateTime getCompletedAt() {
+        return completedAt;
     }
 
-    public void setEndTimestamp(LocalDateTime endTimestamp) {
-        this.endTimestamp = endTimestamp;
+    public void setCompletedAt(LocalDateTime completedAt) {
+        this.completedAt = completedAt;
     }
 
     public Integer getMessageCount() {

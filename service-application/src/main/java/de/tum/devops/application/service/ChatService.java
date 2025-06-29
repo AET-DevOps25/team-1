@@ -68,14 +68,6 @@ public class ChatService {
     }
 
     private ChatMessage addInitialAiMessage(ChatSession session) {
-        // Create a dummy message to trigger the AI's first question
-        ChatMessage triggerMessage = new ChatMessage();
-        triggerMessage.setMessageId(UUID.randomUUID());
-        triggerMessage.setSession(session);
-        triggerMessage.setSender(MessageSender.CANDIDATE);
-        triggerMessage.setContent("generate first question");
-        chatMessageRepository.save(triggerMessage);
-
         // Get the AI's first response
         return aiIntegrationService.processAndGetAIResponse(session.getSessionId(), session);
     }

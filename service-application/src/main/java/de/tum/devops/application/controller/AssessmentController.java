@@ -1,6 +1,7 @@
 package de.tum.devops.application.controller;
 
 import de.tum.devops.application.dto.ApiResponse;
+import de.tum.devops.application.dto.AssessmentDto;
 import de.tum.devops.application.persistence.entity.Assessment;
 import de.tum.devops.application.service.AIIntegrationService;
 import org.slf4j.Logger;
@@ -33,11 +34,12 @@ public class AssessmentController {
      */
     @PostMapping("/applications/{applicationId}/score-resume")
     @PreAuthorize("hasRole('HR')")
-    public ResponseEntity<ApiResponse<Assessment>> scoreResume(@PathVariable UUID applicationId,
-                                                               @AuthenticationPrincipal String userId) {
+    public ResponseEntity<ApiResponse<AssessmentDto>> scoreResume(@PathVariable UUID applicationId,
+                                                                  @AuthenticationPrincipal String userId) {
         logger.info("HR {} triggered resume scoring for application {}", userId, applicationId);
         Assessment assessment = aiIntegrationService.scoreResumeSync(applicationId);
-        return ResponseEntity.ok(ApiResponse.success("Resume scored successfully", assessment));
+        AssessmentDto assessmentDto = new AssessmentDto(assessment);
+        return ResponseEntity.ok(ApiResponse.success("Resume scored successfully", assessmentDto));
     }
 
     /**
@@ -45,10 +47,11 @@ public class AssessmentController {
      */
     @PostMapping("/applications/{applicationId}/score-interview")
     @PreAuthorize("hasRole('HR')")
-    public ResponseEntity<ApiResponse<Assessment>> scoreInterview(@PathVariable UUID applicationId,
-                                                                  @AuthenticationPrincipal String userId) {
+    public ResponseEntity<ApiResponse<AssessmentDto>> scoreInterview(@PathVariable UUID applicationId,
+                                                                     @AuthenticationPrincipal String userId) {
         logger.info("HR {} triggered interview scoring for application {}", userId, applicationId);
         Assessment assessment = aiIntegrationService.scoreInterviewSync(applicationId);
-        return ResponseEntity.ok(ApiResponse.success("Interview scored successfully", assessment));
+        AssessmentDto assessmentDto = new AssessmentDto(assessment);
+        return ResponseEntity.ok(ApiResponse.success("Interview scored successfully", assessmentDto));
     }
 }

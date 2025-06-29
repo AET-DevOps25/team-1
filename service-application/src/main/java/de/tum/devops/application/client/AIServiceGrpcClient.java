@@ -106,15 +106,19 @@ public class AIServiceGrpcClient {
     /**
      * Score a resume against job requirements
      *
-     * @param resumeText      Candidate's resume text
+     * @param jobTitle        Job title
+     * @param jobDescription  Job description
      * @param jobRequirements Job requirements
+     * @param resumeText      Candidate's resume text
      * @return Resume score response with score, comment and recommendation
      */
-    public ScoreResumeResponse scoreResume(String resumeText, String jobRequirements) {
+    public ScoreResumeResponse scoreResume(String jobTitle, String jobDescription, String jobRequirements, String resumeText) {
         try {
             ScoreResumeRequest request = ScoreResumeRequest.newBuilder()
-                    .setResumeText(resumeText)
+                    .setJobTitle(jobTitle)
+                    .setJobDescription(jobDescription)
                     .setJobRequirements(jobRequirements)
+                    .setResumeText(resumeText)
                     .build();
 
             return blockingStub.scoreResume(request);
@@ -132,12 +136,13 @@ public class AIServiceGrpcClient {
     /**
      * Score an interview based on chat history
      *
-     * @param resumeText      Candidate's resume text
+     * @param jobTitle        Job title
+     * @param jobDescription  Job description
      * @param jobRequirements Job requirements
      * @param chatHistory     Chat history
      * @return Interview score response with score, comment and recommendation
      */
-    public ScoreInterviewResponse scoreInterview(String resumeText, String jobRequirements, List<ChatMessage> chatHistory) {
+    public ScoreInterviewResponse scoreInterview(String jobTitle, String jobDescription, String jobRequirements, List<ChatMessage> chatHistory) {
         try {
             // Convert domain chat messages to gRPC chat messages
             List<de.tum.devops.grpc.ai.ChatMessage> grpcMessages = chatHistory.stream()
@@ -145,7 +150,8 @@ public class AIServiceGrpcClient {
                     .collect(Collectors.toList());
 
             ScoreInterviewRequest request = ScoreInterviewRequest.newBuilder()
-                    .setResumeText(resumeText)
+                    .setJobTitle(jobTitle)
+                    .setJobDescription(jobDescription)
                     .setJobRequirements(jobRequirements)
                     .addAllChatHistory(grpcMessages)
                     .build();

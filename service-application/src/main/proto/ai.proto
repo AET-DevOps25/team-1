@@ -35,8 +35,10 @@ message ChatReplyResponse {
 
 // --------------------------- ScoreResume ---------------------------
 message ScoreResumeRequest {
-  string resume_text = 1;
-  string job_requirements = 2;
+  string job_title = 1;
+  string job_description = 2;
+  string job_requirements = 3;
+  string resume_text = 4;
 }
 
 message ScoreResumeResponse {
@@ -47,9 +49,10 @@ message ScoreResumeResponse {
 
 // --------------------------- ScoreInterview ---------------------------
 message ScoreInterviewRequest {
-  string resume_text = 1;
-  string job_requirements = 2;
-  repeated ChatMessage chat_history = 3;
+  string job_title = 1;
+  string job_description = 2;
+  string job_requirements = 3;
+  repeated ChatMessage chat_history = 4;
 }
 
 message ScoreInterviewResponse {

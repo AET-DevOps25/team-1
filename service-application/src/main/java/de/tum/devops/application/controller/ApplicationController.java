@@ -51,7 +51,7 @@ public class ApplicationController {
     @PostMapping
     @PreAuthorize("hasRole('CANDIDATE')")
     public ResponseEntity<ApiResponse<ApplicationDto>> submitApplication(@RequestParam UUID jobId,
-                                                                         @RequestParam MultipartFile resumeFile,
+                                                                         @RequestPart MultipartFile resumeFile,
                                                                          @AuthenticationPrincipal Jwt jwt) {
         if (resumeFile.isEmpty() || !"application/pdf".equals(resumeFile.getContentType())) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.badRequest("Only PDF file is allowed for resume."));

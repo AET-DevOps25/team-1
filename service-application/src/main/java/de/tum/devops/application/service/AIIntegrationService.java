@@ -145,8 +145,10 @@ public class AIIntegrationService {
 
         // Call AI service to score resume
         ScoreResumeResponse scoreResponse = aiServiceClient.scoreResume(
-                application.getResumeText(),
-                job.getRequirements()
+                job.getTitle(),
+                job.getDescription(),
+                job.getRequirements(),
+                application.getResumeText()
         );
 
         // Create or update assessment
@@ -174,8 +176,10 @@ public class AIIntegrationService {
 
         // Call AI service to score resume
         ScoreResumeResponse scoreResponse = aiServiceClient.scoreResume(
-                application.getResumeText(),
-                job.getRequirements()
+                job.getTitle(),
+                job.getDescription(),
+                job.getRequirements(),
+                application.getResumeText()
         );
 
         // Create or update assessment
@@ -217,7 +221,8 @@ public class AIIntegrationService {
 
         // Call AI service to score interview
         ScoreInterviewResponse scoreResponse = aiServiceClient.scoreInterview(
-                application.getResumeText(),
+                job.getTitle(),
+                job.getDescription(),
                 job.getRequirements(),
                 chatHistory
         );
@@ -229,10 +234,10 @@ public class AIIntegrationService {
         assessment.setInterviewScore((float) scoreResponse.getInterviewScore());
         assessment.setInterviewComment(scoreResponse.getComment());
 
-        // Only update recommendation if it's better than the existing one
+        // Only update recommendation if it's worse than the existing one
         RecommendationEnum newRecommendation = aiServiceClient.convertToRecommendationEnum(scoreResponse.getRecommendation());
         if (assessment.getRecommendation() == null ||
-                assessment.getRecommendation().ordinal() > newRecommendation.ordinal()) {
+                assessment.getRecommendation().ordinal() < newRecommendation.ordinal()) {
             assessment.setRecommendation(newRecommendation);
         }
 
@@ -259,7 +264,8 @@ public class AIIntegrationService {
 
         // Call AI service to score interview
         ScoreInterviewResponse scoreResponse = aiServiceClient.scoreInterview(
-                application.getResumeText(),
+                job.getTitle(),
+                job.getDescription(),
                 job.getRequirements(),
                 chatHistory
         );
@@ -271,10 +277,10 @@ public class AIIntegrationService {
         assessment.setInterviewScore((float) scoreResponse.getInterviewScore());
         assessment.setInterviewComment(scoreResponse.getComment());
 
-        // Only update recommendation if it's better than the existing one
+        // Only update recommendation if it's worse than the existing one
         RecommendationEnum newRecommendation = aiServiceClient.convertToRecommendationEnum(scoreResponse.getRecommendation());
         if (assessment.getRecommendation() == null ||
-                assessment.getRecommendation().ordinal() > newRecommendation.ordinal()) {
+                assessment.getRecommendation().ordinal() < newRecommendation.ordinal()) {
             assessment.setRecommendation(newRecommendation);
         }
 

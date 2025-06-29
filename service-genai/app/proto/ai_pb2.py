@@ -25,7 +25,7 @@ _sym_db = _symbol_database.Default()
 from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x08\x61i.proto\x12\x02\x61i\x1a\x1fgoogle/protobuf/timestamp.proto\"\x8d\x01\n\x0b\x43hatMessage\x12&\n\x06sender\x18\x01 \x01(\x0e\x32\x16.ai.ChatMessage.Sender\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\t\"E\n\x06Sender\x12\x16\n\x12SENDER_UNSPECIFIED\x10\x00\x12\r\n\tSENDER_AI\x10\x01\x12\x14\n\x10SENDER_CANDIDATE\x10\x02\"\x94\x01\n\x10\x43hatReplyRequest\x12\x13\n\x0bresume_text\x18\x01 \x01(\t\x12\x11\n\tjob_title\x18\x02 \x01(\t\x12\x17\n\x0fjob_description\x18\x03 \x01(\t\x12\x18\n\x10job_requirements\x18\x04 \x01(\t\x12%\n\x0c\x63hat_history\x18\x05 \x03(\x0b\x32\x0f.ai.ChatMessage\"\'\n\x11\x43hatReplyResponse\x12\x12\n\nai_message\x18\x01 \x01(\t\"C\n\x12ScoreResumeRequest\x12\x13\n\x0bresume_text\x18\x01 \x01(\t\x12\x18\n\x10job_requirements\x18\x02 \x01(\t\"l\n\x13ScoreResumeResponse\x12\x14\n\x0cresume_score\x18\x01 \x01(\x01\x12\x0f\n\x07\x63omment\x18\x02 \x01(\t\x12.\n\x0erecommendation\x18\x03 \x01(\x0e\x32\x16.ai.RecommendationEnum\"m\n\x15ScoreInterviewRequest\x12\x13\n\x0bresume_text\x18\x01 \x01(\t\x12\x18\n\x10job_requirements\x18\x02 \x01(\t\x12%\n\x0c\x63hat_history\x18\x03 \x03(\x0b\x32\x0f.ai.ChatMessage\"r\n\x16ScoreInterviewResponse\x12\x17\n\x0finterview_score\x18\x01 \x01(\x01\x12\x0f\n\x07\x63omment\x18\x02 \x01(\t\x12.\n\x0erecommendation\x18\x03 \x01(\x0e\x32\x16.ai.RecommendationEnum*D\n\x12RecommendationEnum\x12\r\n\tRECOMMEND\x10\x00\x12\x0c\n\x08\x43ONSIDER\x10\x01\x12\x11\n\rNOT_RECOMMEND\x10\x02\x32\xd0\x01\n\tAIService\x12:\n\tChatReply\x12\x14.ai.ChatReplyRequest\x1a\x15.ai.ChatReplyResponse0\x01\x12>\n\x0bScoreResume\x12\x16.ai.ScoreResumeRequest\x1a\x17.ai.ScoreResumeResponse\x12G\n\x0eScoreInterview\x12\x19.ai.ScoreInterviewRequest\x1a\x1a.ai.ScoreInterviewResponseB)\n\x15\x64\x65.tum.devops.grpc.aiB\x0e\x41IServiceProtoP\x01\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x08\x61i.proto\x12\x02\x61i\x1a\x1fgoogle/protobuf/timestamp.proto\"\x8d\x01\n\x0b\x43hatMessage\x12&\n\x06sender\x18\x01 \x01(\x0e\x32\x16.ai.ChatMessage.Sender\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\t\"E\n\x06Sender\x12\x16\n\x12SENDER_UNSPECIFIED\x10\x00\x12\r\n\tSENDER_AI\x10\x01\x12\x14\n\x10SENDER_CANDIDATE\x10\x02\"\x94\x01\n\x10\x43hatReplyRequest\x12\x13\n\x0bresume_text\x18\x01 \x01(\t\x12\x11\n\tjob_title\x18\x02 \x01(\t\x12\x17\n\x0fjob_description\x18\x03 \x01(\t\x12\x18\n\x10job_requirements\x18\x04 \x01(\t\x12%\n\x0c\x63hat_history\x18\x05 \x03(\x0b\x32\x0f.ai.ChatMessage\"\'\n\x11\x43hatReplyResponse\x12\x12\n\nai_message\x18\x01 \x01(\t\"o\n\x12ScoreResumeRequest\x12\x11\n\tjob_title\x18\x01 \x01(\t\x12\x17\n\x0fjob_description\x18\x02 \x01(\t\x12\x18\n\x10job_requirements\x18\x03 \x01(\t\x12\x13\n\x0bresume_text\x18\x04 \x01(\t\"l\n\x13ScoreResumeResponse\x12\x14\n\x0cresume_score\x18\x01 \x01(\x01\x12\x0f\n\x07\x63omment\x18\x02 \x01(\t\x12.\n\x0erecommendation\x18\x03 \x01(\x0e\x32\x16.ai.RecommendationEnum\"\x84\x01\n\x15ScoreInterviewRequest\x12\x11\n\tjob_title\x18\x01 \x01(\t\x12\x17\n\x0fjob_description\x18\x02 \x01(\t\x12\x18\n\x10job_requirements\x18\x03 \x01(\t\x12%\n\x0c\x63hat_history\x18\x04 \x03(\x0b\x32\x0f.ai.ChatMessage\"r\n\x16ScoreInterviewResponse\x12\x17\n\x0finterview_score\x18\x01 \x01(\x01\x12\x0f\n\x07\x63omment\x18\x02 \x01(\t\x12.\n\x0erecommendation\x18\x03 \x01(\x0e\x32\x16.ai.RecommendationEnum*D\n\x12RecommendationEnum\x12\r\n\tRECOMMEND\x10\x00\x12\x0c\n\x08\x43ONSIDER\x10\x01\x12\x11\n\rNOT_RECOMMEND\x10\x02\x32\xd0\x01\n\tAIService\x12:\n\tChatReply\x12\x14.ai.ChatReplyRequest\x1a\x15.ai.ChatReplyResponse0\x01\x12>\n\x0bScoreResume\x12\x16.ai.ScoreResumeRequest\x1a\x17.ai.ScoreResumeResponse\x12G\n\x0eScoreInterview\x12\x19.ai.ScoreInterviewRequest\x1a\x1a.ai.ScoreInterviewResponseB)\n\x15\x64\x65.tum.devops.grpc.aiB\x0e\x41IServiceProtoP\x01\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,8 +33,8 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'ai_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'\n\025de.tum.devops.grpc.aiB\016AIServiceProtoP\001'
-  _globals['_RECOMMENDATIONENUM']._serialized_start=791
-  _globals['_RECOMMENDATIONENUM']._serialized_end=859
+  _globals['_RECOMMENDATIONENUM']._serialized_start=859
+  _globals['_RECOMMENDATIONENUM']._serialized_end=927
   _globals['_CHATMESSAGE']._serialized_start=50
   _globals['_CHATMESSAGE']._serialized_end=191
   _globals['_CHATMESSAGE_SENDER']._serialized_start=122
@@ -44,13 +44,13 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_CHATREPLYRESPONSE']._serialized_start=344
   _globals['_CHATREPLYRESPONSE']._serialized_end=383
   _globals['_SCORERESUMEREQUEST']._serialized_start=385
-  _globals['_SCORERESUMEREQUEST']._serialized_end=452
-  _globals['_SCORERESUMERESPONSE']._serialized_start=454
-  _globals['_SCORERESUMERESPONSE']._serialized_end=562
-  _globals['_SCOREINTERVIEWREQUEST']._serialized_start=564
-  _globals['_SCOREINTERVIEWREQUEST']._serialized_end=673
-  _globals['_SCOREINTERVIEWRESPONSE']._serialized_start=675
-  _globals['_SCOREINTERVIEWRESPONSE']._serialized_end=789
-  _globals['_AISERVICE']._serialized_start=862
-  _globals['_AISERVICE']._serialized_end=1070
+  _globals['_SCORERESUMEREQUEST']._serialized_end=496
+  _globals['_SCORERESUMERESPONSE']._serialized_start=498
+  _globals['_SCORERESUMERESPONSE']._serialized_end=606
+  _globals['_SCOREINTERVIEWREQUEST']._serialized_start=609
+  _globals['_SCOREINTERVIEWREQUEST']._serialized_end=741
+  _globals['_SCOREINTERVIEWRESPONSE']._serialized_start=743
+  _globals['_SCOREINTERVIEWRESPONSE']._serialized_end=857
+  _globals['_AISERVICE']._serialized_start=930
+  _globals['_AISERVICE']._serialized_end=1138
 # @@protoc_insertion_point(module_scope)
