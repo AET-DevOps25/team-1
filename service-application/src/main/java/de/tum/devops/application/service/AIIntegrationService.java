@@ -12,6 +12,7 @@ import de.tum.devops.application.persistence.enums.RecommendationEnum;
 import de.tum.devops.application.persistence.repository.ApplicationRepository;
 import de.tum.devops.application.persistence.repository.AssessmentRepository;
 import de.tum.devops.application.persistence.repository.ChatMessageRepository;
+import de.tum.devops.grpc.ai.ChatReplyResponse;
 import de.tum.devops.grpc.ai.ScoreInterviewResponse;
 import de.tum.devops.grpc.ai.ScoreResumeResponse;
 import io.grpc.stub.StreamObserver;
@@ -21,6 +22,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -94,7 +96,7 @@ public class AIIntegrationService {
     }
 
     @Transactional
-    public void processAndGetAIResponseStream(UUID sessionId, ChatSession session, StreamObserver<de.tum.devops.grpc.ai.ChatReplyResponse> responseObserver) {
+    public void processAndGetAIResponseStream(UUID sessionId, ChatSession session, StreamObserver<ChatReplyResponse> responseObserver) {
         // Get application and job details
         Application application = session.getApplication();
         JobDto job = jobWebClient.fetchJob(application.getJobId()).block();
@@ -292,9 +294,12 @@ public class AIIntegrationService {
      */
     private ChatMessage createErrorMessage(ChatSession session, String errorMessage) {
         ChatMessage message = new ChatMessage();
+        message.setMessageId(UUID.randomUUID());
         message.setSession(session);
         message.setSender(MessageSender.AI);
         message.setContent(errorMessage);
-        return chatMessageRepository.save(message);
+        message.setSentAt(LocalDateTime.now());
+        // Not save error message
+        return message;
     }
 }
