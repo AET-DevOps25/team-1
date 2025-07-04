@@ -14,7 +14,7 @@ spec:
   namespaceSelector:
     matchNames: [ {{ .Release.Namespace }} ]
   endpoints:
-    - port: http
-      path: /actuator/prometheus
+    - port: metrics
+      path: /
       interval: {{ .Values.monitoring.scrapeInterval | default "15s" }}
 {{- end }}
