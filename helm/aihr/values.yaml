@@ -48,23 +48,22 @@ grafana:
       cert-manager.io/cluster-issuer: letsencrypt-prod
 
   datasources:
-    "datasources.yaml": |-
-      {{- $r := .Release.Name }}
+    datasources.yaml:
       apiVersion: 1
       datasources:
         - name: auth-service
           type: prometheus
-          url: http://{{ $r }}-service-auth:8080/actuator/prometheus
+          url: http://{{ printf "%s-service-auth" .Release.Name }}:8080/actuator/prometheus
           access: proxy
         - name: job-service
           type: prometheus
-          url: http://{{ $r }}-service-job:8081/actuator/prometheus
+          url: http://{{ printf "%s-service-job" .Release.Name }}:8081/actuator/prometheus
           access: proxy
         - name: application-service
           type: prometheus
-          url: http://{{ $r }}-service-application:8082/actuator/prometheus
+          url: http://{{ printf "%s-service-application" .Release.Name }}:8082/actuator/prometheus
           access: proxy
         - name: genai-service
           type: prometheus
-          url: http://{{ $r }}-service-genai:8000
+          url: http://{{ printf "%s-service-genai" .Release.Name }}:8000
           access: proxy
