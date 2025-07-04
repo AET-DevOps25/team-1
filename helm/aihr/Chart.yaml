@@ -2,7 +2,7 @@ apiVersion: v2
 name: ai-hr                         # Umbrella chart name
 description: Umbrella chart for the AI-HR micro-services
 type: application
-version: 0.1.0                     # Chart version
+version: 0.1.1                     # Chart version
 appVersion: "1.0.0"
 icon: https://imgur.com/a/q4Plszi
 
@@ -19,9 +19,6 @@ dependencies:
   - name: service-application
     version: 0.1.0
     repository: "file://charts/service-application"
-  - name: service-assess
-    version: 0.1.0
-    repository: "file://charts/service-assess"
   - name: service-genai
     version: 0.1.0
     repository: "file://charts/service-genai"

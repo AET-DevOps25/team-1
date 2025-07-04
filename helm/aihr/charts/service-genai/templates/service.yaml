@@ -10,3 +10,11 @@ spec:
       targetPort: {{ .Values.service.port }}
       protocol: TCP
       name: http
+    - port: 8079
+      targetPort: grpc
+      protocol: TCP
+      name: grpc
+    - port: 8000
+      targetPort: metrics
+      protocol: TCP
+      name: metrics

@@ -34,8 +34,10 @@ spec:
             - containerPort: 5432
               name: postgres
           env:
+{{- if .Values.postgresqlDatabase }}
             - name: POSTGRES_DB
               value: {{ .Values.postgresqlDatabase | quote }}
+{{- end }}
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
