@@ -95,6 +95,9 @@ jobs:
           echo "${{ secrets.JWT_PRIV_KEY }}" > priv.pem
           echo "${{ secrets.JWT_PUB_KEY }}"  > pub.pem
 
+      - name: Helm dependency update
+        run: helm dependency update ./helm/aihr
+
       - name: Helm deploy
         run: |
           helm upgrade --install ${{ steps.vars.outputs.release }} ./helm/aihr \
