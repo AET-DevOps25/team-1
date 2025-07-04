@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: 'Branch or tag to build (e.g. week1)' 
+        description: 'Branch or tag to build (e.g. week1)'
         required: false
 
 jobs:
@@ -51,8 +51,6 @@ jobs:
   deploy-k8s:
     needs: build-and-push
     runs-on: ubuntu-latest
-    environment:
-      name: k8s
 
     steps:
       - uses: actions/checkout@v4

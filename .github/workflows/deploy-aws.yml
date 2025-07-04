@@ -6,8 +6,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: AWS
 
     steps:
       - name: Checkout code

@@ -2,4 +2,4 @@ venv
 .idea
 requirements-true-packages.txt
 generate_proto.bat
-*
+.env

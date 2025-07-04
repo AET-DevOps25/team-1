@@ -43,13 +43,20 @@ dependencies {
     testImplementation 'org.springframework.grpc:spring-grpc-test'
 }
 
+def isLinux = org.gradle.internal.os.OperatingSystem.current().isLinux()
+def isWindows = org.gradle.internal.os.OperatingSystem.current().isWindows()
+
 protobuf {
     protoc {
         artifact = 'com.google.protobuf:protoc'
     }
     plugins {
         grpc {
-            artifact = 'io.grpc:protoc-gen-grpc-java'
+            if (isLinux) {
+                path = 'service-application/protoc-gen-grpc-java-1.73.0-linux-x86_64.exe'
+            } else if (isWindows) {
+                path = 'service-application/protoc-gen-grpc-java-1.73.0-windows-x86_64.exe'
+            }
         }
     }
     generateProtoTasks {

@@ -26,7 +26,7 @@ class AIService(ai_pb2_grpc.AIServiceServicer):
     def ChatReply(self, request: ai_pb2.ChatReplyRequest, context):  # type: ignore
         REQUEST_COUNTER.labels("ChatReply").inc()
         # Stream response from LLM
-        # TODO: rebuild request message and chat history
+
         messages = [
             SystemMessage(content=f"You are a experienced expert in {request.job_title}. You are generate a series of questions for a {request.job_title} position. "
                                   f"When you generate a question, you can also consider the candidate's resume, because it can help to check the authenticity of the resume. "

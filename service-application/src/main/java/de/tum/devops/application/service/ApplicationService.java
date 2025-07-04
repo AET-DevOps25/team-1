@@ -64,7 +64,7 @@ public class ApplicationService {
         }
 
         // 3. Verify job exists and is open
-        jobWebClient.fetchJob(jobId)
+        JobDto jobDto = jobWebClient.fetchJob(jobId)
                 .filter(job -> job.getStatus() == JobStatus.OPEN)
                 .blockOptional()
                 .orElseThrow(() -> new IllegalArgumentException("Job is not open for applications"));
@@ -104,6 +104,7 @@ public class ApplicationService {
         savedApplication = applicationRepository.saveAndFlush(savedApplication);
 
         ApplicationDto applicationDto = convertToDto(savedApplication);
+        applicationDto.setJob(jobDto);
         hideImportantFieldsForCandidate(applicationDto);
         return applicationDto;
     }
@@ -186,6 +187,16 @@ public class ApplicationService {
         // Fetch related data if needed, e.g., user details
         UserDto candidate = authWebClient.fetchUser(application.getCandidateId()).block();
         JobDto job = jobWebClient.fetchJob(application.getJobId()).block();
+        if (job == null) {
+            logger.warn("Job not found for application: {}", application.getApplicationId());
+        } else {
+            try {
+                UserDto hrCreator = authWebClient.fetchUser(job.getHrCreator().getUserID()).block();
+                job.setHrCreator(hrCreator);
+            } catch (Exception e) {
+                logger.error("HR creator not found for job when converting Application to dto: {}", job.getJobID(), e);
+            }
+        }
 
         ChatStatus chatStatus = application.getChatSession() != null ? application.getChatSession().getStatus() : null;
 
@@ -212,7 +223,11 @@ public class ApplicationService {
     private void hideImportantFieldsForCandidate(ApplicationDto applicationDto) {
         applicationDto.setResumeText(null);
         applicationDto.setResumeFilePath(null);
-        applicationDto.getJob().getHrCreator().setUserID(null);
+        try {
+            applicationDto.getJob().getHrCreator().setUserID(null);
+        } catch (Exception e) {
+            logger.error("HR creator not found for job when hiding important fields for candidate: {}", applicationDto.getJob().getJobID(), e);
+        }
         applicationDto.setAssessment(null);
     }
 }

@@ -1,0 +1,13 @@
+application-dev.yml
+bin
+build
+.env
+*.pem
+uploads
+terraform
+helm
+ansible
+.idea
+.github
+.vscode
+.gradle

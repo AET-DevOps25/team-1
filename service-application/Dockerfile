@@ -1,5 +1,5 @@
 # Multi-stage build for application service
-FROM eclipse-temurin:21-jdk-alpine AS build
+FROM eclipse-temurin:21-jdk AS build
 
 # Set working directory
 WORKDIR /app
@@ -10,20 +10,24 @@ COPY gradle gradle
 COPY settings.gradle .
 COPY build.gradle .
 
+RUN gradle dependencies || return 0
+
 # Copy service source code
 COPY service-application service-application
-COPY persistence persistence
 
 # Build the application
+RUN rm -rf /root/.gradle/caches/
 RUN chmod +x gradlew
+RUN chmod +x /app/service-application/protoc-gen-grpc-java-1.73.0-linux-x86_64.exe
 RUN ./gradlew :service-application:build -x test
 
 # Runtime stage
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:21-jre
 
 # Add non-root user for security
-RUN addgroup -g 1001 -S appgroup && \
-    adduser -u 1001 -S appuser -G appgroup
+RUN addgroup --gid 1001 --system appgroup \
+    && adduser --uid 1001 --system --ingroup appgroup appuser
+
 
 # Set working directory
 WORKDIR /app

@@ -19,15 +19,6 @@ COPY --from=builder /usr/local /usr/local
 # Copy application code
 COPY . .
 
-# Environment settings
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+EXPOSE 8079 8000
 
-EXPOSE 8079
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
-
-# Run the FastAPI application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8079"]
+CMD ["python", "-m", "app.main"]

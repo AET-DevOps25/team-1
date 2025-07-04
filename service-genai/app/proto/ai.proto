@@ -6,8 +6,6 @@ option java_package = "de.tum.devops.grpc.ai";
 option java_outer_classname = "AIServiceProto";
 option java_multiple_files = true;
 
-import "google/protobuf/timestamp.proto";
-
 // Represents a single chat message exchanged between AI and candidate
 message ChatMessage {
   enum Sender {

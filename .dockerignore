@@ -1,0 +1,13 @@
+.env
+*.pem
+build
+uploads
+terraform
+proto
+helm
+ansible
+.idea
+.github
+.vscode
+.gradle
+postgresql
