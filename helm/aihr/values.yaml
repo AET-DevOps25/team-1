@@ -42,7 +42,7 @@ global:
       hosts:
         - grafana.{{ .Values.global.env.host }}
       tls:
-        - secretName: { { .Values.global.env.tlsSecret } }
+        - secretName: {{ .Values.global.env.tlsSecret }}
           hosts:
             - grafana.{{ .Values.global.env.host }}
 
