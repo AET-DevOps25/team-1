@@ -28,39 +28,43 @@ global:
     username: ""
     password: ""
 
-  # Grafana overrides
-  grafana:
-    adminPassword: "${GRAFANA_ADMIN_PWD}"
+# Grafana overrides
+grafana:
+  rbac:
+    namespaced: true
 
-    service:
-      type: ClusterIP
-      port: 80
+  adminPassword: ""     # CI 用 --set-string 注入
 
-    ingress:
-      enabled: true
-      className: nginx
-      hosts: []           # override per-environment values file
-      tls: []
-      annotations:
-        cert-manager.io/cluster-issuer: letsencrypt-prod
+  service:
+    type: ClusterIP
+    port: 80
 
-    datasources:
-      "datasources.yaml":
-        apiVersion: 1
-        datasources:
-          - name: auth-service
-            type: prometheus
-            url: http://{{ include "aihr.releaseName" . }}-service-auth:8080/actuator/prometheus
-            access: proxy
-          - name: job-service
-            type: prometheus
-            url: http://{{ include "aihr.releaseName" . }}-service-job:8081/actuator/prometheus
-            access: proxy
-          - name: application-service
-            type: prometheus
-            url: http://{{ include "aihr.releaseName" . }}-service-application:8082/actuator/prometheus
-            access: proxy
-          - name: genai-service
-            type: prometheus
-            url: http://{{ include "aihr.releaseName" . }}-service-genai:8000
-            access: proxy
+  ingress:
+    enabled: true
+    className: nginx
+    hosts: []           # 在 values-dev / prod 覆盖
+    tls: []
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+
+  datasources:
+    "datasources.yaml": |-
+      {{- $r := .Release.Name }}
+      apiVersion: 1
+      datasources:
+        - name: auth-service
+          type: prometheus
+          url: http://{{ $r }}-service-auth:8080/actuator/prometheus
+          access: proxy
+        - name: job-service
+          type: prometheus
+          url: http://{{ $r }}-service-job:8081/actuator/prometheus
+          access: proxy
+        - name: application-service
+          type: prometheus
+          url: http://{{ $r }}-service-application:8082/actuator/prometheus
+          access: proxy
+        - name: genai-service
+          type: prometheus
+          url: http://{{ $r }}-service-genai:8000
+          access: proxy
