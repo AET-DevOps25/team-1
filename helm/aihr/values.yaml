@@ -23,14 +23,14 @@ global:
     privateKey: ""           # helm --set-file 注入
     publicKey: ""            # helm --set-file 注入
 
-  # 数据库凭据（用户名可外部覆写，密码留空→安装时随机）
+  # 数据库凭据
   db:
     username: ""
     password: ""
 
   # Grafana overrides
   grafana:
-    adminPassword: "${GRAFANA_ADMIN_PWD}"   # 留空, CI 可 --set-file 或 --set 覆写
+    adminPassword: "${GRAFANA_ADMIN_PWD}"
 
     service:
       type: ClusterIP
@@ -41,6 +41,8 @@ global:
       className: nginx
       hosts: []           # override per-environment values file
       tls: []
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
 
     datasources:
       "datasources.yaml":
