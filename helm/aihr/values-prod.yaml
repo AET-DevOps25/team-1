@@ -4,9 +4,19 @@ global:
     host: api.ai-hr.student.k8s.aet.cit.tum.de
     tlsSecret: ai-hr-prod-tls
     corsAllowed: "https://ai-hr.student.k8s.aet.cit.tum.de/api/v1/applications"
+  grafana:
+    ingress:
+      hosts:
+        - grafana.api.ai-hr.student.k8s.aet.cit.tum.de
+      tls:
+        - secretName: ai-hr-prod-grafana-tls
+          hosts:
+            - grafana.api.ai-hr.student.k8s.aet.cit.tum.de
 
 frontend:
   ingress:
     enabled: true
     host: ai-hr.student.k8s.aet.cit.tum.de
     tlsSecret: ai-hr-frontend-tls
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod

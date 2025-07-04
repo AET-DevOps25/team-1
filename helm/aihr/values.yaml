@@ -39,12 +39,8 @@ global:
     ingress:
       enabled: true
       className: nginx
-      hosts:
-        - grafana.{{ .Values.global.env.host }}
-      tls:
-        - secretName: {{ .Values.global.env.tlsSecret }}
-          hosts:
-            - grafana.{{ .Values.global.env.host }}
+      hosts: []           # override per-environment values file
+      tls: []
 
     datasources:
       "datasources.yaml":
