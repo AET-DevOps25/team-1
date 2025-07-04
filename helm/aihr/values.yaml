@@ -27,3 +27,42 @@ global:
   db:
     username: ""
     password: ""
+
+  # Grafana overrides
+  grafana:
+    adminPassword: "${GRAFANA_ADMIN_PWD}"   # 留空, CI 可 --set-file 或 --set 覆写
+
+    service:
+      type: ClusterIP
+      port: 80
+
+    ingress:
+      enabled: true
+      className: {{ .Values.global.ingress.className }}
+      hosts:
+        - grafana.{{ .Values.global.env.host }}
+      tls:
+        - secretName: {{ .Values.global.env.tlsSecret }}
+          hosts:
+            - grafana.{{ .Values.global.env.host }}
+
+    datasources:
+      "datasources.yaml":
+        apiVersion: 1
+        datasources:
+          - name: auth-service
+            type: prometheus
+            url: http://{{ include "aihr.releaseName" . }}-service-auth:8080/actuator/prometheus
+            access: proxy
+          - name: job-service
+            type: prometheus
+            url: http://{{ include "aihr.releaseName" . }}-service-job:8081/actuator/prometheus
+            access: proxy
+          - name: application-service
+            type: prometheus
+            url: http://{{ include "aihr.releaseName" . }}-service-application:8082/actuator/prometheus
+            access: proxy
+          - name: genai-service
+            type: prometheus
+            url: http://{{ include "aihr.releaseName" . }}-service-genai:8000
+            access: proxy

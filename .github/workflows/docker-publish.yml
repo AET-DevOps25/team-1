@@ -105,6 +105,7 @@ jobs:
             --set global.imageTag=${{ env.IMAGE_TAG }} \
             --set-file global.jwt.privateKey=priv.pem \
             --set-file global.jwt.publicKey=pub.pem \
+            --set global.grafana.adminPassword=${{ secrets.GRAFANA_ADMIN_PWD }} \
             --set charts.service-genai.env.ollamaBaseUrl=${{ secrets.OLLAMA_BASE_URL }} \
             --set charts.service-genai.env.ollamaModel=${{ env.OLLAMA_MODEL }} \
             --set charts.service-genai.env.ollamaApiKey=${{ secrets.OLLAMA_API_KEY }} \
