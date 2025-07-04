@@ -3,7 +3,6 @@ package de.tum.devops.application.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -25,7 +24,7 @@ import java.util.Base64;
 import java.util.List;
 
 /**
- * Security configuration for JWT authentication and authorization
+ * Security configuration for JWT authentication and CORS
  */
 @Configuration
 @EnableWebSecurity
@@ -44,15 +43,12 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Health check endpoints
                         .requestMatchers("/actuator/health").permitAll()
-                        .requestMatchers("/actuator/info").permitAll()
-                        // Authenticated endpoints
-                        .requestMatchers(HttpMethod.GET, "/api/v1/applications").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/applications/**").authenticated()
-                        // Candidate-only endpoints
-                        .requestMatchers(HttpMethod.POST, "/api/v1/applications").hasRole("CANDIDATE")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/applications/**").hasRole("CANDIDATE")
-                        // HR-only endpoints
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/applications/*/status").hasRole("HR")
+                        .requestMatchers("/actuator/prometheus").permitAll()
+                        .requestMatchers("/test/**").permitAll()
+
+                        // Internal API (no auth)
+                        .requestMatchers("/internal/api/v1/**").permitAll()
+
                         // All other requests require authentication
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
@@ -97,6 +93,9 @@ public class SecurityConfig {
     @Value("${cors.allow-credentials}")
     private boolean allowCredentials;
 
+    /**
+     * CORS configuration for frontend integration
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
@@ -104,6 +103,7 @@ public class SecurityConfig {
         configuration.setAllowedMethods(allowedMethods);
         configuration.setAllowedHeaders(List.of(allowedHeaders));
         configuration.setAllowCredentials(allowCredentials);
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

@@ -1,16 +1,70 @@
 // service-application specific dependencies
+repositories {
+    mavenCentral()
+    maven { url = 'https://repo.spring.io/milestone' }
+    maven { url = 'https://repo.spring.io/snapshot' }
+}
+
+ext {
+    set('springGrpcVersion', "0.8.0")
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.grpc:spring-grpc-dependencies:${springGrpcVersion}"
+    }
+}
+
 dependencies {
-    // Shared persistence module
-    implementation project(':persistence')
-    
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-security'
+
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
-    
+
+    // Reactive WebClient for inter-service calls
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+    // gRPC dependencies
+    implementation 'io.grpc:grpc-services'
+    implementation 'org.springframework.grpc:spring-grpc-spring-boot-starter'
+
+    // PDF and document processing
+    implementation 'org.apache.pdfbox:pdfbox:3.0.1'
+    implementation 'org.apache.poi:poi:5.4.1'
+    implementation 'org.apache.poi:poi-ooxml:5.4.1'
+    implementation 'org.apache.poi:poi-scratchpad:5.4.1'
+
     // Database
     runtimeOnly 'org.postgresql:postgresql'
-    
+
     // Testing
     testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'org.testcontainers:postgresql'
-} 
+    testImplementation 'org.springframework.grpc:spring-grpc-test'
+}
+
+def isLinux = org.gradle.internal.os.OperatingSystem.current().isLinux()
+def isWindows = org.gradle.internal.os.OperatingSystem.current().isWindows()
+
+protobuf {
+    protoc {
+        artifact = 'com.google.protobuf:protoc'
+    }
+    plugins {
+        grpc {
+            if (isLinux) {
+                path = 'service-application/protoc-gen-grpc-java-1.73.0-linux-x86_64.exe'
+            } else if (isWindows) {
+                path = 'service-application/protoc-gen-grpc-java-1.73.0-windows-x86_64.exe'
+            }
+        }
+    }
+    generateProtoTasks {
+        all()*.plugins {
+            grpc {
+                option 'jakarta_omit'
+                option '@generated=omit'
+            }
+        }
+    }
+}

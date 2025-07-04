@@ -24,4 +24,18 @@ spec:
                 name: {{ include "service-application.fullname" . }}
                 port:
                   number: 80
+          - path: /api/v1/chat
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "service-application.fullname" . }}
+                port:
+                  number: 80
+          - path: /api/v1/files
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "service-application.fullname" . }}
+                port:
+                  number: 80
 {{- end }}

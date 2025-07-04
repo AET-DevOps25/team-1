@@ -25,11 +25,11 @@ import java.util.Base64;
 import java.util.List;
 
 /**
- * Security configuration for JWT authentication and authorization
+ * Security configuration for JWT authentication and CORS
  */
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(prePostEnabled = true)
+@EnableMethodSecurity
 public class SecurityConfig {
 
     @Value("${app.jwt.public-key}")
@@ -42,19 +42,19 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // Public jobs list
+                        .requestMatchers(HttpMethod.GET, "/api/v1/jobs").permitAll()
+
+                        // Internal API (no auth)
+                        .requestMatchers("/internal/api/v1/**").permitAll()
+
                         // Health check endpoints
                         .requestMatchers("/actuator/health").permitAll()
-                        .requestMatchers("/actuator/info").permitAll()
-                        // Public endpoints
-                        .requestMatchers(HttpMethod.GET, "/api/v1/jobs").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/jobs/**").authenticated()
-                        // HR-only endpoints
-                        .requestMatchers(HttpMethod.POST, "/api/v1/jobs").hasRole("HR")
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/jobs/**").hasRole("HR")
-                        .requestMatchers(HttpMethod.POST, "/api/v1/jobs/*/close").hasRole("HR")
-                        // All other requests require authentication
-                        .anyRequest().authenticated())
-                .oauth2ResourceServer(oauth2 -> oauth2
+                        .requestMatchers("/actuator/prometheus").permitAll()
+
+                        // All other endpoints require authentication
+                        .anyRequest().authenticated()
+                ).oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt
                                 .decoder(jwtDecoder())
                                 .jwtAuthenticationConverter(jwtAuthenticationConverter())));
@@ -96,6 +96,9 @@ public class SecurityConfig {
     @Value("${cors.allow-credentials}")
     private boolean allowCredentials;
 
+    /**
+     * CORS configuration for frontend integration
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
@@ -103,6 +106,7 @@ public class SecurityConfig {
         configuration.setAllowedMethods(allowedMethods);
         configuration.setAllowedHeaders(List.of(allowedHeaders));
         configuration.setAllowCredentials(allowCredentials);
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

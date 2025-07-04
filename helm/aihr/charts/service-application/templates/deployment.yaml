@@ -60,6 +60,14 @@ spec:
             {{- end }}
             - name: CORS_ALLOWED_ORIGINS
               value: {{ .Values.env.corsAllowed | default .Values.global.env.corsAllowed | quote }}
+            - name: AUTH_BASE_URL
+              value: {{ .Values.env.authBaseUrl | default (printf "http://%s-service-auth:8080" (include "aihr.releaseName" .)) | quote }}
+            - name: JOB_BASE_URL
+              value: {{ .Values.env.jobBaseUrl | default (printf "http://%s-service-job:8081" (include "aihr.releaseName" .)) | quote }}
+            - name: GRPC_GEN_AI_SERVICE_HOST
+              value: {{ .Values.env.grpcHost | default (printf "%s-service-genai" (include "aihr.releaseName" .)) | quote }}
+            - name: GRPC_GEN_AI_SERVICE_PORT
+              value: {{ .Values.env.grpcPort | quote }}
 
           readinessProbe:
             httpGet:

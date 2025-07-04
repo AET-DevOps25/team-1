@@ -3,7 +3,8 @@ image:
   tag: ""
   pullPolicy: IfNotPresent
 
-postgresqlDatabase: hrapp
+# Default database to create; leave empty to skip (Init.sql creates multiple DBs)
+postgresqlDatabase: ""
 
 resources: {}
 

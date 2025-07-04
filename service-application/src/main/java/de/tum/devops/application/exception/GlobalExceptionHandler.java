@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
@@ -76,6 +77,64 @@ public class GlobalExceptionHandler {
         logger.warn("Authentication failed: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(ApiResponse.unauthorized("Authentication failed"));
+    }
+
+    /**
+     * Handle security exceptions
+     */
+    @ExceptionHandler(SecurityException.class)
+    public ResponseEntity<ApiResponse<String>> handleSecurityException(
+            SecurityException ex) {
+
+        logger.warn("Security violation: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.forbidden(ex.getMessage()));
+    }
+
+    /**
+     * Handle file storage exceptions
+     */
+    @ExceptionHandler(FileStorageException.class)
+    public ResponseEntity<ApiResponse<String>> handleFileStorageException(
+            FileStorageException ex) {
+
+        logger.error("File storage error: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.internalError("File storage error: " + ex.getMessage()));
+    }
+
+    /**
+     * Handle file not found exceptions
+     */
+    @ExceptionHandler(FileNotFoundException.class)
+    public ResponseEntity<ApiResponse<String>> handleFileNotFoundException(
+            FileNotFoundException ex) {
+
+        logger.warn("File not found: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.notFound(ex.getMessage()));
+    }
+
+    /**
+     * Handle multipart file exceptions
+     */
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<String>> handleMaxUploadSizeExceededException(
+            org.springframework.web.multipart.MaxUploadSizeExceededException ex) {
+
+        logger.warn("File upload size exceeded: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.badRequest("File size exceeds maximum limit of 10MB"));
+    }
+
+    /**
+     * Handle InvalidFormatException
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<String>> handleInvalidFormatException(HttpMessageNotReadableException ex) {
+        logger.warn("Invalid format: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.badRequest("Invalid format"));
     }
 
     /**

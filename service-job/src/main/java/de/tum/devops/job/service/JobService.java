@@ -1,78 +1,78 @@
 package de.tum.devops.job.service;
 
-import de.tum.devops.job.dto.*;
-import de.tum.devops.persistence.entity.Job;
-import de.tum.devops.persistence.entity.User;
-import de.tum.devops.persistence.enums.JobStatus;
-import de.tum.devops.persistence.repository.JobRepository;
-import de.tum.devops.persistence.repository.UserRepository;
+import de.tum.devops.job.client.AuthWebClient;
+import de.tum.devops.job.dto.CreateJobRequest;
+import de.tum.devops.job.dto.JobDto;
+import de.tum.devops.job.dto.UpdateJobRequest;
+import de.tum.devops.job.dto.UserDto;
+import de.tum.devops.job.persistence.entity.Job;
+import de.tum.devops.job.persistence.enums.JobStatus;
+import de.tum.devops.job.persistence.repository.JobRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Map;
 import java.util.UUID;
 
 /**
  * Service layer for job management operations
  */
 @Service
-@Transactional
 public class JobService {
 
     private static final Logger logger = LoggerFactory.getLogger(JobService.class);
 
     private final JobRepository jobRepository;
-    private final UserRepository userRepository;
+    private final AuthWebClient authWebClient;
 
-    public JobService(JobRepository jobRepository, UserRepository userRepository) {
+    public JobService(JobRepository jobRepository, AuthWebClient authWebClient) {
         this.jobRepository = jobRepository;
-        this.userRepository = userRepository;
+        this.authWebClient = authWebClient;
     }
 
     /**
      * Get paginated job list with filtering based on user role
      */
     @Transactional(readOnly = true)
-    public Map<String, Object> getJobs(int page, int size, JobStatus status, String userRole) {
+    public Page<JobDto> getJobs(int page, int size, JobStatus status, String userRole) {
         logger.info("Getting jobs - page: {}, size: {}, status: {}, userRole: {}", page, size, status, userRole);
 
-        Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.Direction.DESC, "createdAt");
         Page<Job> jobPage;
 
-        if (status != null) {
-            // Filter by specific status
-            jobPage = jobRepository.findByStatus(status, pageable);
-        } else {
-            // Role-based filtering
-            if ("HR".equals(userRole)) {
-                // HR can see all jobs
-                jobPage = jobRepository.findAll(pageable);
+        // Role-based filtering
+        if ("HR".equals(userRole)) {
+            // HR can see all jobs
+            if (status != null) {
+                // Filter by specific status
+                jobPage = jobRepository.findByStatus(status, pageable);
             } else {
-                // Candidates can only see OPEN jobs
-                JobStatus[] candidateVisibleStatuses = { JobStatus.OPEN };
-                jobPage = jobRepository.findByStatusIn(candidateVisibleStatuses, pageable);
+                jobPage = jobRepository.findAll(pageable);
             }
+        } else {
+            // Candidates can only see OPEN jobs
+            JobStatus[] candidateVisibleStatuses = {JobStatus.OPEN};
+            jobPage = jobRepository.findByStatusIn(candidateVisibleStatuses, pageable);
         }
 
         Page<JobDto> jobDtoPage = jobPage.map(this::convertToDto);
+        if (!"HR".equals(userRole)) {
+            jobDtoPage.map(this::hideSensitiveData);
+        }
 
-        return Map.of(
-                "content", jobDtoPage.getContent(),
-                "pageInfo", new PageInfo(
-                        jobDtoPage.getNumber(),
-                        jobDtoPage.getSize(),
-                        jobDtoPage.getTotalElements(),
-                        jobDtoPage.getTotalPages()));
+        return jobDtoPage;
     }
 
     /**
      * Create new job (HR only)
      */
+    @Transactional
     public JobDto createJob(CreateJobRequest request, UUID hrCreatorId) {
         logger.info("Creating job: {} by HR: {}", request.getTitle(), hrCreatorId);
 
@@ -82,12 +82,10 @@ public class JobService {
                 request.getRequirements(),
                 hrCreatorId);
 
-        if (request.getClosingDate() != null) {
-            job.setClosingDate(request.getClosingDate());
-        }
-
-        job = jobRepository.save(job);
+        job = jobRepository.saveAndFlush(job);
         logger.info("Job created successfully: {}", job.getJobId());
+        logger.info("Job details: {}", job);
+        logger.info("Job created at: {}", job.getCreatedAt());
 
         return convertToDto(job);
     }
@@ -96,7 +94,7 @@ public class JobService {
      * Get job details by ID
      */
     @Transactional(readOnly = true)
-    public JobDto getJobById(UUID jobId, String userRole) {
+    public JobDto getJobById(UUID jobId, String userRole, boolean internal) {
         logger.info("Getting job details: {} for user role: {}", jobId, userRole);
 
         Job job = jobRepository.findById(jobId)
@@ -107,12 +105,17 @@ public class JobService {
             throw new IllegalArgumentException("Job not accessible");
         }
 
-        return convertToDto(job);
+        if (internal || "HR".equals(userRole)) {
+            return convertToDto(job);
+        }
+
+        return hideSensitiveData(convertToDto(job));
     }
 
     /**
      * Update job (HR only)
      */
+    @Transactional
     public JobDto updateJob(UUID jobId, UpdateJobRequest request, UUID hrUserId) {
         logger.info("Updating job: {} by HR: {}", jobId, hrUserId);
 
@@ -129,14 +132,11 @@ public class JobService {
         if (request.getRequirements() != null) {
             job.setRequirements(request.getRequirements());
         }
-        if (request.getClosingDate() != null) {
-            job.setClosingDate(request.getClosingDate());
-        }
         if (request.getStatus() != null) {
             job.setStatus(request.getStatus());
         }
 
-        job.setLastModifiedTimestamp(LocalDateTime.now());
+        job.setUpdatedAt(LocalDateTime.now());
         job = jobRepository.save(job);
 
         logger.info("Job updated successfully: {}", jobId);
@@ -146,6 +146,7 @@ public class JobService {
     /**
      * Close job (HR only)
      */
+    @Transactional
     public JobDto closeJob(UUID jobId, UUID hrUserId) {
         logger.info("Closing job: {} by HR: {}", jobId, hrUserId);
 
@@ -157,11 +158,47 @@ public class JobService {
         }
 
         job.setStatus(JobStatus.CLOSED);
-        job.setLastModifiedTimestamp(LocalDateTime.now());
+        job.setUpdatedAt(LocalDateTime.now());
         job = jobRepository.save(job);
 
         logger.info("Job closed successfully: {}", jobId);
         return convertToDto(job);
+    }
+
+    /**
+     * Re-open job (HR only)
+     */
+    @Transactional
+    public JobDto reopenJob(UUID jobId, UUID hrUserId) {
+        logger.info("Re-opening job: {} by HR: {}", jobId, hrUserId);
+
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new IllegalArgumentException("Job not found"));
+
+        if (job.getStatus() == JobStatus.OPEN) {
+            throw new IllegalArgumentException("Job is already open");
+        }
+
+        job.setStatus(JobStatus.OPEN);
+        job.setUpdatedAt(LocalDateTime.now());
+        job = jobRepository.save(job);
+
+        logger.info("Job reopened successfully: {}", jobId);
+        return convertToDto(job);
+    }
+
+    /**
+     * Delete job (HR only)
+     */
+    @Transactional
+    public void deleteJob(UUID jobId, UUID hrUserId) {
+        logger.info("Deleting job: {} by HR: {}", jobId, hrUserId);
+
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new IllegalArgumentException("Job not found"));
+
+        jobRepository.delete(job);
+        logger.info("Job deleted: {}", jobId);
     }
 
     /**
@@ -176,19 +213,10 @@ public class JobService {
      * Convert Job entity to JobDto
      */
     private JobDto convertToDto(Job job) {
-        // Get HR creator information from UserRepository
-        User hrCreator = userRepository.findById(job.getHrCreatorId())
+        // Synchronously fetch HR creator info via WebClient
+        UserDto hrCreatorDto = authWebClient.fetchUser(job.getHrCreatorId())
+                .blockOptional()
                 .orElse(null);
-
-        UserDto hrCreatorDto = null;
-        if (hrCreator != null) {
-            hrCreatorDto = new UserDto(
-                    hrCreator.getUserId(),
-                    hrCreator.getFullName(),
-                    hrCreator.getEmail(),
-                    hrCreator.getRole().name(),
-                    hrCreator.getCreationTimestamp());
-        }
 
         return new JobDto(
                 job.getJobId(),
@@ -196,9 +224,13 @@ public class JobService {
                 job.getDescription(),
                 job.getRequirements(),
                 job.getStatus(),
-                job.getCreationTimestamp(),
-                job.getClosingDate(),
-                job.getLastModifiedTimestamp(),
+                job.getCreatedAt(),
+                job.getUpdatedAt(),
                 hrCreatorDto);
+    }
+
+    private JobDto hideSensitiveData(JobDto jobDto) {
+        jobDto.getHrCreator().setUserID(null);
+        return jobDto;
     }
 }

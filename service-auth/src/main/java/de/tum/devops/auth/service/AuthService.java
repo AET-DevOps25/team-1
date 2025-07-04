@@ -2,10 +2,11 @@ package de.tum.devops.auth.service;
 
 import de.tum.devops.auth.dto.AuthResponse;
 import de.tum.devops.auth.dto.UserDto;
-import de.tum.devops.persistence.entity.User;
-import de.tum.devops.persistence.enums.UserRole;
-import de.tum.devops.persistence.repository.UserRepository;
-import io.jsonwebtoken.Claims;
+import de.tum.devops.auth.persistence.entity.User;
+import de.tum.devops.auth.persistence.enums.UserRole;
+import de.tum.devops.auth.persistence.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
 
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
         this.userRepository = userRepository;
@@ -38,7 +40,7 @@ public class AuthService {
                 user.getFullName(),
                 user.getEmail(),
                 user.getRole(),
-                user.getCreationTimestamp());
+                user.getCreatedAt());
     }
 
     /**
@@ -77,38 +79,29 @@ public class AuthService {
         user.setPasswordHash(passwordEncoder.encode(password));
         user.setRole(UserRole.CANDIDATE);
 
-        user = userRepository.save(user);
+        user = userRepository.saveAndFlush(user);
         return generateAuthResponse(user);
     }
 
-
     /**
-     * Get user profile from access token
+     * Internal fetch user by ID (no auth)
      */
-    public UserDto getProfile(String accessToken) {
-        try {
-            Claims claims = jwtService.parseToken(accessToken);
-            UUID userId = UUID.fromString(claims.getSubject());
-
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
-            return convertToDto(user);
-
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid access token");
-        }
+    public UserDto getUserById(UUID id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        return convertToDto(user);
     }
 
     /**
      * Create HR user (only by existing HR users)
      */
-    public UserDto createHRUser(String fullName, String email, String password, String requestorToken) {
-        // Verify requestor is HR
-        UserDto requestor = getProfile(requestorToken);
-        if (!requestor.getRole().name().equals("HR")) {
-            throw new IllegalArgumentException("Only HR users can create other HR users");
-        }
+    public UserDto createHRUser(String fullName, String email, String password, String requestorId) {
+        // Requestor validation (token parsing, fetching requestor user, role check)
+        // is now handled by JwtAuthenticationFilter and @PreAuthorize("hasRole('HR')")
+        // in the AuthController.
+
+        // Log who is performing the action
+        logger.info("HR user '{}' is creating a new HR account for email '{}' with full name '{}'", requestorId, email, fullName);
 
         // Check if email already exists
         if (userRepository.existsByEmail(email)) {
@@ -121,7 +114,7 @@ public class AuthService {
         newHRUser.setPasswordHash(passwordEncoder.encode(password));
         newHRUser.setRole(UserRole.HR);
 
-        newHRUser = userRepository.save(newHRUser);
+        newHRUser = userRepository.saveAndFlush(newHRUser);
         return convertToDto(newHRUser);
     }
 
@@ -140,32 +133,5 @@ public class AuthService {
                 accessToken,
                 userDto,
                 3600); // 1 hour in seconds
-    }
-
-    /**
-     * Extract user ID from JWT token
-     */
-    public UUID extractUserIdFromToken(String token) {
-        try {
-            return jwtService.extractUserId(token);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid token");
-        }
-    }
-
-    /**
-     * Validate token and return user info
-     */
-    public UserDto validateTokenAndGetUser(String token) {
-        try {
-            UUID userId = jwtService.extractUserId(token);
-
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
-            return convertToDto(user);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid token");
-        }
     }
 }

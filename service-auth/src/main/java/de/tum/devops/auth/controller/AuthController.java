@@ -1,25 +1,21 @@
 package de.tum.devops.auth.controller;
 
-import de.tum.devops.auth.dto.ApiResponse;
-import de.tum.devops.auth.dto.AuthResponse;
-import de.tum.devops.auth.dto.LoginRequest;
-import de.tum.devops.auth.dto.RegisterRequest;
-import de.tum.devops.auth.dto.UserDto;
+import de.tum.devops.auth.dto.*;
 import de.tum.devops.auth.service.AuthService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Authentication Controller
- * Implements the 4 authentication endpoints from api-documentation.yaml:
- * - POST /api/v1/auth/login
- * - POST /api/v1/auth/register
- * - POST /api/v1/auth/logout
- * - GET /api/v1/auth/profile
  */
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -67,49 +63,27 @@ public class AuthController {
                 .body(ApiResponse.created(authResponse));
     }
 
-
     /**
-     * POST /api/v1/auth/logout
-     * User logout (simple response, no token revocation in this implementation)
+     * POST /api/v1/auth/hr-register
+     * Existing HR users create other HR accounts
      */
-    @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Object>> logout(@RequestHeader("Authorization") String authHeader) {
-        logger.info("Logout request received");
+    @PreAuthorize("hasRole('HR')")
+    @PostMapping("/hr-register")
+    public ResponseEntity<ApiResponse<UserDto>> hrRegister(
+            @Valid @RequestBody RegisterRequest request,
+            @AuthenticationPrincipal String requestorId) {
 
-        // Extract token from Authorization header (format: "Bearer <token>")
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
+        logger.info("HR register attempt for email: {} by HR user: {}", request.getEmail(), requestorId);
 
-            // Validate token and get user info for logging
-            try {
-                UserDto user = authService.validateTokenAndGetUser(token);
-                logger.info("Logout successful for user: {}", user.getUserID());
-            } catch (Exception e) {
-                logger.warn("Logout with invalid token");
-            }
-        }
+        UserDto newHR = authService.createHRUser(
+                request.getFullName(),
+                request.getEmail(),
+                request.getPassword(),
+                requestorId);
 
-        return ResponseEntity.ok(ApiResponse.success("Logout successful", null));
-    }
+        logger.info("HR user created: {} by HR user: {}", newHR.getUserID(), requestorId);
 
-    /**
-     * GET /api/v1/auth/profile
-     * Get detailed information of the current logged-in user
-     */
-    @GetMapping("/profile")
-    public ResponseEntity<ApiResponse<UserDto>> getProfile(@RequestHeader("Authorization") String authHeader) {
-        logger.info("Profile request received");
-
-        // Extract token from Authorization header
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new IllegalArgumentException("Authorization header is required");
-        }
-
-        String token = authHeader.substring(7);
-        UserDto user = authService.getProfile(token);
-
-        logger.info("Profile retrieved for user: {}", user.getUserID());
-
-        return ResponseEntity.ok(ApiResponse.success("Profile retrieved successfully", user));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.created(newHR));
     }
 }

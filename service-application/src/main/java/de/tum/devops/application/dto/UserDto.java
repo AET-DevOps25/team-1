@@ -1,6 +1,7 @@
 package de.tum.devops.application.dto;
 
-import java.time.LocalDateTime;
+import jakarta.annotation.Nullable;
+
 import java.util.UUID;
 
 /**
@@ -8,30 +9,30 @@ import java.util.UUID;
  */
 public class UserDto {
 
+    @Nullable
     private UUID userID;
     private String fullName;
     private String email;
     private String role;
-    private LocalDateTime creationTimestamp;
 
     // Constructors
     public UserDto() {
     }
 
-    public UserDto(UUID userID, String fullName, String email, String role, LocalDateTime creationTimestamp) {
+    public UserDto(@Nullable UUID userID, String fullName, String email, String role) {
         this.userID = userID;
         this.fullName = fullName;
         this.email = email;
         this.role = role;
-        this.creationTimestamp = creationTimestamp;
     }
 
     // Getters and Setters
+    @Nullable
     public UUID getUserID() {
         return userID;
     }
 
-    public void setUserID(UUID userID) {
+    public void setUserID(@Nullable UUID userID) {
         this.userID = userID;
     }
 
@@ -57,13 +58,5 @@ public class UserDto {
 
     public void setRole(String role) {
         this.role = role;
-    }
-
-    public LocalDateTime getCreationTimestamp() {
-        return creationTimestamp;
-    }
-
-    public void setCreationTimestamp(LocalDateTime creationTimestamp) {
-        this.creationTimestamp = creationTimestamp;
     }
 }

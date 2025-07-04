@@ -14,3 +14,7 @@ env:
   springProfile: docker
   corsAllowed: ""
   jwtPublicKey: ""
+  authBaseUrl: ""
+  jobBaseUrl: ""
+  grpcHost: ""
+  grpcPort: "8079"

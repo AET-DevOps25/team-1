@@ -4,7 +4,11 @@ on:
   push:
     branches:
       - main
-      - week*
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch or tag to build (e.g. week1)'
+        required: false
 
 jobs:
   build-and-push:
@@ -44,17 +48,9 @@ jobs:
       - name: Push all images via docker compose
         run: docker compose -f docker-compose.prod.yml push
 
-  deploy-aws:
-    if: github.ref == 'refs/heads/main'
-    needs: build-and-push
-    uses: ./.github/workflows/deploy-aws.yml
-    secrets: inherit
-
   deploy-k8s:
     needs: build-and-push
     runs-on: ubuntu-latest
-    environment:
-      name: k8s
 
     steps:
       - uses: actions/checkout@v4
@@ -92,6 +88,7 @@ jobs:
             echo "values=values-dev.yaml"  >>$GITHUB_OUTPUT
             echo "release=ai-hr-dev"       >>$GITHUB_OUTPUT
           fi
+          echo "OLLAMA_MODEL=${{ vars.OLLAMA_MODEL }}" >> $GITHUB_ENV
 
       - name: Write JWT keys
         run: |
@@ -108,4 +105,7 @@ jobs:
             --set global.imageTag=${{ env.IMAGE_TAG }} \
             --set-file global.jwt.privateKey=priv.pem \
             --set-file global.jwt.publicKey=pub.pem \
+            --set charts.service-genai.env.ollamaBaseUrl=${{ secrets.OLLAMA_BASE_URL }} \
+            --set charts.service-genai.env.ollamaModel=${{ env.OLLAMA_MODEL }} \
+            --set charts.service-genai.env.ollamaApiKey=${{ secrets.OLLAMA_API_KEY }} \
             --wait --timeout 15m

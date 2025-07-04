@@ -1,6 +1,7 @@
 package de.tum.devops.application.dto;
 
-import de.tum.devops.persistence.enums.MessageSender;
+import de.tum.devops.application.persistence.entity.ChatMessage;
+import de.tum.devops.application.persistence.enums.MessageSender;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -11,48 +12,63 @@ import java.util.UUID;
  * Schema definition:
  * ChatMessageDto:
  * properties:
- * messageID: string (uuid)
- * sessionID: string (uuid)
+ * messageId: string (uuid)
+ * sessionId: string (uuid)
  * sender: string (enum: [AI, CANDIDATE])
  * content: string
- * timestamp: string (date-time)
+ * sentAt: string (date-time)
  */
 public class ChatMessageDto {
 
-    private UUID messageID;
-    private UUID sessionID;
+    private UUID messageId;
+    private UUID sessionId;
     private MessageSender sender;
     private String content;
-    private LocalDateTime timestamp;
+    private LocalDateTime sentAt;
 
     // Constructors
     public ChatMessageDto() {
     }
 
-    public ChatMessageDto(UUID messageID, UUID sessionID, MessageSender sender,
-            String content, LocalDateTime timestamp) {
-        this.messageID = messageID;
-        this.sessionID = sessionID;
+    public ChatMessageDto(ChatMessage chatMessage) {
+        this.messageId = chatMessage.getMessageId();
+        this.sessionId = chatMessage.getSession().getSessionId();
+        this.sender = chatMessage.getSender();
+        this.content = chatMessage.getContent();
+        this.sentAt = chatMessage.getSentAt();
+    }
+
+    public ChatMessageDto(UUID messageId, UUID sessionId, MessageSender sender,
+            String content, LocalDateTime sentAt) {
+        this.messageId = messageId;
+        this.sessionId = sessionId;
         this.sender = sender;
         this.content = content;
-        this.timestamp = timestamp;
+        this.sentAt = sentAt;
+    }
+
+    public ChatMessageDto(UUID sessionId, MessageSender sender, String content) {
+        this.sessionId = sessionId;
+        this.sender = sender;
+        this.content = content;
+        this.sentAt = LocalDateTime.now();
     }
 
     // Getters and Setters
-    public UUID getMessageID() {
-        return messageID;
+    public UUID getMessageId() {
+        return messageId;
     }
 
-    public void setMessageID(UUID messageID) {
-        this.messageID = messageID;
+    public void setMessageId(UUID messageId) {
+        this.messageId = messageId;
     }
 
-    public UUID getSessionID() {
-        return sessionID;
+    public UUID getSessionId() {
+        return sessionId;
     }
 
-    public void setSessionID(UUID sessionID) {
-        this.sessionID = sessionID;
+    public void setSessionId(UUID sessionId) {
+        this.sessionId = sessionId;
     }
 
     public MessageSender getSender() {
@@ -71,11 +87,11 @@ public class ChatMessageDto {
         this.content = content;
     }
 
-    public LocalDateTime getTimestamp() {
-        return timestamp;
+    public LocalDateTime getSentAt() {
+        return sentAt;
     }
 
-    public void setTimestamp(LocalDateTime timestamp) {
-        this.timestamp = timestamp;
+    public void setSentAt(LocalDateTime sentAt) {
+        this.sentAt = sentAt;
     }
 }

@@ -1,581 +1,250 @@
 openapi: 3.0.3
+
 info:
-  title: AI-HR Recruitment System API
-  description: |
-    Complete AI-driven recruitment system with resume filtering, AI interview chat, and candidate scoring functionality.
-
-    ## System Workflow
-    1. **User Management**: Candidate registration/login, HR login and create other HR accounts
-    2. **Job Management**: HR creates and closes job positions
-    3. **Application Process**: Candidates apply for positions and submit resumes
-    4. **AI Assessment**: AI filters resumes and scores, chats with candidates and scores again
-    5. **HR Review**: HR views job applicants, scores, and resumes
-
-    ## Authentication
-    Uses RSA-signed JWT Bearer Token for authentication.
-
-  version: 2.0.0
-  contact:
-    name: AI-HR Team
-    email: yifei.liu@tum.de
-  license:
-    name: MIT
-    url: https://opensource.org/licenses/MIT
+  title: AI-HR Recruitment Platform – Public & Internal HTTP API
+  version: "2.2.0"
+  description: >
+    This single file describes **external** (JWT-protected) and **internal**
+    (cluster-only, no-auth) REST endpoints.
 
 servers:
-  - url: http://localhost:8080/api/v1
-    description: Development environment
+  # external gateway (Traefik / Ingress)
+  - url: https://api.ai-hr.student.k8s.aet.cit.tum.de/api/v1
+    description: External – production
+  - url: http://api.ai-hr-dev.student.k8s.aet.cit.tum.de/api/v1
+    description: External – dev
+  # internal ClusterIP services (plain HTTP; traffic stays inside the cluster)
+  - url: http://user-service/internal/api/v1
+    description: Internal – user-service
+  - url: http://job-service/internal/api/v1
+    description: Internal – job-service
+  - url: http://application-service/internal/api/v1
+    description: Internal – application-service
 
-# Security configuration
+tags:
+  - name: Auth
+  - name: Jobs
+  - name: Applications
+  - name: Chat
+  - name: Assessments
+  - name: Internal-User
+  - name: Internal-Job
+  - name: Internal-Application
+
+# ─────────────────────────────────────────────────────────────
 components:
+  # ── security ───────────────────────────────────────────────
   securitySchemes:
     BearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: RSA-signed JWT token
+      description: RSA-signed, stateless (no refresh / blacklist)
 
-  # Data model definitions
+  # ── reusable response envelope ─────────────────────────────
   schemas:
-    # Unified response format
     ApiResponse:
       type: object
+      required: [ success, message, timestamp, code ]
       properties:
-        success:
-          type: boolean
-          description: Whether the request was successful
-        message:
-          type: string
-          description: Response message
-        data:
-          oneOf:
-            - type: object
-            - type: array
-            - type: "null"
-          description: Response data
-        timestamp:
-          type: string
-          format: date-time
-          description: Response timestamp
-        code:
-          type: integer
-          description: HTTP status code
-      required:
-        - success
-        - message
-        - timestamp
-        - code
+        success: { type: boolean }
+        message: { type: string }
+        data: { nullable: true }
+        timestamp: { type: string, format: date-time }
+        code: { type: integer }
 
-    # Error response
     ErrorResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: false
-        message:
-          type: string
-          example: "Error description"
-        errors:
-          type: array
-          items:
-            type: object
-            properties:
-              field:
-                type: string
-              message:
-                type: string
-        timestamp:
-          type: string
-          format: date-time
-        code:
-          type: integer
+      allOf:
+        - $ref: "#/components/schemas/ApiResponse"
+        - type: object
+          properties:
+            errors:
+              type: array
+              items:
+                type: object
+                properties:
+                  field: { type: string }
+                  message: { type: string }
 
-    # Pagination information
     PageInfo:
       type: object
       properties:
-        page:
-          type: integer
-          minimum: 0
-          description: Current page number (0-based)
-        size:
-          type: integer
-          minimum: 1
-          maximum: 100
-          description: Number of items per page
-        total:
-          type: integer
-          description: Total number of items
-        totalPages:
-          type: integer
-          description: Total number of pages
+        page: { type: integer, minimum: 0 }
+        size: { type: integer, minimum: 1, maximum: 100 }
+        total: { type: integer }
+        totalPages: { type: integer }
 
-    # User-related models
+    # ── domain DTOs (abbreviated) ──────────────────────────────
     UserDto:
       type: object
       properties:
-        userID:
-          type: string
-          format: uuid
-        fullName:
-          type: string
-          maxLength: 255
-        email:
-          type: string
-          format: email
-          maxLength: 255
-        role:
-          type: string
-          enum: [CANDIDATE, HR]
-        creationTimestamp:
-          type: string
-          format: date-time
-      required:
-        - userID
-        - fullName
-        - email
-        - role
+        userID: { type: string, format: uuid }
+        fullName: { type: string }
+        email: { type: string, format: email }
+        role: { type: string, enum: [ CANDIDATE, HR ] }
+        createdAt: { type: string, format: date-time }
 
-    # Authentication-related models
-    LoginRequest:
-      type: object
-      properties:
-        email:
-          type: string
-          format: email
-        password:
-          type: string
-          minLength: 6
-      required:
-        - email
-        - password
-
-    RegisterRequest:
-      type: object
-      properties:
-        fullName:
-          type: string
-          maxLength: 255
-        email:
-          type: string
-          format: email
-          maxLength: 255
-        password:
-          type: string
-          minLength: 6
-      required:
-        - fullName
-        - email
-        - password
-
-    AuthResponse:
-      type: object
-      properties:
-        accessToken:
-          type: string
-          description: JWT access token
-        user:
-          $ref: "#/components/schemas/UserDto"
-        expiresIn:
-          type: integer
-          description: Access token expiration time (seconds)
-
-    # Job position-related models
     JobDto:
       type: object
       properties:
-        jobID:
-          type: string
-          format: uuid
-        title:
-          type: string
-          maxLength: 255
-        description:
-          type: string
-        requirements:
-          type: string
-          description: Job requirements
-        status:
-          type: string
-          enum: [OPEN, CLOSED, DRAFT]
-        creationTimestamp:
-          type: string
-          format: date-time
-        closingDate:
-          type: string
-          format: date
-        lastModifiedTimestamp:
-          type: string
-          format: date-time
-        hrCreator:
-          $ref: "#/components/schemas/UserDto"
-      required:
-        - jobID
-        - title
-        - status
-        - hrCreator
+        jobID: { type: string, format: uuid }
+        title: { type: string }
+        description: { type: string }
+        requirements: { type: string }
+        status: { type: string, enum: [ OPEN, CLOSED, DRAFT ] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
 
-    CreateJobRequest:
-      type: object
-      properties:
-        title:
-          type: string
-          maxLength: 255
-        description:
-          type: string
-        requirements:
-          type: string
-        closingDate:
-          type: string
-          format: date
-      required:
-        - title
-        - description
-        - requirements
-
-    UpdateJobRequest:
-      type: object
-      properties:
-        title:
-          type: string
-          maxLength: 255
-        description:
-          type: string
-        requirements:
-          type: string
-        closingDate:
-          type: string
-          format: date
-        status:
-          type: string
-          enum: [OPEN, CLOSED, DRAFT]
-
-    # Application-related models
     ApplicationDto:
       type: object
       properties:
-        applicationID:
-          type: string
-          format: uuid
-        submissionTimestamp:
-          type: string
-          format: date-time
+        applicationID: { type: string, format: uuid }
+        jobID: { type: string, format: uuid }
+        candidateID: { type: string, format: uuid }
         status:
           type: string
-          enum: [
-              SUBMITTED, # Submitted
-              AI_SCREENING, # AI screening
-              AI_INTERVIEW, # AI interview
-              COMPLETED, # Assessment completed
-              SHORTLISTED, # Shortlisted
-              REJECTED, # Rejected
-              HIRED, # Hired
+          enum:
+            [
+              SUBMITTED,
+              AI_SCREENING,
+              AI_INTERVIEW,
+              COMPLETED,
+              SHORTLISTED,
+              REJECTED,
+              HIRED,
             ]
-        resumeContent:
-          type: string
-          description: Resume text content
-        originalResumeFilename:
-          type: string
-          description: Original resume filename
-        lastModifiedTimestamp:
-          type: string
-          format: date-time
-        candidate:
-          $ref: "#/components/schemas/UserDto"
-        job:
-          $ref: "#/components/schemas/JobDto"
-        assessment:
-          $ref: "#/components/schemas/AssessmentDto"
-      required:
-        - applicationID
-        - status
-        - candidate
-        - job
+        resumeText: { type: string }
+        resumeFilePath: { type: string }
+        hrDecision: { type: string, enum: [ SHORTLISTED, REJECTED, HIRED ] }
+        hrComments: { type: string }
+        chatStatus: { type: string, enum: [ ACTIVE, COMPLETE ] }
+        submittedAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
 
-    CreateApplicationRequest:
-      type: object
-      properties:
-        jobID:
-          type: string
-          format: uuid
-        resumeContent:
-          type: string
-          description: Resume text content
-        originalResumeFilename:
-          type: string
-          description: Original resume filename (optional)
-      required:
-        - jobID
-        - resumeContent
-
-    # AI assessment-related models
     AssessmentDto:
       type: object
       properties:
-        assessmentID:
-          type: string
-          format: uuid
-        applicationID:
-          type: string
-          format: uuid
-        resumeScore:
-          type: number
-          format: float
-          minimum: 0
-          maximum: 100
-          description: Resume AI score (0-100)
-        interviewScore:
-          type: number
-          format: float
-          minimum: 0
-          maximum: 100
-          description: Interview AI score (0-100)
-        finalScore:
-          type: number
-          format: float
-          minimum: 0
-          maximum: 100
-          description: Final composite score (0-100)
-        resumeAnalysis:
-          type: string
-          description: Resume analysis results
-        interviewSummary:
-          type: string
-          description: Interview summary
-        recommendation:
-          type: string
-          enum: [RECOMMEND, CONSIDER, NOT_RECOMMEND]
-          description: AI recommendation result
-        creationTimestamp:
-          type: string
-          format: date-time
-        lastModifiedTimestamp:
-          type: string
-          format: date-time
-      required:
-        - assessmentID
-        - applicationID
-
-    # AI chat-related models
-    ChatSessionDto:
-      type: object
-      properties:
-        sessionID:
-          type: string
-          format: uuid
-        applicationID:
-          type: string
-          format: uuid
-        status:
-          type: string
-          enum: [ACTIVE, COMPLETED, EXPIRED]
-        startTimestamp:
-          type: string
-          format: date-time
-        endTimestamp:
-          type: string
-          format: date-time
-        messageCount:
-          type: integer
-          description: Total number of messages
-      required:
-        - sessionID
-        - applicationID
-        - status
+        resumeScore: { type: number }
+        interviewScore: { type: number }
+        recommendation: { type: string }
 
     ChatMessageDto:
       type: object
       properties:
-        messageID:
-          type: string
-          format: uuid
-        sessionID:
-          type: string
-          format: uuid
-        sender:
-          type: string
-          enum: [AI, CANDIDATE]
-        content:
-          type: string
-        timestamp:
-          type: string
-          format: date-time
-      required:
-        - messageID
-        - sessionID
-        - sender
-        - content
-        - timestamp
+        messageID: { type: string, format: uuid }
+        sessionID: { type: string, format: uuid }
+        sender: { type: string, enum: [ AI, CANDIDATE ] }
+        content: { type: string }
+        sentAt: { type: string, format: date-time }
 
-    SendMessageRequest:
+    # ── request bodies (minimal) ───────────────────────────────
+    LoginRequest:
+      type: object
+      required: [ email, password ]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+
+    RegisterRequest:
+      type: object
+      required: [ fullName, email, password ]
+      properties:
+        fullName: { type: string }
+        email: { type: string, format: email }
+        password: { type: string }
+
+    CreateJobRequest:
+      type: object
+      required: [ title, description, requirements ]
+      properties:
+        title: { type: string }
+        description: { type: string }
+        requirements: { type: string }
+
+    UpdateJobRequest:
       type: object
       properties:
-        content:
-          type: string
-          maxLength: 1000
-      required:
-        - content
+        title: { type: string }
+        description: { type: string }
+        requirements: { type: string }
+        status: { type: string, enum: [ OPEN, CLOSED, DRAFT ] }
 
-    # HR view-related models
-    ApplicationSummaryDto:
+    CreateApplicationRequest:
+      type: object
+      required: [ jobID, resumeFile ]
+      properties:
+        jobID: { type: string, format: uuid }
+        resumeFile: { type: string, format: binary }
+
+    UpdateApplicationRequest:
+      type: object
+      required: [ hrDecision ]
+      properties:
+        hrDecision: { type: string, enum: [ SHORTLISTED, REJECTED, HIRED ] }
+        hrComments: { type: string }
+
+    SendChatMessageRequest:
+      type: object
+      required: [ content ]
+      properties:
+        content: { type: string }
+
+    Assessment:
       type: object
       properties:
-        applicationID:
-          type: string
-          format: uuid
-        candidate:
-          $ref: "#/components/schemas/UserDto"
-        submissionTimestamp:
-          type: string
-          format: date-time
-        status:
-          type: string
-        resumeScore:
-          type: number
-          format: float
-        interviewScore:
-          type: number
-          format: float
-        finalScore:
-          type: number
-          format: float
-        recommendation:
-          type: string
-          enum: [RECOMMEND, CONSIDER, NOT_RECOMMEND]
-      required:
-        - applicationID
-        - candidate
-        - status
+        assessmentId: { type: string, format: uuid }
+        applicationId: { type: string, format: uuid }
+        resumeScore: { type: number, format: float, minimum: 0, maximum: 100 }
+        interviewScore: { type: number, format: float, minimum: 0, maximum: 100 }
+        resumeComment: { type: string }
+        interviewComment: { type: string }
+        recommendation: { type: string, enum: [ RECOMMEND, CONSIDER, NOT_RECOMMEND ] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
 
-# API path definitions
+    ResumeFileInfo:
+      type: object
+      properties:
+        applicationId: { type: string, format: uuid }
+        originalFileName: { type: string }
+        downloadFileName: { type: string }
+        size: { type: integer, format: int64 }
+        contentType: { type: string }
+        exists: { type: boolean }
+        resumeTextPreview: { type: string, nullable: true }
+        resumeTextLength: { type: integer }
+
+# ─────────────────────────────────────────────────────────────
+security:
+  - BearerAuth: [ ]
+
+# ─────────────────────────────────────────────────────────────
 paths:
-  # ===================
-  # Authentication APIs (Auth Service)
-  # ===================
+  # ========== AUTH (external) ==========
   /auth/login:
     post:
-      operationId: login
-      tags:
-        - Authentication
+      tags: [ Auth ]
+      security: [ ] # public
       summary: User login
-      description: User (HR or Candidate) login using email and password
-      security: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/LoginRequest"
-            example:
-              email: "john@example.com"
-              password: "password123"
       responses:
         "200":
-          description: Login successful
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        $ref: "#/components/schemas/AuthResponse"
-        "401":
-          description: Authentication failed
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
-  /auth/register:
-    post:
-      operationId: register
-      tags:
-        - Authentication
-      summary: Candidate registration
-      description: New candidate account registration, defaults to CANDIDATE role
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/RegisterRequest"
-            example:
-              fullName: "John Smith"
-              email: "john.smith@example.com"
-              password: "password123"
-      responses:
-        "201":
-          description: Registration successful
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        $ref: "#/components/schemas/AuthResponse"
-        "400":
-          description: Registration failed
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
-
-  /auth/logout:
-    post:
-      operationId: logout
-      tags:
-        - Authentication
-      summary: User logout
-      description: User logout and invalidate token
-      security:
-        - BearerAuth: []
-      responses:
-        "200":
-          description: Logout successful
+          description: OK
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiResponse"
 
-  /auth/profile:
-    get:
-      operationId: getProfile
-      tags:
-        - Authentication
-      summary: Get current user information
-      description: Get detailed information of the current logged-in user
-      security:
-        - BearerAuth: []
-      responses:
-        "200":
-          description: Get successful
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        $ref: "#/components/schemas/UserDto"
-
-  # HR user management
-  /users/hr:
+  /auth/register:
     post:
-      operationId: createHRUser
-      tags:
-        - User Management
-      summary: Create HR user
-      description: Existing HR users create HR accounts for others
-      security:
-        - BearerAuth: []
+      tags: [ Auth ]
+      security: [ ] # public
+      summary: Candidate registration
       requestBody:
         required: true
         content:
@@ -584,162 +253,119 @@ paths:
               $ref: "#/components/schemas/RegisterRequest"
       responses:
         "201":
-          description: HR user created successfully
+          description: Created
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        $ref: "#/components/schemas/UserDto"
-        "403":
-          description: Insufficient permissions
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ApiResponse"
 
-  # ===================
-  # Job Management APIs (Job Service)
-  # ===================
-  /jobs:
+  /auth/hr-register:
+    post:
+      tags: [ Auth ]
+      summary: HR registers another HR
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: HR created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+
+  # ========== USER SERVICE (internal) ==========
+  /internal/api/v1/users/{userId}:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
     get:
-      operationId: getJobList
-      tags:
-        - Job Management
-      summary: Get job list
-      description: Get all open job positions (paginated)
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: page
-          in: query
-          schema:
-            type: integer
-            minimum: 0
-            default: 0
-        - name: size
-          in: query
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 10
-        - name: status
-          in: query
-          schema:
-            type: string
-            enum: [OPEN, CLOSED, DRAFT]
+      tags: [ Internal-User ]
+      security: [ ] # no JWT
+      summary: Get user by ID (internal)
       responses:
         "200":
-          description: Get successful
+          description: OK
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        type: object
-                        properties:
-                          content:
-                            type: array
-                            items:
-                              $ref: "#/components/schemas/JobDto"
-                          pageInfo:
-                            $ref: "#/components/schemas/PageInfo"
+                $ref: "#/components/schemas/ApiResponse"
+
+  # ========== JOB SERVICE (external) ==========
+  /jobs:
+    get:
+      tags: [ Jobs ]
+      security: [ ] # for public to get open jobs, but when have JWT of HR, can get all jobs
+      summary: Public job list
+      parameters:
+        - {
+          name: page,
+          in: query,
+          schema: { type: integer, minimum: 0, default: 0 },
+        }
+        - {
+          name: size,
+          in: query,
+          schema: { type: integer, minimum: 1, maximum: 100, default: 10 },
+        }
+        - {
+          name: status,
+          in: query,
+          schema: { type: string, enum: [ OPEN, CLOSED, DRAFT ] },
+        }
+      responses:
+        "200":
+          description: Job list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
 
     post:
-      operationId: createJob
-      tags:
-        - Job Management
-      summary: Create job position
-      description: HR users create new job positions
-      security:
-        - BearerAuth: []
+      tags: [ Jobs ]
+      summary: Create job (HR)
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/CreateJobRequest"
-            example:
-              title: "Senior Java Developer"
-              description: "Responsible for backend system development and maintenance"
-              requirements: "3+ years Java development experience, familiar with Spring framework"
-              closingDate: "2024-02-28"
       responses:
         "201":
-          description: Creation successful
+          description: Created
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        $ref: "#/components/schemas/JobDto"
-        "403":
-          description: Insufficient permissions (non-HR user)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ApiResponse"
 
   /jobs/{jobId}:
+    parameters:
+      - {
+        name: jobId,
+        in: path,
+        required: true,
+        schema: { type: string, format: uuid },
+      }
+
     get:
-      operationId: getJobDetails
-      tags:
-        - Job Management
-      summary: Get job details
-      description: Get detailed information of a specific job position
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: jobId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      tags: [ Jobs ]
+      summary: Job details
       responses:
         "200":
-          description: Get successful
+          description: OK
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        $ref: "#/components/schemas/JobDto"
-        "404":
-          description: Job not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ApiResponse"
 
-    put:
-      operationId: updateJob
-      tags:
-        - Job Management
-      summary: Update job position
-      description: HR users update job position information
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: jobId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+    patch:
+      tags: [ Jobs ]
+      summary: Update job (HR)
       requestBody:
         required: true
         content:
@@ -748,145 +374,275 @@ paths:
               $ref: "#/components/schemas/UpdateJobRequest"
       responses:
         "200":
-          description: Update successful
+          description: Updated
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        $ref: "#/components/schemas/JobDto"
-        "403":
-          description: Insufficient permissions
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ApiResponse"
+
+    delete:
+      tags: [ Jobs ]
+      summary: Delete job (HR)
+      responses:
+        "204":
+          description: Deleted
 
   /jobs/{jobId}/close:
+    parameters:
+      - name: jobId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
     post:
-      operationId: closeJob
-      tags:
-        - Job Management
-      summary: Close job position
-      description: HR users close specified job position
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: jobId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      tags: [ Jobs ]
+      summary: Close job
       responses:
         "200":
-          description: Close successful
+          description: Closed
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        $ref: "#/components/schemas/JobDto"
-        "403":
-          description: Insufficient permissions
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ApiResponse"
 
-  # ===================
-  # Application Management APIs (Application Service)
-  # ===================
-  /applications:
+  /jobs/{jobId}/open:
+    parameters:
+      - name: jobId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [ Jobs ]
+      summary: Re-open job
+      responses:
+        "200":
+          description: Opened
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+
+  # ========== JOB SERVICE (internal) ==========
+  /internal/api/v1/jobs/{jobId}:
+    parameters:
+      - {
+        name: jobId,
+        in: path,
+        required: true,
+        schema: { type: string, format: uuid },
+      }
     get:
-      operationId: getApplicationList
-      tags:
-        - Application Management
-      summary: Get current user's applications
-      description: Candidates view their own application history, HR views all applications
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: page
-          in: query
-          schema:
-            type: integer
-            minimum: 0
-            default: 0
-        - name: size
-          in: query
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 10
-        - name: jobId
-          in: query
-          description: Filter by job ID (HR only)
-          schema:
-            type: string
-            format: uuid
-        - name: status
-          in: query
-          schema:
-            type: string
-            enum:
-              [
-                SUBMITTED,
-                AI_SCREENING,
-                AI_INTERVIEW,
-                COMPLETED,
-                SHORTLISTED,
-                REJECTED,
-                HIRED,
-              ]
+      tags: [ Internal-Job ]
+      security: [ ]
+      summary: Get job by ID (internal)
       responses:
         "200":
-          description: Get successful
+          description: OK
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        type: object
-                        properties:
-                          content:
-                            type: array
-                            items:
-                              $ref: "#/components/schemas/ApplicationDto"
-                          pageInfo:
-                            $ref: "#/components/schemas/PageInfo"
+                $ref: "#/components/schemas/ApiResponse"
 
+  # ========== APPLICATION SERVICE (external) ==========
+  /applications:
     post:
-      operationId: createApplication
-      tags:
-        - Application Management
-      summary: Submit job application
-      description: Candidates apply for specified job positions and submit resumes
-      security:
-        - BearerAuth: []
+      tags: [ Applications ]
+      summary: Apply to a job
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CreateApplicationRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+
+    get:
+      tags: [ Applications ]
+      summary: List applications (candidate / HR)
+      parameters:
+        - { name: jobId, in: query, schema: { type: string, format: uuid } }
+        - { name: status, in: query, schema: { type: string } }
+        - {
+          name: page,
+          in: query,
+          schema: { type: integer, minimum: 0, default: 0 },
+        }
+        - {
+          name: size,
+          in: query,
+          schema: { type: integer, minimum: 1, maximum: 100, default: 10 },
+        }
+      responses:
+        "200":
+          description: List
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+
+  /applications/{applicationId}:
+    parameters:
+      - {
+        name: applicationId,
+        in: path,
+        required: true,
+        schema: { type: string, format: uuid },
+      }
+
+    get:
+      tags: [ Applications ]
+      summary: Application details
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+
+    patch:
+      tags: [ Applications ]
+      summary: HR decision/comments
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateApplicationRequest"
-            example:
-              jobID: "123e4567-e89b-12d3-a456-426614174000"
-              resumeContent: "Name: John Smith\nEducation: Bachelor's in Computer Science\nWork Experience: 3 years Java development experience..."
-              originalResumeFilename: "john_smith_resume.pdf"
+              $ref: "#/components/schemas/UpdateApplicationRequest"
       responses:
-        "201":
-          description: Application submitted successfully
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+
+  /applications/{applicationId}/messages:
+    get:
+      tags: [ Applications ]
+      summary: HR fetches chat messages
+      parameters:
+        - {
+          name: page,
+          in: query,
+          schema: { type: integer, minimum: 0, default: 0 },
+        }
+        - {
+          name: size,
+          in: query,
+          schema: { type: integer, minimum: 1, maximum: 100, default: 100 },
+        }
+        - {
+          name: applicationId,
+          in: path,
+          required: true,
+          schema: { type: string, format: uuid },
+        }
+      responses:
+        "200":
+          description: Messages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+
+  /applications/{applicationId}/chat:
+    post:
+      tags: [ Chat ]
+      summary: Create or fetch chat session
+      parameters:
+        - {
+          name: applicationId,
+          in: path,
+          required: true,
+          schema: { type: string, format: uuid },
+        }
+      responses:
+        "200":
+          description: Session info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+
+  # ---- chat-session messages (external) ----
+  /chat/{sessionId}/messages:
+    parameters:
+      - {
+        name: sessionId,
+        in: path,
+        required: true,
+        schema: { type: string, format: uuid },
+      }
+
+    post:
+      tags: [ Chat ]
+      summary: Candidate sends message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendChatMessageRequest"
+      responses:
+        "200":
+          description: AI reply
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+
+    get:
+      tags: [ Chat ]
+      summary: Candidate fetches chat history
+      parameters:
+        - {
+          name: page,
+          in: query,
+          schema: { type: integer, minimum: 0, default: 0 },
+        }
+        - {
+          name: size,
+          in: query,
+          schema: { type: integer, minimum: 1, maximum: 100, default: 100 },
+        }
+      responses:
+        "200":
+          description: History
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+
+  # ========== ASSESSMENT SERVICE ==========
+  /assessments/applications/{applicationId}/score-resume:
+    parameters:
+      - {
+        name: applicationId,
+        in: path,
+        required: true,
+        schema: { type: string, format: uuid },
+      }
+    post:
+      tags: [ Assessments ]
+      security: [ { BearerAuth: [ ] } ]
+      summary: Trigger AI resume scoring for an application
+      description: >
+        HR can manually trigger resume scoring for a specific application.
+        This will use AI to analyze the candidate's resume against job requirements
+        and generate a score, comment, and recommendation.
+      responses:
+        "200":
+          description: Resume scored successfully
           content:
             application/json:
               schema:
@@ -895,83 +651,52 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: "#/components/schemas/ApplicationDto"
+                        $ref: "#/components/schemas/Assessment"
         "400":
-          description: Application failed
+          description: Bad request (invalid application ID, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "403":
-          description: Insufficient permissions (non-Candidate user)
+          description: Forbidden (not HR role)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-
-  /applications/{applicationId}:
-    get:
-      operationId: getApplicationDetails
-      tags:
-        - Application Management
-      summary: Get application details
-      description: Get detailed information and assessment results of a specific application
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: applicationId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "200":
-          description: Get successful
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        $ref: "#/components/schemas/ApplicationDto"
         "404":
           description: Application not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-        "403":
-          description: Insufficient permissions
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
 
-  # ===================
-  # AI Chat Interview APIs (GenAI Service)
-  # ===================
-  /applications/{applicationId}/chat:
-    get:
-      operationId: getChatSession
-      tags:
-        - AI Chat Interview
-      summary: Get chat session
-      description: Get AI chat session information related to the application
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: applicationId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+  /assessments/applications/{applicationId}/score-interview:
+    parameters:
+      - {
+        name: applicationId,
+        in: path,
+        required: true,
+        schema: { type: string, format: uuid },
+      }
+    post:
+      tags: [ Assessments ]
+      security: [ { BearerAuth: [ ] } ]
+      summary: Trigger AI interview scoring for an application
+      description: >
+        HR can manually trigger interview scoring for a specific application.
+        This will use AI to analyze the chat history between the candidate and AI
+        to generate an interview score, comment, and recommendation.
+        Requires that the candidate has completed at least one chat session.
       responses:
         "200":
-          description: Get successful
+          description: Interview scored successfully
           content:
             application/json:
               schema:
@@ -980,308 +705,116 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: "#/components/schemas/ChatSessionDto"
-        "404":
-          description: Chat session not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
-    post:
-      operationId: startChatInterview
-      tags:
-        - AI Chat Interview
-      summary: Start AI chat interview
-      description: Start AI chat interview session for specified application
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: applicationId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "201":
-          description: Chat session created successfully
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        $ref: "#/components/schemas/ChatSessionDto"
+                        $ref: "#/components/schemas/Assessment"
         "400":
-          description: Unable to create chat session
+          description: Bad request (no chat history, invalid application ID, etc.)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-
-  /applications/{applicationId}/chat/messages:
-    get:
-      operationId: getChatMessages
-      tags:
-        - AI Chat Interview
-      summary: Get chat messages
-      description: Get all messages in the chat session
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: applicationId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: page
-          in: query
-          schema:
-            type: integer
-            minimum: 0
-            default: 0
-        - name: size
-          in: query
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 50
-      responses:
-        "200":
-          description: Get successful
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        type: object
-                        properties:
-                          content:
-                            type: array
-                            items:
-                              $ref: "#/components/schemas/ChatMessageDto"
-                          pageInfo:
-                            $ref: "#/components/schemas/PageInfo"
-
-    post:
-      operationId: sendChatMessage
-      tags:
-        - AI Chat Interview
-      summary: Send chat message
-      description: Candidate sends message to AI
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: applicationId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SendMessageRequest"
-            example:
-              content: "I have 3 years of Java development experience, mainly using Spring Boot framework"
-      responses:
-        "200":
-          description: Message sent successfully, returns AI reply
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: "#/components/schemas/ChatMessageDto"
-                        description: List of messages including user message and AI reply
-        "400":
-          description: Message sending failed
+        "401":
+          description: Unauthorized
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-
-  /applications/{applicationId}/chat/complete:
-    post:
-      operationId: completeChatInterview
-      tags:
-        - AI Chat Interview
-      summary: Complete AI chat interview
-      description: End AI chat interview and trigger final scoring
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: applicationId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "200":
-          description: Interview completed, returns final assessment
+        "403":
+          description: Forbidden (not HR role)
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        $ref: "#/components/schemas/AssessmentDto"
-
-  # ===================
-  # AI Assessment APIs (Assessment Service)
-  # ===================
-  /assessments/{applicationId}:
-    get:
-      operationId: getAssessmentResults
-      tags:
-        - AI Assessment
-      summary: Get assessment results
-      description: Get AI assessment results for specified application
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: applicationId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "200":
-          description: Get successful
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        $ref: "#/components/schemas/AssessmentDto"
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
-          description: Assessment not found
+          description: Application not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  # ===================
-  # HR Review APIs
-  # ===================
-  /jobs/{jobId}/applications:
+  # ========== FILE SERVICE ==========
+  /files/applications/{applicationId}/resume:
+    parameters:
+      - {
+        name: applicationId,
+        in: path,
+        required: true,
+        schema: { type: string, format: uuid },
+      }
     get:
-      operationId: getJobApplications
-      tags:
-        - HR Management
-      summary: View job applicants
-      description: HR views all applicants for specified job position and their scores
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: jobId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: page
-          in: query
-          schema:
-            type: integer
-            minimum: 0
-            default: 0
-        - name: size
-          in: query
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 20
-        - name: sortBy
-          in: query
-          description: Sort field
-          schema:
-            type: string
-            enum: [finalScore, resumeScore, interviewScore, submissionTimestamp]
-            default: finalScore
-        - name: sortOrder
-          in: query
-          description: Sort order
-          schema:
-            type: string
-            enum: [asc, desc]
-            default: desc
-        - name: minScore
-          in: query
-          description: Minimum score filter
-          schema:
-            type: number
-            format: float
-            minimum: 0
-            maximum: 100
+      tags: [ Applications ]
+      security: [ { BearerAuth: [ ] } ]
+      summary: Download resume file for an application
+      description: >
+        Download the resume file for a specific application.
+        HR can download any resume file, candidates can only download their own.
       responses:
         "200":
-          description: Get successful
+          description: Resume file downloaded successfully
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            application/msword:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              description: Attachment filename
+              schema:
+                type: string
+            Content-Length:
+              description: File size in bytes
+              schema:
+                type: integer
+        "400":
+          description: Bad request
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        type: object
-                        properties:
-                          content:
-                            type: array
-                            items:
-                              $ref: "#/components/schemas/ApplicationSummaryDto"
-                          pageInfo:
-                            $ref: "#/components/schemas/PageInfo"
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "403":
-          description: Insufficient permissions (non-HR user)
+          description: Forbidden (candidate accessing other's resume)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Application or resume file not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /applications/{applicationId}/resume:
+  /files/applications/{applicationId}/resume/info:
+    parameters:
+      - {
+        name: applicationId,
+        in: path,
+        required: true,
+        schema: { type: string, format: uuid },
+      }
     get:
-      operationId: getApplicantResume
-      tags:
-        - HR Management
-      summary: View applicant resume
-      description: HR views complete resume content of applicant
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: applicationId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      tags: [ Applications ]
+      security: [ { BearerAuth: [ ] } ]
+      summary: Get resume file information for an application
+      description: >
+        Get detailed information about the resume file for a specific application.
+        Only HR can access this endpoint.
       responses:
         "200":
-          description: Get successful
+          description: Resume file information retrieved successfully
           content:
             application/json:
               schema:
@@ -1290,76 +823,49 @@ paths:
                   - type: object
                     properties:
                       data:
-                        type: object
-                        properties:
-                          resumeContent:
-                            type: string
-                          originalResumeFilename:
-                            type: string
-                          candidate:
-                            $ref: "#/components/schemas/UserDto"
-                          assessment:
-                            $ref: "#/components/schemas/AssessmentDto"
+                        $ref: "#/components/schemas/ResumeFileInfo"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "403":
-          description: Insufficient permissions (non-HR user)
+          description: Forbidden (not HR role)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Application or resume file not found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /applications/{applicationId}/decision:
-    post:
-      operationId: makeDecision
-      tags:
-        - HR Management
-      summary: HR decision
-      description: HR makes final decision on applicant (shortlist/reject/hire)
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: applicationId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                decision:
-                  type: string
-                  enum: [SHORTLISTED, REJECTED, HIRED]
-                comments:
-                  type: string
-                  description: HR evaluation comments
-              required:
-                - decision
-            example:
-              decision: "SHORTLISTED"
-              comments: "Excellent technical skills, clear communication, recommend for next round interview"
+  # ========== APPLICATION SERVICE (internal) ==========
+  /internal/api/v1/applications/{applicationId}:
+    parameters:
+      - {
+        name: applicationId,
+        in: path,
+        required: true,
+        schema: { type: string, format: uuid },
+      }
+    get:
+      tags: [ Internal-Application ]
+      security: [ ]
+      summary: Get application + assessment (internal)
       responses:
         "200":
-          description: Decision successful
+          description: OK
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        $ref: "#/components/schemas/ApplicationDto"
-        "403":
-          description: Insufficient permissions (non-HR user)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
-# Global security requirements (except auth APIs)
-security:
-  - BearerAuth: []
+                $ref: "#/components/schemas/ApiResponse"

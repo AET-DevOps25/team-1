@@ -1,6 +1,5 @@
 package de.tum.devops.application.dto;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -13,10 +12,9 @@ public class JobDto {
     private String title;
     private String description;
     private String requirements;
-    private String status;
-    private LocalDateTime creationTimestamp;
-    private LocalDate closingDate;
-    private LocalDateTime lastModifiedTimestamp;
+    private JobStatus status;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     private UserDto hrCreator;
 
     // Constructors
@@ -24,16 +22,15 @@ public class JobDto {
     }
 
     public JobDto(UUID jobID, String title, String description, String requirements,
-            String status, LocalDateTime creationTimestamp, LocalDate closingDate,
-            LocalDateTime lastModifiedTimestamp, UserDto hrCreator) {
+                  JobStatus status, LocalDateTime createdAt,
+                  LocalDateTime updatedAt, UserDto hrCreator) {
         this.jobID = jobID;
         this.title = title;
         this.description = description;
         this.requirements = requirements;
         this.status = status;
-        this.creationTimestamp = creationTimestamp;
-        this.closingDate = closingDate;
-        this.lastModifiedTimestamp = lastModifiedTimestamp;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
         this.hrCreator = hrCreator;
     }
 
@@ -70,36 +67,28 @@ public class JobDto {
         this.requirements = requirements;
     }
 
-    public String getStatus() {
+    public JobStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(JobStatus status) {
         this.status = status;
     }
 
-    public LocalDateTime getCreationTimestamp() {
-        return creationTimestamp;
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 
-    public void setCreationTimestamp(LocalDateTime creationTimestamp) {
-        this.creationTimestamp = creationTimestamp;
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
-    public LocalDate getClosingDate() {
-        return closingDate;
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
     }
 
-    public void setClosingDate(LocalDate closingDate) {
-        this.closingDate = closingDate;
-    }
-
-    public LocalDateTime getLastModifiedTimestamp() {
-        return lastModifiedTimestamp;
-    }
-
-    public void setLastModifiedTimestamp(LocalDateTime lastModifiedTimestamp) {
-        this.lastModifiedTimestamp = lastModifiedTimestamp;
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
     public UserDto getHrCreator() {

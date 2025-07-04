@@ -13,3 +13,6 @@ service:
 env:
   springProfile: docker
   corsAllowed: ""
+  ollamaBaseUrl: ""
+  ollamaModel: ""
+  ollamaApiKey: ""

@@ -26,13 +26,12 @@ services:
   # PostgreSQL database
   postgresql:
     build:
-      context: .
-      dockerfile: postgresql/Dockerfile
+      context: ./postgresql
+      dockerfile: ./Dockerfile
     container_name: ai-hr-postgres
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_DB=hrapp
       - POSTGRES_USER=${DB_USERNAME:-postgres}
       - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
     volumes:
@@ -40,12 +39,13 @@ services:
     networks:
       - ai-hr-network
     healthcheck:
-      test: [
-        "CMD-SHELL",
-        "PGPASSWORD=$$POSTGRES_PASSWORD psql -U $$POSTGRES_USER -d $$POSTGRES_DB -tAc \"SELECT to_regclass('public.embeddings');\" | grep -q embeddings"
-      ]
-      interval: 20s
-      timeout: 10s
+      test:
+        [
+          "CMD-SHELL",
+          "PGPASSWORD=$$POSTGRES_PASSWORD psql -U $$POSTGRES_USER -d ai_db -tAc \"SELECT to_regclass('public.embeddings');\" | grep -q embeddings"
+        ]
+      interval: 10s
+      timeout: 5s
       retries: 5
     labels:
       - "traefik.enable=false"
@@ -54,7 +54,7 @@ services:
   service-auth:
     build:
       context: .
-      dockerfile: service-auth/Dockerfile
+      dockerfile: ./service-auth/Dockerfile
     container_name: ai-hr-auth
     depends_on:
       postgresql:
@@ -63,13 +63,12 @@ services:
       - ai-hr-network
     environment:
       - SERVER_PORT=${AUTH_SERVER_PORT:-8080}
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-docker}
       - DB_HOST=${DB_HOST:-postgresql}
       - DB_PORT=${DB_PORT:-5432}
       - DB_USERNAME=${DB_USERNAME:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
-      - JWT_PRIVATE_KEY=${JWT_PRIVATE_KEY:-}
-      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY:-}
+      - JWT_PRIVATE_KEY=${JWT_PRIVATE_KEY:------BEGIN PRIVATE KEY-----MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCqDezswS8yNAoZHLUF3oE/dnvH3Z1Jga80GJr7mv45dQNdnkzYLFtq87hb/ocIZoiE87fgprejQPDeC732gtfcEJxqHPtYIJDe4Db+bsPRDm7lKBQOchef0wYilH57mgG/iia5nYH61naq0qmHJdFeRYzRCxpQR3n9EXXomV5gfvxLZZZtNk1Up4oTDzRLsTT2OVAlLR2ccYqeS55PcK7ny1M1EeXOBEo4OMfkwdc4f+n2osRNRfLInIlCvOToChxWX8knYmVMWl8afnvSqo6NJCTg0A3RMcEic7+gdTgRSuA9dzkWlymRwUgWhMDMkDS6l7TFIwx9tIT2dp6JYO3DAgMBAAECggEAVPFfx2M4D/uuj5ynT6c1KF4mtk8cofsFaSBhSgzBsDGi3MCV4eVGRMY48LrS+H8+8ipLTwv37rQhnMiAuwHgkSw69UZExmB9/NZCohTx+xsaiZzbZ9vVsR/XkK5b/6GN/f8kGNN0ebdmzy0rQTbCvjQ/gqvpGPCbHq36F5WEbu4udzoISi+cDkivDuujs8UfwPBi0MFYo8gvpskjxdvT2AumtTTPF7D2mp+V+QXnGuNoncmptpNRJ+72Q8DNqqLy5ZvLG+EkorpgaCeawd9RGUdYiC58RErkD9inLv/UtzG5emRrzrPqXP9GOsUMQHBoN2yfIgYpGKTHpKVYPZCvAQKBgQDejQtpgZFCh1fcXgXQ74durXFo6iej+0OtvgvgCXZD6N/W8GafCaLdsklQdbnYBMD63URC3646mCMPn8/uGo9rhDCqr0Uru5DsTa7rMbgLl5VR3lenRqSZKrnR8nakJDTMuz70r85g+ZbDNG8eLf4vyhNSVPnJfuMyNhZkH5LvvQKBgQDDnQDXjd3MgfNb8WMUiaN9qoANwl79N9HfAtbO7CTCLPgB5FwqZElJ5hshKD6MlYJY8W/2ynTgA+4aZa+EmgyaO2wMRDe/KnHWoLSECtjWmUbdZgNAW3MQvHGtjqi3B8/gnUM6vh8sDzUBDQnRn1jlWPTRbp5KAvabf7YWGuhrfwKBgQC9nJQVjzPQ5/k+osj3y6yq6pFOnvmpJ+HwvJPnjIg7scRMn8P/Sjl+A3GdYMA3QU2eLzkCdQs/lvGAVVvV9MEvDJBeTDh12zfNbR5T+qdhEQRCnVo3BeQlL5bkPl1A2iw2Jm6sEMGYM+50YE8v+mWwF85Afm/XcglmdVi8c35ATQKBgQC4+b2zGBc2bWhIeHH+GM2+Zr2ixTv37ZILde7VS17TM5zuhRhWifD37Z2X9Ct522OgYedDk12D/JNq6N9Z4CasriZVTyj8H9H4aI1rE6rK+7SUZgQLFq8vk1NYEMAgHEYKHAxX/zMRAexYaxDu5eU1M7KGXTlXuYejsdfo/VbtVwKBgAS9ZEStN17V9N+v4vCb2tnkHagXx/bKOZ9TwG3OjhRofL5mftsVeWMSnofBjQX7fpvQIn/CUREpRGCgivYs6MB79GbemhY7NlSHc+z8y1oHmPxgiizTNTImGLCCgRTS9c58KkGdm1kdkR6IbJe4cExvlndP/IPvJxUQ/WBmdk3M-----END PRIVATE KEY-----}
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY:------BEGIN PUBLIC KEY-----MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqg3s7MEvMjQKGRy1Bd6BP3Z7x92dSYGvNBia+5r+OXUDXZ5M2CxbavO4W/6HCGaIhPO34Ka3o0Dw3gu99oLX3BCcahz7WCCQ3uA2/m7D0Q5u5SgUDnIXn9MGIpR+e5oBv4omuZ2B+tZ2qtKphyXRXkWM0QsaUEd5/RF16JleYH78S2WWbTZNVKeKEw80S7E09jlQJS0dnHGKnkueT3Cu58tTNRHlzgRKODjH5MHXOH/p9qLETUXyyJyJQrzk6AocVl/JJ2JlTFpfGn570qqOjSQk4NAN0THBInO/oHU4EUrgPXc5FpcpkcFIFoTAzJA0upe0xSMMfbSE9naeiWDtwwIDAQAB-----END PUBLIC KEY-----}
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-"http://localhost:3000,http://localhost:5173,http://localhost:4200"}
     healthcheck:
       test:
@@ -86,7 +85,7 @@ services:
       retries: 3
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.auth.rule=Host(`api.localhost`) && PathPrefix(`/api/v1/auth`)"
+      - "traefik.http.routers.auth.rule=Host(`localhost`) && PathPrefix(`/api/v1/auth`)"
       - "traefik.http.routers.auth.entrypoints=web"
       - "traefik.http.services.auth.loadbalancer.server.port=8080"
 
@@ -94,24 +93,22 @@ services:
   service-job:
     build:
       context: .
-      dockerfile: service-job/Dockerfile
+      dockerfile: ./service-job/Dockerfile
     container_name: ai-hr-job
     depends_on:
       postgresql:
-        condition: service_healthy
-      service-auth:
         condition: service_healthy
     networks:
       - ai-hr-network
     environment:
       - SERVER_PORT=${JOB_SERVER_PORT:-8081}
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-docker}
       - DB_HOST=${DB_HOST:-postgresql}
       - DB_PORT=${DB_PORT:-5432}
       - DB_USERNAME=${DB_USERNAME:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
-      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY:-}
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY:------BEGIN PUBLIC KEY-----MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqg3s7MEvMjQKGRy1Bd6BP3Z7x92dSYGvNBia+5r+OXUDXZ5M2CxbavO4W/6HCGaIhPO34Ka3o0Dw3gu99oLX3BCcahz7WCCQ3uA2/m7D0Q5u5SgUDnIXn9MGIpR+e5oBv4omuZ2B+tZ2qtKphyXRXkWM0QsaUEd5/RF16JleYH78S2WWbTZNVKeKEw80S7E09jlQJS0dnHGKnkueT3Cu58tTNRHlzgRKODjH5MHXOH/p9qLETUXyyJyJQrzk6AocVl/JJ2JlTFpfGn570qqOjSQk4NAN0THBInO/oHU4EUrgPXc5FpcpkcFIFoTAzJA0upe0xSMMfbSE9naeiWDtwwIDAQAB-----END PUBLIC KEY-----}
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-"http://localhost:3000,http://localhost:5173,http://localhost:4200"}
+      - AUTH_BASE_URL=${AUTH_BASE_URL:-http://service-auth:8080}
     healthcheck:
       test:
         [
@@ -127,7 +124,7 @@ services:
       retries: 3
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.job.rule=Host(`api.localhost`) && PathPrefix(`/api/v1/jobs`)"
+      - "traefik.http.routers.job.rule=Host(`localhost`) && PathPrefix(`/api/v1/jobs`)"
       - "traefik.http.routers.job.entrypoints=web"
       - "traefik.http.services.job.loadbalancer.server.port=8081"
 
@@ -135,26 +132,25 @@ services:
   service-application:
     build:
       context: .
-      dockerfile: service-application/Dockerfile
+      dockerfile: ./service-application/Dockerfile
     container_name: ai-hr-application
     depends_on:
       postgresql:
-        condition: service_healthy
-      service-auth:
-        condition: service_healthy
-      service-job:
         condition: service_healthy
     networks:
       - ai-hr-network
     environment:
       - SERVER_PORT=${APPLICATION_SERVER_PORT:-8082}
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-docker}
       - DB_HOST=${DB_HOST:-postgresql}
       - DB_PORT=${DB_PORT:-5432}
       - DB_USERNAME=${DB_USERNAME:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
-      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY:-}
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY:------BEGIN PUBLIC KEY-----MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqg3s7MEvMjQKGRy1Bd6BP3Z7x92dSYGvNBia+5r+OXUDXZ5M2CxbavO4W/6HCGaIhPO34Ka3o0Dw3gu99oLX3BCcahz7WCCQ3uA2/m7D0Q5u5SgUDnIXn9MGIpR+e5oBv4omuZ2B+tZ2qtKphyXRXkWM0QsaUEd5/RF16JleYH78S2WWbTZNVKeKEw80S7E09jlQJS0dnHGKnkueT3Cu58tTNRHlzgRKODjH5MHXOH/p9qLETUXyyJyJQrzk6AocVl/JJ2JlTFpfGn570qqOjSQk4NAN0THBInO/oHU4EUrgPXc5FpcpkcFIFoTAzJA0upe0xSMMfbSE9naeiWDtwwIDAQAB-----END PUBLIC KEY-----}
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-"http://localhost:3000,http://localhost:5173,http://localhost:4200"}
+      - GRPC_GEN_AI_SERVICE_HOST=${GRPC_GEN_AI_SERVICE_HOST:-service-genai}
+      - GRPC_GEN_AI_SERVICE_PORT=${GRPC_GEN_AI_SERVICE_PORT:-8079}
+      - AUTH_BASE_URL=${AUTH_BASE_URL:-http://service-auth:8080}
+      - JOB_BASE_URL=${JOB_BASE_URL:-http://service-job:8081}
     volumes:
       - resume-uploads:/app/uploads/resumes
     healthcheck:
@@ -172,58 +168,15 @@ services:
       retries: 3
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.application.rule=Host(`api.localhost`) && PathPrefix(`/api/v1/applications`)"
+      - "traefik.http.routers.application.rule=Host(`localhost`) && (PathPrefix(`/api/v1/applications`) || PathPrefix(`/api/v1/chat`) || PathPrefix(`/api/v1/assessments`) || PathPrefix(`/api/v1/files`))"
       - "traefik.http.routers.application.entrypoints=web"
       - "traefik.http.services.application.loadbalancer.server.port=8082"
-
-  # Assessment service
-  service-assess:
-    build:
-      context: .
-      dockerfile: service-assess/Dockerfile
-    container_name: ai-hr-assess
-    depends_on:
-      postgresql:
-        condition: service_healthy
-      service-auth:
-        condition: service_healthy
-      service-application:
-        condition: service_healthy
-    networks:
-      - ai-hr-network
-    environment:
-      - SERVER_PORT=${ASSESS_SERVER_PORT:-8083}
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-docker}
-      - DB_HOST=${DB_HOST:-postgresql}
-      - DB_PORT=${DB_PORT:-5432}
-      - DB_USERNAME=${DB_USERNAME:-postgres}
-      - DB_PASSWORD=${DB_PASSWORD:-postgres}
-      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY:-}
-      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-"http://localhost:3000,http://localhost:5173,http://localhost:4200"}
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
-          "http://localhost:8083/actuator/health",
-        ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.assess.rule=Host(`api.localhost`) && PathPrefix(`/api/v1/assessments`)"
-      - "traefik.http.routers.assess.entrypoints=web"
-      - "traefik.http.services.assess.loadbalancer.server.port=8083"
 
   # GenAI service
   service-genai:
     build:
       context: ./service-genai
-      dockerfile: Dockerfile
+      dockerfile: ./Dockerfile
     container_name: ai-hr-genai
     depends_on:
       postgresql:
@@ -233,43 +186,23 @@ services:
     environment:
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONUNBUFFERED=1
-      - DATABASE_URL=postgresql://${DB_USERNAME:-postgres}:${DB_PASSWORD:-postgres}@postgresql:5432/hrapp
-      - ALLOW_ORIGINS=${CORS_ALLOWED_ORIGINS:-"http://localhost:3000,http://localhost:5173,http://localhost:4200"}
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8079/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.genai.rule=Host(`api.localhost`) && (PathPrefix(`/resume`) || PathPrefix(`/chat`) || PathPrefix(`/assessment`))"
-      - "traefik.http.routers.genai.entrypoints=web"
-      - "traefik.http.services.genai.loadbalancer.server.port=8079"
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
+      - OLLAMA_MODEL=${OLLAMA_MODEL}
+      - OLLAMA_API_KEY=${OLLAMA_API_KEY}
 
   # Frontend
-#  frontend:
-#    build:
-#      context: ./frontend
-#      dockerfile: Dockerfile
-#    container_name: ai-hr-frontend
-#    depends_on:
-#      service-auth:
-#        condition: service_healthy
-#      service-job:
-#        condition: service_healthy
-#      service-application:
-#        condition: service_healthy
-#      service-assess:
-#        condition: service_healthy
-#      service-genai:
-#        condition: service_healthy
-#    networks:
-#      - ai-hr-network
-#    labels:
-#      - "traefik.enable=true"
-#      - "traefik.http.routers.frontend.rule=Host(`localhost`)"
-#      - "traefik.http.routers.frontend.entrypoints=web"
-#      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ./Dockerfile
+    container_name: ai-hr-frontend
+    networks:
+      - ai-hr-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`localhost`)"
+      - "traefik.http.routers.frontend.entrypoints=web"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
 
 networks:
   ai-hr-network:

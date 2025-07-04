@@ -1,14 +1,11 @@
 name: Deploy to Production
 
 on:
-  workflow_call:
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: AWS
 
     steps:
       - name: Checkout code
