@@ -4,33 +4,39 @@ services:
     build:
       context: ./postgresql
       dockerfile: ./Dockerfile
+    image: ghcr.io/${GHCR_USER}/${GHCR_REPO}-postgresql:${GHCR_TAG:-latest}
 
   # Authentication service
   service-auth:
     build:
       context: .
       dockerfile: ./service-auth/Dockerfile
+    image: ghcr.io/${GHCR_USER}/${GHCR_REPO}-service-auth:${GHCR_TAG:-latest}
 
   # Job management service
   service-job:
     build:
       context: .
       dockerfile: ./service-job/Dockerfile
+    image: ghcr.io/${GHCR_USER}/${GHCR_REPO}-service-job:${GHCR_TAG:-latest}
 
   # Application management service
   service-application:
     build:
       context: .
       dockerfile: ./service-application/Dockerfile
+    image: ghcr.io/${GHCR_USER}/${GHCR_REPO}-service-application:${GHCR_TAG:-latest}
 
   # GenAI service
   service-genai:
+    image: ghcr.io/${GHCR_USER}/${GHCR_REPO}-service-genai:${GHCR_TAG:-latest}
     build:
       context: ./service-genai
       dockerfile: ./Dockerfile
 
   # Frontend
   frontend:
+    image: ghcr.io/${GHCR_USER}/${GHCR_REPO}-frontend:${GHCR_TAG:-latest}
     build:
       context: ./frontend
       dockerfile: ./Dockerfile
