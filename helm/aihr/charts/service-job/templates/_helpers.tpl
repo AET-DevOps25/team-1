@@ -1,3 +1,7 @@
+{{- define "service-job.name" -}}
+service-job
+{{- end }}
+
 {{- define "service-job.fullname" -}}
 {{- printf "%s-job" .Release.Name -}}
 {{- end -}}

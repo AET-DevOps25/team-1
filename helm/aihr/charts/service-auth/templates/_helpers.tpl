@@ -1,3 +1,7 @@
+{{- define "service-auth.name" -}}
+service-auth
+{{- end }}
+
 {{- define "service-auth.fullname" -}}
 {{- printf "%s-auth" .Release.Name -}}
 {{- end -}}
