@@ -14,3 +14,4 @@ env:
   springProfile: docker
   corsAllowed: ""
   jwtPublicKey: ""
+  authBaseUrl: ""

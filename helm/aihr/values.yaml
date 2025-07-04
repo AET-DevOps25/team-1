@@ -53,17 +53,17 @@ grafana:
       datasources:
         - name: auth-service
           type: prometheus
-          url: http://{{ printf "%s-auth" .Release.Name }}:8080/actuator/prometheus
+          url: http://{{ printf "%s-auth" .Release.Name }}/actuator/prometheus
           access: proxy
         - name: job-service
           type: prometheus
-          url: http://{{ printf "%s-job" .Release.Name }}:8081/actuator/prometheus
+          url: http://{{ printf "%s-job" .Release.Name }}/actuator/prometheus
           access: proxy
         - name: application-service
           type: prometheus
-          url: http://{{ printf "%s-application" .Release.Name }}:8082/actuator/prometheus
+          url: http://{{ printf "%s-application" .Release.Name }}/actuator/prometheus
           access: proxy
         - name: genai-service
           type: prometheus
-          url: http://{{ printf "%s-genai" .Release.Name }}:8000
+          url: http://{{ printf "%s-genai" .Release.Name }}:8000/
           access: proxy

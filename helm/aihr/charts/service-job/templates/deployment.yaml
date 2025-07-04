@@ -60,6 +60,8 @@ spec:
             {{- end }}
             - name: CORS_ALLOWED_ORIGINS
               value: {{ .Values.env.corsAllowed | default .Values.global.env.corsAllowed | quote }}
+            - name: AUTH_BASE_URL
+              value: {{ .Values.env.authBaseUrl | default (printf "http://%s-auth" (include "aihr.releaseName" .)) | quote }}
 
           readinessProbe:
             httpGet:
