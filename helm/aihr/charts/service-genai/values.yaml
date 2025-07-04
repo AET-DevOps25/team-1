@@ -16,3 +16,7 @@ env:
   ollamaBaseUrl: ""
   ollamaModel: ""
   ollamaApiKey: ""
+
+monitoring:
+  enabled: true
+  scrapeInterval: 15s

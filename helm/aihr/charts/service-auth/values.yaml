@@ -15,3 +15,7 @@ env:
   corsAllowed: ""
   jwtPrivateKey: ""
   jwtPublicKey: ""
+
+monitoring:
+  enabled: true
+  scrapeInterval: 15s

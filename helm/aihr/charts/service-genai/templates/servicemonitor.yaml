@@ -1,0 +1,20 @@
+{{- if .Values.monitoring.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "service-genai.fullname" . }}-monitor
+  namespace: cattle-monitoring-system
+  labels:
+    release: rancher-monitoring
+spec:
+  selector:
+    matchLabels:
+      {{- include "service-genai.selectorLabels" . | nindent 6 }}
+      prometheus: "true"
+  namespaceSelector:
+    matchNames: [ {{ .Release.Namespace }} ]
+  endpoints:
+    - port: http
+      path: /actuator/prometheus
+      interval: {{ .Values.monitoring.scrapeInterval | default "15s" }}
+{{- end }}
