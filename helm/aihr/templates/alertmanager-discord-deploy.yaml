@@ -1,0 +1,35 @@
+# templates/alertmanager-discord-deploy.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alertmanager-discord
+  labels: { app: alertmanager-discord }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: alertmanager-discord } }
+  template:
+    metadata: { labels: { app: alertmanager-discord } }
+    spec:
+      containers:
+        - name: webhook
+          image: ghcr.io/rogerrum/alertmanager-discord:main   # tag 任意
+          env:
+            - name: DISCORD_WEBHOOK
+              value: {{ .Values.discordWebhook.url | quote }}
+            - name: DISCORD_USERNAME
+              value: "alert"
+            - name: VERBOSE
+              value: "ON"
+          ports:
+            - name: http
+              containerPort: 9094
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager-discord
+spec:
+  ports:
+    - port: 9094
+      name: http
+  selector: { app: alertmanager-discord }

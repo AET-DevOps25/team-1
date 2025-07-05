@@ -1,14 +1,10 @@
-name: Build & Push All Docker Images
+name: Build and Publish and Deploy
 
 on:
   push:
     branches:
       - main
   workflow_dispatch:
-    inputs:
-      ref:
-        description: 'Branch or tag to build (e.g. week1)'
-        required: false
 
 jobs:
   build-and-push:
@@ -95,11 +91,15 @@ jobs:
           echo "${{ secrets.JWT_PRIV_KEY }}" > priv.pem
           echo "${{ secrets.JWT_PUB_KEY }}"  > pub.pem
 
+      - name: Helm dependency update
+        run: helm dependency update ./helm/aihr
+
       - name: Helm deploy
         run: |
           helm upgrade --install ${{ steps.vars.outputs.release }} ./helm/aihr \
             --namespace ${{ steps.vars.outputs.ns }} --create-namespace \
             -f helm/aihr/${{ steps.vars.outputs.values }} \
+            --set discordWebhook.url=${{ secrets.DISCORD_WEBHOOK }} \
             --set global.ghcrUser=${{ env.GHCR_USER }} \
             --set global.ghcrRepo=${{ env.GHCR_REPO }} \
             --set global.imageTag=${{ env.IMAGE_TAG }} \

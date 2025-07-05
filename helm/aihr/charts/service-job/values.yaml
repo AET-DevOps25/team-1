@@ -14,3 +14,8 @@ env:
   springProfile: docker
   corsAllowed: ""
   jwtPublicKey: ""
+  authBaseUrl: ""
+
+monitoring:
+  enabled: true
+  scrapeInterval: 15s

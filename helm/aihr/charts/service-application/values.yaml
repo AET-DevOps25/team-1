@@ -18,3 +18,7 @@ env:
   jobBaseUrl: ""
   grpcHost: ""
   grpcPort: "8079"
+
+monitoring:
+  enabled: true
+  scrapeInterval: 15s

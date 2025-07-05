@@ -17,6 +17,10 @@ spec:
       app: {{ include "service-job.fullname" . }}
   template:
     metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8081"
+        prometheus.io/path: "/actuator/prometheus"
       labels:
         app: {{ include "service-job.fullname" . }}
     spec:
@@ -60,6 +64,8 @@ spec:
             {{- end }}
             - name: CORS_ALLOWED_ORIGINS
               value: {{ .Values.env.corsAllowed | default .Values.global.env.corsAllowed | quote }}
+            - name: AUTH_BASE_URL
+              value: {{ .Values.env.authBaseUrl | default (printf "http://%s-auth" (include "aihr.releaseName" .)) | quote }}
 
           readinessProbe:
             httpGet:

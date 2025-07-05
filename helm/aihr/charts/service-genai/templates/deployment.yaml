@@ -17,6 +17,10 @@ spec:
       app: {{ include "service-genai.fullname" . }}
   template:
     metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
       labels:
         app: {{ include "service-genai.fullname" . }}
     spec:
@@ -73,7 +77,7 @@ spec:
 
           livenessProbe:
             httpGet:
-              path: /health
-              port: http
-            initialDelaySeconds: 20
-            periodSeconds: 20
+              path: /
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 120
