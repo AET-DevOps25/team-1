@@ -1,5 +1,0 @@
-apiVersion: v2
-name: monitoring
-description: Deploy a namespace-scoped Prometheus that re-uses the cluster Operator
-type: application
-version: 0.1.0

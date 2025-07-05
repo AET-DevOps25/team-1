@@ -5,15 +5,6 @@ global:
     tlsSecret: ai-hr-dev-tls
     corsAllowed: "http://localhost:3000,http://localhost:5173,http://localhost:4200,https://ai-hr-dev.student.k8s.aet.cit.tum.de/api/v1/applications"
 
-#grafana:
-#  ingress:
-#    hosts:
-#      - grafana.ai-hr-dev.student.k8s.aet.cit.tum.de
-#    tls:
-#      - secretName: ai-hr-dev-grafana-tls
-#        hosts:
-#          - grafana.ai-hr-dev.student.k8s.aet.cit.tum.de
-
 frontend:
   ingress:
     enabled: true
@@ -21,3 +12,48 @@ frontend:
     tlsSecret: ai-hr-dev-frontend-tls
     annotations:
       cert-manager.io/cluster-issuer: letsencrypt-staging
+
+prometheus:
+  server:
+    extraScrapeConfigs:
+      - job_name: aihr-pods
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - ai-hr-dev               # ★ 只抓 dev
+        relabel_configs:
+          # 只抓 prometheus.io/scrape="true" 的 Pod
+          - source_labels: [ __meta_kubernetes_pod_annotation_prometheus_io_scrape ]
+            action: keep
+            regex: "true"
+
+          # 把 PodIP + 注解端口 拼成新 __address__
+          - source_labels: [ __meta_kubernetes_pod_ip, __meta_kubernetes_pod_annotation_prometheus_io_port ]
+            action: replace
+            regex: (.+);(.+)
+            replacement: $1:$2          # -> 10.0.3.25:8080
+            target_label: __address__
+
+          # 替换 metrics 路径（默认 /metrics → /actuator/prometheus 等）
+          - source_labels: [ __meta_kubernetes_pod_annotation_prometheus_io_path ]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+
+          # （可选）给 job 打上 pod 名 / namespace 等标签，方便查询
+          - source_labels: [ __meta_kubernetes_pod_name ]
+            action: replace
+            target_label: pod
+          - source_labels: [ __meta_kubernetes_namespace ]
+            action: replace
+            target_label: namespace
+
+grafana:
+  ingress:
+    hosts:
+      - grafana.ai-hr-dev.student.k8s.aet.cit.tum.de
+    tls:
+      - secretName: ai-hr-dev-grafana-tls
+        hosts:
+          - grafana.ai-hr-dev.student.k8s.aet.cit.tum.de

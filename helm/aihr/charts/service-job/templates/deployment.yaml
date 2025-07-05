@@ -17,6 +17,10 @@ spec:
       app: {{ include "service-job.fullname" . }}
   template:
     metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8081"
+        prometheus.io/path: "/actuator/prometheus"
       labels:
         app: {{ include "service-job.fullname" . }}
     spec:

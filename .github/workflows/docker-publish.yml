@@ -112,9 +112,3 @@ jobs:
             --set charts.service-genai.env.ollamaModel=${{ env.OLLAMA_MODEL }} \
             --set charts.service-genai.env.ollamaApiKey=${{ secrets.OLLAMA_API_KEY }} \
             --wait --timeout 15m
-
-      - name: Helm monitor
-        run: |
-          helm upgrade --install ai-hr-monitoring ./helm/monitor \
-            --namespace ai-hr-monitoring --create-namespace \
-            --wait --timeout 20m

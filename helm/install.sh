@@ -33,9 +33,3 @@ helm upgrade --install ai-hr-prod ./helm/aihr \
   --set charts.service-genai.env.ollamaModel="${OLLAMA_MODEL}" \
   --set charts.service-genai.env.ollamaApiKey="${OLLAMA_API_KEY}" \
   --wait --timeout 15m
-
-helm upgrade --install ai-hr-monitoring ./helm/monitor \
-  --dependency-update \
-  --skip-crds \
-  --namespace ai-hr-monitoring --create-namespace \
-  --wait --timeout 20m

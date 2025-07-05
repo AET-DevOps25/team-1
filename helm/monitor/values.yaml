@@ -1,5 +1,0 @@
-replicaCount: 1            # 想改副本时覆写
-storageSize: 10Gi          # PVC 大小
-matchLabel: monitoring     # 与 ServiceMonitor 上的标签键一致
-matchValue: "true"
-serviceAccount: prometheus-aihr

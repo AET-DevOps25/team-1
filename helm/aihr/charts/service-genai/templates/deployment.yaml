@@ -17,6 +17,10 @@ spec:
       app: {{ include "service-genai.fullname" . }}
   template:
     metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
       labels:
         app: {{ include "service-genai.fullname" . }}
     spec:
