@@ -58,6 +58,8 @@ prometheus:
               send_resolved: true
   server:
     replicaCount: 1
+    rbac:
+      create: false
     serviceAccount:
       create: true
       name: prom-sa                 # Helm 会自动生成 Role+Binding，可直接用
