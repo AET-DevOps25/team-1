@@ -5,7 +5,7 @@ metadata:
   name: {{ include "service-auth.fullname" . }}-monitor
   namespace: {{ .Release.Namespace }}
   labels:
-    release: rancher-monitoring
+    release: aihr-monitoring
 spec:
   selector:
     matchLabels:
