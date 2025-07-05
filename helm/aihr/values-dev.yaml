@@ -14,6 +14,17 @@ frontend:
       cert-manager.io/cluster-issuer: letsencrypt-staging
 
 prometheus:
+  alertmanager:
+    ingress:
+      enabled: true
+      hosts:
+        - alertmanager.ai-hr-dev.student.k8s.aet.cit.tum.de
+      tls:
+        - secretName: ai-hr-dev-alertmanager-tls
+          hosts:
+            - alertmanager.ai-hr-dev.student.k8s.aet.cit.tum.de
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-staging
   server:
     extraScrapeConfigs:
       - job_name: aihr-pods

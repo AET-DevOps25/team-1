@@ -23,6 +23,17 @@ grafana:
           - grafana.ai-hr.student.k8s.aet.cit.tum.de
 
 prometheus:
+  alertmanager:
+    ingress:
+      enabled: true
+      hosts:
+        - alertmanager.ai-hr-prod.student.k8s.aet.cit.tum.de
+      tls:
+        - secretName: ai-hr-prod-alertmanager-tls
+          hosts:
+            - alertmanager.ai-hr-prod.student.k8s.aet.cit.tum.de
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
   server:
     extraScrapeConfigs:
       - job_name: aihr-pods
