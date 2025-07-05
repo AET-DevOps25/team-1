@@ -45,7 +45,10 @@ prometheus:
       name: prom-sa                 # Helm 会自动生成 Role+Binding，可直接用
     persistentVolume:
       enabled: true
-      size: 12Gi
+      size: 2Gi
+    alertmanagers:
+      - static_configs:
+          - targets: [ "monitoring-alertmanager:9093" ]   # Helm 默认 Service 名
 
     extraScrapeConfigs:
       - job_name: ai-hr-pods
@@ -107,3 +110,28 @@ grafana:
           url: http://monitoring-prometheus-server:80   # ← Helm 会自动生成此 Service
           access: proxy
           isDefault: true
+
+kubeStateMetrics:
+  enabled: false
+
+nodeExporter:
+  enabled: false
+
+pushgateway:
+  enabled: false
+
+alertmanager:
+  enabled: true
+  config:
+    global:
+      resolve_timeout: 5m
+    route:
+      receiver: discord
+    receivers:
+      - name: discord
+        webhook_configs:
+          - url: http://alertmanager-discord:9094
+            send_resolved: true
+
+discordWebhook:
+  url: ""

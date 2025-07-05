@@ -8,9 +8,12 @@ OLLAMA_API_KEY=""
 private_key=""
 public_key=""
 
+DISCORD_WEBHOOK=""
+
 helm upgrade --install ai-hr-dev ./helm/aihr \
   --namespace ai-hr-dev --create-namespace \
   -f helm/aihr/values-dev.yaml \
+  --set discordWebhook.url="${DISCORD_WEBHOOK}" \
   --set global.ghcrUser=aet-devops25 \
   --set global.ghcrRepo=team-1 \
   --set global.imageTag="$(git rev-parse --short HEAD)" \
@@ -24,6 +27,7 @@ helm upgrade --install ai-hr-dev ./helm/aihr \
 helm upgrade --install ai-hr-prod ./helm/aihr \
   --namespace ai-hr --create-namespace \
   -f helm/aihr/values-prod.yaml \
+  --set discordWebhook.url="${DISCORD_WEBHOOK}" \
   --set global.ghcrUser=aet-devops25 \
   --set global.ghcrRepo=team-1 \
   --set global.imageTag="$(git rev-parse --short HEAD)" \
