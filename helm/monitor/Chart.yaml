@@ -1,10 +1,5 @@
 apiVersion: v2
 name: monitoring
-description: Wrapper chart that installs kube-prometheus-stack
+description: Deploy a namespace-scoped Prometheus that re-uses the cluster Operator
 type: application
 version: 0.1.0
-
-dependencies:
-  - name: kube-prometheus-stack
-    version: 75.7.0
-    repository: https://prometheus-community.github.io/helm-charts

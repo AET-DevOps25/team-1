@@ -1,0 +1,21 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: {{ .Release.Name }}            # aihr
+  namespace: {{ .Release.Namespace }}  # ai-hr-monitoring
+  labels:
+    release: ai-hr-monitoring          # 必须与 Operator selector 匹配
+spec:
+  replicas: {{ .Values.replicaCount }}
+  serviceAccountName: {{ .Values.serviceAccount }}
+  storage:
+    volumeClaimTemplate:
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: {{ .Values.storageSize }}
+  serviceMonitorSelector:
+    matchLabels:
+      release: ai-hr-monitoring
+  podMonitorSelector: { }               # 如需 PodMonitor 同理打标签

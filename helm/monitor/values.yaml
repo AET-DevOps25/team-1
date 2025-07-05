@@ -1,16 +1,5 @@
-kube-prometheus-stack:
-  prometheus:
-    prometheusSpec:
-      serviceMonitorSelectorNilUsesHelmValues: false
-      serviceMonitorSelector:
-        matchLabels:
-          release: ai-hr-monitoring
-
-  grafana:
-    ingress:
-      hosts:
-        - grafana.ai-hr-monitoring.student.k8s.aet.cit.tum.de
-      tls:
-        - secretName: ai-hr-prod-grafana-tls
-          hosts:
-            - grafana.ai-hr-monitoring.student.k8s.aet.cit.tum.de
+replicaCount: 1            # 想改副本时覆写
+storageSize: 10Gi          # PVC 大小
+matchLabel: monitoring     # 与 ServiceMonitor 上的标签键一致
+matchValue: "true"
+serviceAccount: prometheus-aihr
