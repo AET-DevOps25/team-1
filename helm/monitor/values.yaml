@@ -5,3 +5,12 @@ kube-prometheus-stack:
       serviceMonitorSelector:
         matchLabels:
           release: ai-hr-monitoring
+
+  grafana:
+    ingress:
+      hosts:
+        - grafana.ai-hr-monitoring.student.k8s.aet.cit.tum.de
+      tls:
+        - secretName: ai-hr-prod-grafana-tls
+          hosts:
+            - grafana.ai-hr-monitoring.student.k8s.aet.cit.tum.de
