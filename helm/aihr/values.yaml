@@ -70,7 +70,7 @@ prometheus:
       size: 2Gi
     alertmanagers:
       - static_configs:
-          - targets: [ "monitoring-alertmanager:9093" ]   # Helm 默认 Service 名
+          - targets: [ "ai-hr-dev-alertmanager:9093" ]   # Helm 默认 Service 名
     # Alert rules
     serverFiles:
       alerting_rules.yml: |
@@ -142,7 +142,7 @@ grafana:
       datasources:
         - name: Prometheus
           type: prometheus
-          url: http://monitoring-prometheus-server:80   # ← Helm 会自动生成此 Service
+          url: http://ai-hr-dev-prometheus-server   # ← Helm 会自动生成此 Service
           access: proxy
           isDefault: true
 
