@@ -49,6 +49,19 @@ prometheus:
     alertmanagers:
       - static_configs:
           - targets: [ "monitoring-alertmanager:9093" ]   # Helm 默认 Service 名
+    # Alert rules
+    serverFiles:
+      alerting_rules.yml: |
+        groups:
+          - name: basic-alerts
+            rules:
+              - alert: TargetDown
+                expr: up == 0
+                for: 1m
+                labels: { severity: critical }
+                annotations:
+                  summary: "Target {{ $labels.instance }} down"
+                  description: "Instance {{ $labels.instance }} cannot be reached for more than 1 minute."
 
     extraScrapeConfigs:
       - job_name: ai-hr-pods
