@@ -141,6 +141,7 @@ grafana:
       apiVersion: 1
       datasources:
         - name: Prometheus
+          uid: prometheus
           type: prometheus
           url: http://ai-hr-dev-prometheus-server   # ← Helm 会自动生成此 Service
           access: proxy
@@ -182,7 +183,7 @@ grafana:
                     relativeTimeRange:
                       from: 0
                       to: 0
-                    datasourceUid: Prometheus
+                    datasourceUid: prometheus
                     model:
                       expr: up == 0
                       interval: ""
