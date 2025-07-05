@@ -36,5 +36,6 @@ helm upgrade --install ai-hr-prod ./helm/aihr \
 
 helm upgrade --install ai-hr-monitoring ./helm/monitor \
   --dependency-update \
+  --skip-crds \
   --namespace ai-hr-monitoring --create-namespace \
   --wait --timeout 20m
