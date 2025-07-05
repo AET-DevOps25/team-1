@@ -11,9 +11,3 @@ kubectl create rolebinding ai-hr-admin \
   --clusterrole=admin \
   --user="$(kubectl config view --minify -o jsonpath='{.contexts[0].context.user}')" \
   --namespace=ai-hr
-
-# monitor
-kubectl create rolebinding ai-hr-monitoring-admin \
-  --clusterrole=admin \
-  --user="$(kubectl config view --minify -o jsonpath='{.contexts[0].context.user}')" \
-  --namespace=ai-hr-monitoring
