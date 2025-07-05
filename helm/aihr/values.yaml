@@ -146,5 +146,52 @@ grafana:
           access: proxy
           isDefault: true
 
+  alerting:
+    # ContactPoint & NotificationPolicy 都支持 YAML Provision
+    contactpoints:
+      alertmanager-contact.yaml: |
+        apiVersion: 1
+        contactPoints:
+          - orgId: 1
+            name: external-alertmanager         # UI 中的显示名
+            receivers:
+              - type: alertmanager              # 内置接收器
+                uid: ext-am
+                settings:
+                  url: http://ai-hr-dev-alertmanager:9093
+    notificationPolicies:
+      default.yaml: |
+        apiVersion: 1
+        policies:
+          - orgId: 1
+            receiver: external-alertmanager     # 全局默认全部走这条
+
+    ruleFiles:
+      sample-rule.yaml: |
+        apiVersion: 1
+        groups:
+          - name: ai-hr-grafana-rules
+            interval: 1m
+            rules:
+              - uid: grafana-target-down
+                title: TargetDown (Grafana side)
+                condition: A
+                data:
+                  - refId: A
+                    queryType: promql
+                    relativeTimeRange:
+                      from: 0
+                      to: 0
+                    datasourceUid: Prometheus
+                    model:
+                      expr: up == 0
+                      interval: ""
+                noDataState: NoData
+                for: 60s
+                annotations:
+                  summary: "Target {{ $values.instance }} down (via Grafana)"
+                labels:
+                  severity: critical
+
 discordWebhook:
   url: ""
