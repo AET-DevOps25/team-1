@@ -167,7 +167,7 @@ grafana:
             receiver: external-alertmanager     # 全局默认全部走这条
 
     ruleFiles:
-      sample-rule.yaml: |
+      alert-rule.yaml: |
         apiVersion: 1
         groups:
           - name: ai-hr-grafana-rules
@@ -189,7 +189,7 @@ grafana:
                 noDataState: NoData
                 for: 60s
                 annotations:
-                  summary: "Target {{ $values.instance }} down (via Grafana)"
+                  summary: "{{ "{{" }} $values.instance {{ "}}" }} down (via Grafana)"
                 labels:
                   severity: critical
 
