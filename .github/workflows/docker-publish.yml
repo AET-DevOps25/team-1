@@ -116,5 +116,6 @@ jobs:
       - name: Helm monitor
         run: |
           helm upgrade --install ai-hr-monitoring ./helm/monitor \
+            --dependency-update \
             --namespace ai-hr-monitoring --create-namespace \
             --wait --timeout 20m
