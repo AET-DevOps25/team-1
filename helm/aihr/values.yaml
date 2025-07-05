@@ -38,6 +38,24 @@ global:
 #          release: ai-hr-monitoring
 
 prometheus:
+  kube-state-metrics:
+    enabled: false
+    prometheus-node-exporter:
+      enabled: false
+    pushgateway:
+      enabled: false
+    alertmanager:
+      enabled: true
+      config:
+        global:
+          resolve_timeout: 5m
+        route:
+          receiver: discord
+        receivers:
+          - name: discord
+            webhook_configs:
+              - url: http://alertmanager-discord:9094
+                send_resolved: true
   server:
     replicaCount: 1
     serviceAccount:
@@ -123,28 +141,6 @@ grafana:
           url: http://monitoring-prometheus-server:80   # ← Helm 会自动生成此 Service
           access: proxy
           isDefault: true
-
-kube-state-metrics:
-  enabled: false
-
-prometheus-node-exporter:
-  enabled: false
-
-pushgateway:
-  enabled: false
-
-alertmanager:
-  enabled: true
-  config:
-    global:
-      resolve_timeout: 5m
-    route:
-      receiver: discord
-    receivers:
-      - name: discord
-        webhook_configs:
-          - url: http://alertmanager-discord:9094
-            send_resolved: true
 
 discordWebhook:
   url: ""
