@@ -27,7 +27,7 @@ prometheus:
     ingress:
       enabled: true
       hosts:
-        - alertmanager.ai-hr-prod.student.k8s.aet.cit.tum.de
+        - host: alertmanager.ai-hr-prod.student.k8s.aet.cit.tum.de
       tls:
         - secretName: ai-hr-prod-alertmanager-tls
           hosts:

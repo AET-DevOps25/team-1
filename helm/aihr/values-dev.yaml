@@ -18,7 +18,10 @@ prometheus:
     ingress:
       enabled: true
       hosts:
-        - alertmanager.ai-hr-dev.student.k8s.aet.cit.tum.de
+        - host: alertmanager.ai-hr-dev.student.k8s.aet.cit.tum.de
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
       tls:
         - secretName: ai-hr-dev-alertmanager-tls
           hosts:
