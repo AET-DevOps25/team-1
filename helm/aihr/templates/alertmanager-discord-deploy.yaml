@@ -12,10 +12,12 @@ spec:
     spec:
       containers:
         - name: webhook
-          image: ghcr.io/gnprice/alertmanager-discord:v1.2.0   # tag 任意
+          image: ghcr.io/rogerrum/alertmanager-discord:main   # tag 任意
           env:
             - name: DISCORD_WEBHOOK
               value: {{ .Values.discordWebhook.url | quote }}
+            - name: VERBOSE
+              value: "ON"
           ports:
             - name: http
               containerPort: 9094
