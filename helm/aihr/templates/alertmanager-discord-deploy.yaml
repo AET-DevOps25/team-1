@@ -16,6 +16,8 @@ spec:
           env:
             - name: DISCORD_WEBHOOK
               value: {{ .Values.discordWebhook.url | quote }}
+            - name: DISCORD_USERNAME
+              value: "alert"
             - name: VERBOSE
               value: "ON"
           ports:
