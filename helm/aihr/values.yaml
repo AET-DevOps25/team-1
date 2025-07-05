@@ -59,7 +59,9 @@ prometheus:
   server:
     replicaCount: 1
     rbac:
-      create: false
+      create: true
+      pspEnabled: false
+      type: Role   # "Role" 或 "ClusterRole"
     serviceAccount:
       create: true
       name: prom-sa                 # Helm 会自动生成 Role+Binding，可直接用
