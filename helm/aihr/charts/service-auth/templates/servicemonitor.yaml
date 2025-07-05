@@ -5,7 +5,7 @@ metadata:
   name: {{ include "service-auth.fullname" . }}-monitor
   namespace: {{ .Release.Namespace }}
   labels:
-    release: aihr-monitoring
+    release: ai-hr-monitoring
 spec:
   selector:
     matchLabels:

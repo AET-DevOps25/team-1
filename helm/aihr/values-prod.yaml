@@ -5,14 +5,14 @@ global:
     tlsSecret: ai-hr-prod-tls
     corsAllowed: "https://ai-hr.student.k8s.aet.cit.tum.de/api/v1/applications"
 
-grafana:
-  ingress:
-    hosts:
-      - grafana.ai-hr.student.k8s.aet.cit.tum.de
-    tls:
-      - secretName: ai-hr-prod-grafana-tls
-        hosts:
-          - grafana.ai-hr.student.k8s.aet.cit.tum.de
+#grafana:
+#  ingress:
+#    hosts:
+#      - grafana.ai-hr.student.k8s.aet.cit.tum.de
+#    tls:
+#      - secretName: ai-hr-prod-grafana-tls
+#        hosts:
+#          - grafana.ai-hr.student.k8s.aet.cit.tum.de
 
 frontend:
   ingress:

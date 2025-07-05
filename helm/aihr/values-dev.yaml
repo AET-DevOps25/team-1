@@ -5,14 +5,14 @@ global:
     tlsSecret: ai-hr-dev-tls
     corsAllowed: "http://localhost:3000,http://localhost:5173,http://localhost:4200,https://ai-hr-dev.student.k8s.aet.cit.tum.de/api/v1/applications"
 
-grafana:
-  ingress:
-    hosts:
-      - grafana.ai-hr-dev.student.k8s.aet.cit.tum.de
-    tls:
-      - secretName: ai-hr-dev-grafana-tls
-        hosts:
-          - grafana.ai-hr-dev.student.k8s.aet.cit.tum.de
+#grafana:
+#  ingress:
+#    hosts:
+#      - grafana.ai-hr-dev.student.k8s.aet.cit.tum.de
+#    tls:
+#      - secretName: ai-hr-dev-grafana-tls
+#        hosts:
+#          - grafana.ai-hr-dev.student.k8s.aet.cit.tum.de
 
 frontend:
   ingress:
