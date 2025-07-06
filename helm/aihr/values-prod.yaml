@@ -35,7 +35,7 @@ prometheus:
       annotations:
         cert-manager.io/cluster-issuer: letsencrypt-prod
   server:
-    extraScrapeConfigs:
+    extraScrapeConfigs: |
       - job_name: aihr-pods
         kubernetes_sd_configs:
           - role: pod

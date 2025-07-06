@@ -11,7 +11,7 @@ frontend:
     host: ai-hr-dev.student.k8s.aet.cit.tum.de
     tlsSecret: ai-hr-dev-frontend-tls
     annotations:
-      cert-manager.io/cluster-issuer: letsencrypt-prod
+      cert-manager.io/cluster-issuer: letsencrypt-staging
 
 prometheus:
   alertmanager:
@@ -27,7 +27,7 @@ prometheus:
           hosts:
             - alertmanager.ai-hr-dev.student.k8s.aet.cit.tum.de
       annotations:
-        cert-manager.io/cluster-issuer: letsencrypt-staging
+        cert-manager.io/cluster-issuer: letsencrypt-prod
   server:
     extraScrapeConfigs: |
       - job_name: aihr-pods
