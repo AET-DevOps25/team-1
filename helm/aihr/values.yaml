@@ -28,6 +28,12 @@ global:
     username: ""
     password: ""
 
+  ollama:
+    ollamaBaseUrl: ""
+    ollamaModel: ""
+    ollamaApiKey: ""
+
+
 #kube-prometheus-stack:
 #  namespaceOverride: ai-hr-monitoring
 #  prometheus:

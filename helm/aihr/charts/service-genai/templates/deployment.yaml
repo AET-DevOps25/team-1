@@ -69,11 +69,11 @@ spec:
             - name: CORS_ALLOWED_ORIGINS
               value: {{ .Values.env.corsAllowed | default .Values.global.env.corsAllowed | quote }}
             - name: OLLAMA_BASE_URL
-              value: {{ .Values.env.ollamaBaseUrl | quote }}
+              value: {{ .Values.global.ollama.ollamaBaseUrl | quote }}
             - name: OLLAMA_MODEL
-              value: {{ .Values.env.ollamaModel | quote }}
+              value: {{ .Values.global.ollama.ollamaModel | quote }}
             - name: OLLAMA_API_KEY
-              value: {{ .Values.env.ollamaApiKey | quote }}
+              value: {{ .Values.global.ollama.ollamaApiKey | quote }}
 
           livenessProbe:
             httpGet:
