@@ -5,9 +5,15 @@ on:
     branches:
       - main
   workflow_dispatch:
+    # 如果输入image tag，就跳过build
+    inputs:
+      image:
+        description: "Image name and tag"
+        required: false
 
 jobs:
   build-and-push:
+    if: ${{ github.event.inputs.image == '' || github.event.inputs.image == null }}
     runs-on: ubuntu-latest
 
     permissions:
@@ -68,7 +74,9 @@ jobs:
           BRANCH="${GITHUB_REF##*/}"
           echo "GHCR_USER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
           echo "GHCR_REPO=$(echo '${{ github.event.repository.name }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-          if [[ "$BRANCH" == "main" ]]; then
+          if [[ -n "${{ github.event.inputs.image }}" ]]; then
+            echo "IMAGE_TAG=${{ github.event.inputs.image }}" >> $GITHUB_ENV
+          elif [[ "$BRANCH" == "main" ]]; then
             echo "IMAGE_TAG=${GITHUB_SHA}"       >> $GITHUB_ENV
           else
             echo "IMAGE_TAG=dev-${GITHUB_SHA}"   >> $GITHUB_ENV
