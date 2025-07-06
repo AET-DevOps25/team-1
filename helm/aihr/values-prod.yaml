@@ -27,11 +27,11 @@ prometheus:
     ingress:
       enabled: true
       hosts:
-        - host: alertmanager.ai-hr-prod.student.k8s.aet.cit.tum.de
+        - host: alertmanager.ai-hr.student.k8s.aet.cit.tum.de
       tls:
         - secretName: ai-hr-prod-alertmanager-tls
           hosts:
-            - alertmanager.ai-hr-prod.student.k8s.aet.cit.tum.de
+            - alertmanager.ai-hr.student.k8s.aet.cit.tum.de
       annotations:
         cert-manager.io/cluster-issuer: letsencrypt-prod
   server:
@@ -41,7 +41,7 @@ prometheus:
           - role: pod
             namespaces:
               names:
-                - ai-hr-prod              # ★ 只抓 prod
+                - ai-hr             # 只抓 prod
         relabel_configs:
           # 只抓 prometheus.io/scrape="true" 的 Pod
           - source_labels: [ __meta_kubernetes_pod_annotation_prometheus_io_scrape ]

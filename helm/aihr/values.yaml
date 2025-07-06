@@ -37,90 +37,6 @@ global:
 #        matchLabels:
 #          release: ai-hr-monitoring
 
-prometheus:
-  rbac:
-    create: false
-  kube-state-metrics:
-    enabled: false
-  prometheus-node-exporter:
-    enabled: false
-  pushgateway:
-    enabled: false
-  alertmanager:
-    enabled: true
-    config:
-      global:
-        resolve_timeout: 5m
-      route:
-        receiver: discord
-      receivers:
-        - name: discord
-          webhook_configs:
-            - url: http://alertmanager-discord:9094
-              send_resolved: true
-    ingress:
-      enabled: true
-
-  server:
-    replicaCount: 1
-    rbac:
-      create: false
-    serviceAccount:
-      create: false
-      name: prom-sa                 # Helm 会自动生成 Role+Binding，可直接用
-    persistentVolume:
-      enabled: true
-      size: 2Gi
-    alertmanagers:
-      - static_configs:
-          - targets: [ "ai-hr-dev-alertmanager:9093" ]   # Helm 默认 Service 名
-    # Alert rules
-    serverFiles:
-      alerting_rules.yml: |
-        groups:
-          - name: basic-alerts
-            rules:
-              - alert: TargetDown
-                expr: up == 0
-                for: 1m
-                labels: { severity: critical }
-                annotations:
-                  summary: "Target {{ $labels.instance }} down"
-                  description: "Instance {{ $labels.instance }} cannot be reached for more than 1 minute."
-
-    extraScrapeConfigs:
-      - job_name: ai-hr-pods
-        kubernetes_sd_configs:
-          - role: pod
-            namespaces: # ← 这里先占位，会被 dev/prod 覆盖
-              names: [ ]
-        relabel_configs:
-          # 只抓 prometheus.io/scrape="true" 的 Pod
-          - source_labels: [ __meta_kubernetes_pod_annotation_prometheus_io_scrape ]
-            action: keep
-            regex: "true"
-
-          # 把 PodIP + 注解端口 拼成新 __address__
-          - source_labels: [ __meta_kubernetes_pod_ip, __meta_kubernetes_pod_annotation_prometheus_io_port ]
-            action: replace
-            regex: (.+);(.+)
-            replacement: $1:$2          # -> 10.0.3.25:8080
-            target_label: __address__
-
-          # 替换 metrics 路径（默认 /metrics → /actuator/prometheus 等）
-          - source_labels: [ __meta_kubernetes_pod_annotation_prometheus_io_path ]
-            action: replace
-            target_label: __metrics_path__
-            regex: (.+)
-
-          # （可选）给 job 打上 pod 名 / namespace 等标签，方便查询
-          - source_labels: [ __meta_kubernetes_pod_name ]
-            action: replace
-            target_label: pod
-          - source_labels: [ __meta_kubernetes_namespace ]
-            action: replace
-            target_label: namespace
-
 grafana:
   rbac:
     namespaced: true
@@ -150,52 +66,101 @@ grafana:
           access: proxy
           isDefault: true
 
-  alerting:
-    # ContactPoint & NotificationPolicy 都支持 YAML Provision
-    contactpoints:
-      alertmanager-contact.yaml: |
-        apiVersion: 1
-        contactPoints:
-          - orgId: 1
-            name: external-alertmanager         # UI 中的显示名
-            receivers:
-              - type: alertmanager              # 内置接收器
-                uid: ext-am
-                settings:
-                  url: http://ai-hr-dev-alertmanager:9093
-    notificationPolicies:
-      default.yaml: |
-        apiVersion: 1
-        policies:
-          - orgId: 1
-            receiver: external-alertmanager     # 全局默认全部走这条
-
-    ruleFiles:
-      alert-rule.yaml: |
-        apiVersion: 1
-        groups:
-          - name: ai-hr-grafana-rules
-            interval: 1m
-            rules:
-              - uid: grafana-target-down
-                title: TargetDown (Grafana side)
-                condition: A
-                data:
-                  - refId: A
-                    queryType: promql
-                    relativeTimeRange:
-                      from: 0
-                      to: 0
-                    datasourceUid: prometheus
-                    model:
-                      expr: up == 0
-                      interval: ""
-                noDataState: NoData
-                for: 60s
-                annotations:
-                  summary: "{{ "{{" }} $values.instance {{ "}}" }} down (via Grafana)"
-                labels:
-                  severity: critical
-
 discordWebhook:
   url: ""
+
+prometheus:
+  rbac:
+    create: false
+  kube-state-metrics:
+    enabled: false
+  prometheus-node-exporter:
+    enabled: false
+  pushgateway:
+    enabled: false
+  alertmanager:
+    enabled: true
+    config:
+      global:
+        resolve_timeout: 5m
+      route:
+        receiver: discord
+      receivers:
+        - name: discord
+          webhook_configs:
+            - url: http://alertmanager-discord:9094
+              send_resolved: true
+
+  server:
+    replicaCount: 1
+    rbac:
+      create: true
+    releaseNamespace: true
+    serviceAccount:
+      create: true
+      name: prom-sa
+    persistentVolume:
+      enabled: true
+      size: 2Gi
+
+  serverFiles:
+    alerting_rules.yml:
+      groups:
+        - name: Instances
+          rules:
+            - alert: InstanceDown
+              expr: up == 0
+              for: 1m
+              labels:
+                severity: page
+              annotations:
+                description: '{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minutes.'
+                summary: 'Instance {{ $labels.instance }} down'
+    prometheus.yml:
+      scrape_configs:
+        - job_name: 'kubernetes-pods'
+          honor_labels: true
+          kubernetes_sd_configs:
+            - role: pod
+          relabel_configs:
+            - source_labels: [ __meta_kubernetes_pod_annotation_prometheus_io_scrape ]
+              action: keep
+              regex: true
+            - source_labels: [ __meta_kubernetes_pod_annotation_prometheus_io_scrape_slow ]
+              action: drop
+              regex: true
+            - source_labels: [ __meta_kubernetes_pod_annotation_prometheus_io_scheme ]
+              action: replace
+              regex: (https?)
+              target_label: __scheme__
+            - source_labels: [ __meta_kubernetes_pod_annotation_prometheus_io_path ]
+              action: replace
+              target_label: __metrics_path__
+              regex: (.+)
+            - source_labels: [ __meta_kubernetes_pod_annotation_prometheus_io_port, __meta_kubernetes_pod_ip ]
+              action: replace
+              regex: (\d+);(([A-Fa-f0-9]{1,4}::?){1,7}[A-Fa-f0-9]{1,4})
+              replacement: '[$2]:$1'
+              target_label: __address__
+            - source_labels: [ __meta_kubernetes_pod_annotation_prometheus_io_port, __meta_kubernetes_pod_ip ]
+              action: replace
+              regex: (\d+);((([0-9]+?)(\.|$)){4})
+              replacement: $2:$1
+              target_label: __address__
+            - action: labelmap
+              regex: __meta_kubernetes_pod_annotation_prometheus_io_param_(.+)
+              replacement: __param_$1
+            - action: labelmap
+              regex: __meta_kubernetes_pod_label_(.+)
+            - source_labels: [ __meta_kubernetes_namespace ]
+              action: replace
+              target_label: namespace
+            - source_labels: [ __meta_kubernetes_pod_name ]
+              action: replace
+              target_label: pod
+            - source_labels: [ __meta_kubernetes_pod_phase ]
+              regex: Pending|Succeeded|Failed|Completed
+              action: drop
+            - source_labels: [ __meta_kubernetes_pod_node_name ]
+              action: replace
+              target_label: node
