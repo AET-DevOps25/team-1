@@ -23,9 +23,6 @@ spec:
         prometheus.io/path: "/actuator/prometheus"
       labels:
         app: {{ include "service-job.fullname" . }}
-        app.kubernetes.io/component: server
-        app.kubernetes.io/instance: {{ .Release.Name }}
-        app.kubernetes.io/name: prometheus
     spec:
       containers:
         - name: job

@@ -11,7 +11,7 @@ frontend:
     host: ai-hr-dev.student.k8s.aet.cit.tum.de
     tlsSecret: ai-hr-dev-frontend-tls
     annotations:
-      cert-manager.io/cluster-issuer: letsencrypt-staging
+      cert-manager.io/cluster-issuer: letsencrypt-prod
 
 prometheus:
   alertmanager:
@@ -29,13 +29,13 @@ prometheus:
       annotations:
         cert-manager.io/cluster-issuer: letsencrypt-staging
   server:
-    extraScrapeConfigs:
+    extraScrapeConfigs: |
       - job_name: aihr-pods
         kubernetes_sd_configs:
           - role: pod
             namespaces:
               names:
-                - ai-hr-dev               # ★ 只抓 dev
+                - ai-hr-dev               # 只抓 dev
         relabel_configs:
           # 只抓 prometheus.io/scrape="true" 的 Pod
           - source_labels: [ __meta_kubernetes_pod_annotation_prometheus_io_scrape ]

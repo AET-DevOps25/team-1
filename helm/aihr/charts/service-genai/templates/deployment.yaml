@@ -23,9 +23,6 @@ spec:
         prometheus.io/path: "/metrics"
       labels:
         app: {{ include "service-genai.fullname" . }}
-        app.kubernetes.io/component: server
-        app.kubernetes.io/instance: {{ .Release.Name }}
-        app.kubernetes.io/name: prometheus
     spec:
       containers:
         - name: genai
