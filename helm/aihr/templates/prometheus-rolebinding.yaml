@@ -5,7 +5,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 subjects:
   - kind: ServiceAccount
-    name: {{ .Values.prometheus.server.serviceAccount.name | default "ai-hr-dev-prometheus-server" }}
+    name: {{ .Values.prometheus.serviceAccount.server.name | default "ai-hr-dev-prometheus-server" }}
     namespace: {{ .Release.Namespace }}
 roleRef:
   kind: Role
