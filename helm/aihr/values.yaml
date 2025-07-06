@@ -98,7 +98,7 @@ prometheus:
     releaseNamespace: true
     serviceAccount:
       create: true
-      name: prom-sa
+      name: ai-hr-dev-prometheus-server
     persistentVolume:
       enabled: true
       size: 2Gi
