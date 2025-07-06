@@ -97,6 +97,7 @@ prometheus:
 
   server:
     replicaCount: 1
+    namespaces: []
     useClusterRole: false
     releaseNamespace: true
     persistentVolume:
@@ -126,6 +127,8 @@ prometheus:
           honor_labels: true
           kubernetes_sd_configs:
             - role: endpoints
+              namespaces:
+                own_namespace: true
           relabel_configs:
             - source_labels: [ __meta_kubernetes_service_annotation_prometheus_io_scrape ]
               action: keep
@@ -146,24 +149,12 @@ prometheus:
               target_label: __address__
               regex: (.+?)(?::\d+)?;(\d+)
               replacement: $1:$2
-            - action: labelmap
-              regex: __meta_kubernetes_service_annotation_prometheus_io_param_(.+)
-              replacement: __param_$1
-            - action: labelmap
-              regex: __meta_kubernetes_service_label_(.+)
-            - source_labels: [ __meta_kubernetes_namespace ]
-              action: replace
-              target_label: namespace
-            - source_labels: [ __meta_kubernetes_service_name ]
-              action: replace
-              target_label: service
-            - source_labels: [ __meta_kubernetes_pod_node_name ]
-              action: replace
-              target_label: node
         - job_name: 'kubernetes-pods'
           honor_labels: true
           kubernetes_sd_configs:
             - role: pod
+              namespaces:
+                own_namespace: true
           relabel_configs:
             - source_labels: [ __meta_kubernetes_pod_annotation_prometheus_io_scrape ]
               action: keep
@@ -189,20 +180,3 @@ prometheus:
               regex: (\d+);((([0-9]+?)(\.|$)){4})
               replacement: $2:$1
               target_label: __address__
-            - action: labelmap
-              regex: __meta_kubernetes_pod_annotation_prometheus_io_param_(.+)
-              replacement: __param_$1
-            - action: labelmap
-              regex: __meta_kubernetes_pod_label_(.+)
-            - source_labels: [ __meta_kubernetes_namespace ]
-              action: replace
-              target_label: namespace
-            - source_labels: [ __meta_kubernetes_pod_name ]
-              action: replace
-              target_label: pod
-            - source_labels: [ __meta_kubernetes_pod_phase ]
-              regex: Pending|Succeeded|Failed|Completed
-              action: drop
-            - source_labels: [ __meta_kubernetes_pod_node_name ]
-              action: replace
-              target_label: node
