@@ -24,11 +24,6 @@ grafana:
 
 prometheus:
   server:
-    serviceAccount:
-      create: true
-      name: ai-hr-dev-prometheus-server
-    namespaces:
-      - ai-hr-dev
     ingress:
       enabled: true
       hosts:

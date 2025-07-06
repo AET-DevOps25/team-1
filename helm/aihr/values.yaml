@@ -72,6 +72,10 @@ discordWebhook:
 prometheus:
   rbac:
     create: false
+  serviceAccount:
+    server:
+      create: true
+      name: ai-hr-dev-prometheus-server
   kube-state-metrics:
     enabled: false
   prometheus-node-exporter:
@@ -93,12 +97,8 @@ prometheus:
 
   server:
     replicaCount: 1
-    rbac:
-      create: true
+    useClusterRole: false
     releaseNamespace: true
-    serviceAccount:
-      create: true
-      name: ai-hr-dev-prometheus-server
     persistentVolume:
       enabled: true
       size: 2Gi
