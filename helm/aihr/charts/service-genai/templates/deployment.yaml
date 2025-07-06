@@ -38,8 +38,6 @@ spec:
           env:
             - name: SERVER_PORT
               value: "{{ .Values.service.port }}"
-            - name: SPRING_PROFILES_ACTIVE
-              value: {{ .Values.env.springProfile | quote }}
 
             # 数据库连接
             - name: DB_HOST
