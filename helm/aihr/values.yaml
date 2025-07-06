@@ -53,6 +53,17 @@ grafana:
     type: ClusterIP
     port: 80
 
+  dashboards:
+    default:
+      prometheus-stats:
+        gnetId: 2
+        revision: 2
+        datasource: Prometheus
+      GenAI-python-prometheus:
+        file: "dashboards/genai.json"
+      spingboot-prometheus:
+        file: "dashboards/springboot.json"
+
   ingress:
     enabled: true
     className: nginx
