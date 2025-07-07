@@ -23,6 +23,20 @@ grafana:
           - grafana.ai-hr-dev.student.k8s.aet.cit.tum.de
 
 prometheus:
+  alertmanager:
+    ingress:
+      enabled: true
+      hosts:
+        - host: alertmanager.ai-hr-dev.student.k8s.aet.cit.tum.de
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+      tls:
+        - secretName: ai-hr-dev-alertmanager-tls
+          hosts:
+            - alertmanager.ai-hr-dev.student.k8s.aet.cit.tum.de
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
   server:
     ingress:
       enabled: true
@@ -34,46 +48,3 @@ prometheus:
             - prometheus.ai-hr-dev.student.k8s.aet.cit.tum.de
       annotations:
         cert-manager.io/cluster-issuer: letsencrypt-prod
-
-    alertmanagers:
-      - kubernetes_sd_configs:
-          - role: pod
-            namespaces:
-              own_namespace: true
-        ingress:
-          enabled: true
-          hosts:
-            - host: alertmanager.ai-hr-dev.student.k8s.aet.cit.tum.de
-              paths:
-                - path: /
-                  pathType: ImplementationSpecific
-          tls:
-            - secretName: ai-hr-dev-alertmanager-tls
-              hosts:
-                - alertmanager.ai-hr-dev.student.k8s.aet.cit.tum.de
-          annotations:
-            cert-manager.io/cluster-issuer: letsencrypt-prod
-        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-        relabel_configs:
-          - source_labels: [__meta_kubernetes_namespace]
-            regex: ai-hr-dev
-            action: keep
-          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_instance]
-            regex: ai-hr-dev
-            action: keep
-          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
-            regex: "alertmanager"
-            action: keep
-          - source_labels: [__meta_kubernetes_pod_container_port_number]
-            regex: "9093"
-            action: keep
-        config:
-          global:
-            resolve_timeout: 5m
-          route:
-            receiver: discord
-          receivers:
-            - name: discord
-              webhook_configs:
-                - url: http://alertmanager-discord:9094
-                  send_resolved: true
