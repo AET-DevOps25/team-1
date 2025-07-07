@@ -58,10 +58,10 @@ grafana:
       prometheus-stats:
         gnetId: 2
         revision: 2
-        datasource: Prometheus
-      GenAI-python-prometheus:
+        datasource: prometheus
+      genai:
         file: "dashboards/genai.json"
-      spingboot-prometheus:
+      springboot:
         file: "dashboards/springboot.json"
 
   ingress:
@@ -76,7 +76,7 @@ grafana:
     datasources.yaml:
       apiVersion: 1
       datasources:
-        - name: Prometheus
+        - name: prometheus
           uid: prometheus
           type: prometheus
           url: http://ai-hr-dev-prometheus-server   # ← Helm 会自动生成此 Service
@@ -100,6 +100,10 @@ prometheus:
   pushgateway:
     enabled: false
   alertmanager:
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          own_namespace: true
     enabled: true
     config:
       global:
