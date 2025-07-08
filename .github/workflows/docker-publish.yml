@@ -100,6 +100,16 @@ jobs:
       - name: Helm dependency update
         run: helm dependency update ./helm/aihr
 
+      - name: unzip tgz files inside helm
+        run: |
+          cd helm/aihr/charts/
+          tar -xvzf grafana-7.3.12.tgz
+          rm grafana-7.3.12.tgz
+
+      - name: Copy dashboard json
+        run: |
+          cp -r ./dashboards/* ./helm/aihr/charts/grafana/dashboards/
+
       - name: Helm deploy
         run: |
           helm upgrade --install ${{ steps.vars.outputs.release }} ./helm/aihr \
@@ -165,6 +175,16 @@ jobs:
 
       - name: Helm dependency update
         run: helm dependency update ./helm/aihr
+
+      - name: unzip tgz files inside helm
+        run: |
+          cd helm/aihr/charts/
+          tar -xvzf grafana-7.3.12.tgz
+          rm grafana-7.3.12.tgz
+
+      - name: Copy dashboard json
+        run: |
+          cp -r ./dashboards/* ./helm/aihr/charts/grafana/dashboards/
 
       - name: Helm deploy
         run: |
