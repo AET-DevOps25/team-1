@@ -53,6 +53,9 @@ jobs:
   deploy-k8s:
     needs: build-and-push
     runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'k8s' || 'k8s-dev' }}
+      url: ${{ github.ref == 'refs/heads/main' && 'https://ai-hr.student.k8s.aet.cit.tum.de' || 'https://ai-hr-dev.student.k8s.aet.cit.tum.de' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -133,6 +136,9 @@ jobs:
   deploy-k8s-direcct:
     if: ${{ github.event.inputs.image != '' && github.event.inputs.image != null }}
     runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'k8s' || 'k8s-dev' }}
+      url: ${{ github.ref == 'refs/heads/main' && 'https://ai-hr.student.k8s.aet.cit.tum.de' || 'https://ai-hr-dev.student.k8s.aet.cit.tum.de' }}
 
     steps:
       - uses: actions/checkout@v4
