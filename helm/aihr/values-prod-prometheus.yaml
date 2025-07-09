@@ -8,7 +8,7 @@ prometheus:
             - path: /
               pathType: ImplementationSpecific
       tls:
-        - secretName: ai-hr-alertmanager-tls
+        - secretName: ai-hr-prod-alertmanager-tls
           hosts:
             - alertmanager.ai-hr.student.k8s.aet.cit.tum.de
       annotations:
@@ -19,7 +19,7 @@ prometheus:
       hosts:
         - prometheus.ai-hr.student.k8s.aet.cit.tum.de
       tls:
-        - secretName: ai-hr-prometheus-tls
+        - secretName: ai-hr-prod-prometheus-tls
           hosts:
             - prometheus.ai-hr.student.k8s.aet.cit.tum.de
       annotations:

@@ -2,6 +2,6 @@ frontend:
   ingress:
     enabled: true
     host: ai-hr.student.k8s.aet.cit.tum.de
-    tlsSecret: ai-hr-frontend-tls
+    tlsSecret: ai-hr-prod-frontend-tls
     annotations:
       cert-manager.io/cluster-issuer: letsencrypt-prod
