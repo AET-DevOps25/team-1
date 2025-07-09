@@ -1,4 +1,11 @@
 loki:
+  rbac:
+    namespaced: true
+  alertmanager:
+    podSelector:
+      matchLabels:
+        app.kubernetes.io/name: alertmanager
+
   loki:
     commonConfig:
       replication_factor: 1
