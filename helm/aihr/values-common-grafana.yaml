@@ -33,8 +33,6 @@ grafana:
   ingress:
     enabled: true
     className: nginx
-    hosts: []           # 在 values-dev / prod 覆盖
-    tls: []
     annotations:
       cert-manager.io/cluster-issuer: letsencrypt-prod
 
