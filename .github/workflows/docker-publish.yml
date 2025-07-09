@@ -122,6 +122,7 @@ jobs:
             -f helm/aihr/values-common-prometheus.yaml \
             -f helm/aihr/values-common-grafana.yaml \
             -f helm/aihr/values-common-discord-alert.yaml \
+            -f helm/aihr/values-common-loki.yaml \
             --set discordWebhook.url=${{ secrets.DISCORD_WEBHOOK }} \
             --set global.ghcrUser=${{ env.GHCR_USER }} \
             --set global.ghcrRepo=${{ env.GHCR_REPO }} \
@@ -205,6 +206,7 @@ jobs:
             -f helm/aihr/values-common-prometheus.yaml \
             -f helm/aihr/values-common-grafana.yaml \
             -f helm/aihr/values-common-discord-alert.yaml \
+            -f helm/aihr/values-common-loki.yaml \
             --set discordWebhook.url=${{ secrets.DISCORD_WEBHOOK }} \
             --set global.ghcrUser=${{ env.GHCR_USER }} \
             --set global.ghcrRepo=${{ env.GHCR_REPO }} \

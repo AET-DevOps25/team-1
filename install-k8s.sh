@@ -12,6 +12,12 @@ DISCORD_WEBHOOK=""
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+helm dependency update ./helm/aihr
+tar -xvzf helm/aihr/charts/grafana-7.3.12.tgz
+rm helm/aihr/charts/grafana-7.3.12.tgz
+
+cp -r ./dashboards/* ./helm/aihr/charts/grafana/dashboards/
+
 helm upgrade --install ai-hr-dev ./helm/aihr \
   --namespace ai-hr-dev --create-namespace \
   -f "${SCRIPT_DIR}/helm/aihr/values-dev.yaml" \
@@ -21,6 +27,7 @@ helm upgrade --install ai-hr-dev ./helm/aihr \
   -f "${SCRIPT_DIR}/helm/aihr/values-common-prometheus.yaml" \
   -f "${SCRIPT_DIR}/helm/aihr/values-common-grafana.yaml" \
   -f "${SCRIPT_DIR}/helm/aihr/values-common-discord-alert.yaml" \
+  -f "${SCRIPT_DIR}/helm/aihr/values-common-loki.yaml" \
   --set discordWebhook.url="${DISCORD_WEBHOOK}" \
   --set global.ghcrUser=aet-devops25 \
   --set global.ghcrRepo=team-1 \
@@ -41,6 +48,7 @@ helm upgrade --install ai-hr-prod ./helm/aihr \
   -f "${SCRIPT_DIR}/helm/aihr/values-common-prometheus.yaml" \
   -f "${SCRIPT_DIR}/helm/aihr/values-common-grafana.yaml" \
   -f "${SCRIPT_DIR}/helm/aihr/values-common-discord-alert.yaml" \
+  -f "${SCRIPT_DIR}/helm/aihr/values-common-loki.yaml" \
   --set discordWebhook.url="${DISCORD_WEBHOOK}" \
   --set global.ghcrUser=aet-devops25 \
   --set global.ghcrRepo=team-1 \
