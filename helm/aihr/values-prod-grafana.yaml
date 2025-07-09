@@ -1,0 +1,8 @@
+grafana:
+  ingress:
+    hosts:
+      - grafana.ai-hr.student.k8s.aet.cit.tum.de
+    tls:
+      - secretName: ai-hr-prod-grafana-tls
+        hosts:
+          - grafana.ai-hr.student.k8s.aet.cit.tum.de

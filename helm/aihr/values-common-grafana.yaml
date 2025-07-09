@@ -1,0 +1,50 @@
+grafana:
+  rbac:
+    namespaced: true
+
+  adminPassword: ""
+
+  service:
+    type: ClusterIP
+    port: 80
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: 'default'
+          orgId: 1
+          folder: ''
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/default
+  dashboards:
+    default:
+      prometheus-stats:
+        gnetId: 2
+        revision: 2
+        datasource: prometheus
+      genai:
+        file: "dashboards/genai.json"
+      springboot:
+        file: "dashboards/springboot.json"
+
+  ingress:
+    enabled: true
+    className: nginx
+    hosts: []           # 在 values-dev / prod 覆盖
+    tls: []
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: prometheus
+          uid: prometheus
+          type: prometheus
+          url: http://ai-hr-dev-prometheus-server   # ← Helm 会自动生成此 Service
+          access: proxy
+          isDefault: true

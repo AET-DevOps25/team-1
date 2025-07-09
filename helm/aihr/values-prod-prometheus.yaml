@@ -1,0 +1,26 @@
+prometheus:
+  alertmanager:
+    ingress:
+      enabled: true
+      hosts:
+        - host: alertmanager.ai-hr.student.k8s.aet.cit.tum.de
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+      tls:
+        - secretName: ai-hr-alertmanager-tls
+          hosts:
+            - alertmanager.ai-hr.student.k8s.aet.cit.tum.de
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
+  server:
+    ingress:
+      enabled: true
+      hosts:
+        - prometheus.ai-hr.student.k8s.aet.cit.tum.de
+      tls:
+        - secretName: ai-hr-prometheus-tls
+          hosts:
+            - prometheus.ai-hr.student.k8s.aet.cit.tum.de
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod

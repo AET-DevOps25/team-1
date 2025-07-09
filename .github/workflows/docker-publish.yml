@@ -82,12 +82,10 @@ jobs:
           if [[ "$BRANCH" == "main" ]]; then
             echo "stage=prod"  >>$GITHUB_OUTPUT
             echo "ns=ai-hr"    >>$GITHUB_OUTPUT
-            echo "values=values-prod.yaml" >>$GITHUB_OUTPUT
             echo "release=ai-hr-prod"      >>$GITHUB_OUTPUT
           else
             echo "stage=dev"    >>$GITHUB_OUTPUT
             echo "ns=ai-hr-dev" >>$GITHUB_OUTPUT
-            echo "values=values-dev.yaml"  >>$GITHUB_OUTPUT
             echo "release=ai-hr-dev"       >>$GITHUB_OUTPUT
           fi
           echo "OLLAMA_MODEL=${{ vars.OLLAMA_MODEL }}" >> $GITHUB_ENV
@@ -114,7 +112,13 @@ jobs:
         run: |
           helm upgrade --install ${{ steps.vars.outputs.release }} ./helm/aihr \
             --namespace ${{ steps.vars.outputs.ns }} --create-namespace \
-            -f helm/aihr/${{ steps.vars.outputs.values }} \
+            -f helm/aihr/values-${{ steps.vars.outputs.stage }}.yaml \
+            -f helm/aihr/values-${{ steps.vars.outputs.stage }}-prometheus.yaml \
+            -f helm/aihr/values-${{ steps.vars.outputs.stage }}-grafana.yaml \
+            -f helm/aihr/values-${{ steps.vars.outputs.stage }}-frontend.yaml \
+            -f helm/aihr/values-common-prometheus.yaml \
+            -f helm/aihr/values-common-grafana.yaml \
+            -f helm/aihr/values-common-discord-alert.yaml \
             --set discordWebhook.url=${{ secrets.DISCORD_WEBHOOK }} \
             --set global.ghcrUser=${{ env.GHCR_USER }} \
             --set global.ghcrRepo=${{ env.GHCR_REPO }} \
@@ -158,12 +162,10 @@ jobs:
           if [[ "$BRANCH" == "main" ]]; then
             echo "stage=prod"  >>$GITHUB_OUTPUT
             echo "ns=ai-hr"    >>$GITHUB_OUTPUT
-            echo "values=values-prod.yaml" >>$GITHUB_OUTPUT
             echo "release=ai-hr-prod"      >>$GITHUB_OUTPUT
           else
             echo "stage=dev"    >>$GITHUB_OUTPUT
             echo "ns=ai-hr-dev" >>$GITHUB_OUTPUT
-            echo "values=values-dev.yaml"  >>$GITHUB_OUTPUT
             echo "release=ai-hr-dev"       >>$GITHUB_OUTPUT
           fi
           echo "OLLAMA_MODEL=${{ vars.OLLAMA_MODEL }}" >> $GITHUB_ENV
@@ -190,7 +192,13 @@ jobs:
         run: |
           helm upgrade --install ${{ steps.vars.outputs.release }} ./helm/aihr \
             --namespace ${{ steps.vars.outputs.ns }} --create-namespace \
-            -f helm/aihr/${{ steps.vars.outputs.values }} \
+            -f helm/aihr/values-${{ steps.vars.outputs.stage }}.yaml \
+            -f helm/aihr/values-${{ steps.vars.outputs.stage }}-prometheus.yaml \
+            -f helm/aihr/values-${{ steps.vars.outputs.stage }}-grafana.yaml \
+            -f helm/aihr/values-${{ steps.vars.outputs.stage }}-frontend.yaml \
+            -f helm/aihr/values-common-prometheus.yaml \
+            -f helm/aihr/values-common-grafana.yaml \
+            -f helm/aihr/values-common-discord-alert.yaml \
             --set discordWebhook.url=${{ secrets.DISCORD_WEBHOOK }} \
             --set global.ghcrUser=${{ env.GHCR_USER }} \
             --set global.ghcrRepo=${{ env.GHCR_REPO }} \
