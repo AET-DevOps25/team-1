@@ -118,6 +118,7 @@ jobs:
             -f helm/aihr/values-${{ steps.vars.outputs.stage }}.yaml \
             -f helm/aihr/values-${{ steps.vars.outputs.stage }}-prometheus.yaml \
             -f helm/aihr/values-${{ steps.vars.outputs.stage }}-grafana.yaml \
+            -f helm/aihr/values-${{ steps.vars.outputs.stage }}-loki.yaml \
             -f helm/aihr/values-${{ steps.vars.outputs.stage }}-frontend.yaml \
             -f helm/aihr/values-common-prometheus.yaml \
             -f helm/aihr/values-common-grafana.yaml \
@@ -202,6 +203,7 @@ jobs:
             -f helm/aihr/values-${{ steps.vars.outputs.stage }}.yaml \
             -f helm/aihr/values-${{ steps.vars.outputs.stage }}-prometheus.yaml \
             -f helm/aihr/values-${{ steps.vars.outputs.stage }}-grafana.yaml \
+            -f helm/aihr/values-${{ steps.vars.outputs.stage }}-loki.yaml \
             -f helm/aihr/values-${{ steps.vars.outputs.stage }}-frontend.yaml \
             -f helm/aihr/values-common-prometheus.yaml \
             -f helm/aihr/values-common-grafana.yaml \
