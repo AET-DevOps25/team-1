@@ -13,8 +13,8 @@ DISCORD_WEBHOOK=""
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 helm dependency update ./helm/aihr
-tar -xvzf helm/aihr/charts/grafana-7.3.12.tgz
-rm helm/aihr/charts/grafana-7.3.12.tgz
+tar -xvzf helm/aihr/charts/grafana-9.2.10.tgz
+rm helm/aihr/charts/grafana-9.2.10.tgz
 
 cp -r ./dashboards/* ./helm/aihr/charts/grafana/dashboards/
 

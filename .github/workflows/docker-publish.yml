@@ -188,8 +188,8 @@ jobs:
       - name: unzip tgz files inside helm
         run: |
           cd helm/aihr/charts/
-          tar -xvzf grafana-7.3.12.tgz
-          rm grafana-7.3.12.tgz
+          tar -xvzf grafana-9.2.10.tgz
+          rm grafana-9.2.10.tgz
 
       - name: Copy dashboard json
         run: |
