@@ -1,4 +1,6 @@
 loki:
+  global:
+    dnsService: "rke2-coredns-rke2-coredns"
   rbac:
     namespaced: true
   alertmanager:
@@ -75,3 +77,9 @@ loki:
     replicas: 0
   bloomGateway:
     replicas: 0
+  ui:
+    # Disabled by default for backwards compatibility. Enable to use the Loki UI.
+    enabled: true
+    gateway:
+      # enable gateway proxying to UI under /ui
+      enabled: true
