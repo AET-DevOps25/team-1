@@ -18,6 +18,8 @@ promtail:
       - job_name: kubernetes-pods
         kubernetes_sd_configs:
           - role: pod
+            namespaces:
+              own_namespace: true
         relabel_configs:
           # 采集所有 namespace/pod/container 的日志并加标签
           - source_labels: [__meta_kubernetes_namespace]
