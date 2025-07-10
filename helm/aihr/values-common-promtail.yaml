@@ -1,10 +1,7 @@
 promtail:
-  serviceAccount:
-    create: true
-    name: promtail
-
   rbac:
-    create: true
+    create: false
+    namespaced: true
 
   # DaemonSet 部署，每个节点采集日志
   daemonset:
@@ -38,17 +35,17 @@ promtail:
             replacement: /var/log/pods/$1/*/$2/*.log
             target_label: __path__
         # 你可以在此加 pipeline_stages 做日志多行合并或 json 解析
-
-  # 自动挂载日志目录
-  extraVolumes:
-    - name: varlog
-      hostPath:
-        path: /var/log/pods
-        type: Directory
-  extraVolumeMounts:
-    - name: varlog
-      mountPath: /var/log/pods
-      readOnly: true
+#
+#  # 自动挂载日志目录
+#  extraVolumes:
+#    - name: varlog
+#      hostPath:
+#        path: /var/log/pods
+#        type: Directory
+#  extraVolumeMounts:
+#    - name: varlog
+#      mountPath: /var/log/pods
+#      readOnly: true
 
   # 资源限制
   resources:
