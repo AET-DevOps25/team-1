@@ -4,7 +4,6 @@ prometheus:
   serviceAccount:
     server:
       create: true
-      name: ai-hr-dev-prometheus-server
   kube-state-metrics:
     enabled: false
   prometheus-node-exporter:
