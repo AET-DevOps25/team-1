@@ -3,6 +3,10 @@ promtail:
     create: false
     namespaced: true
 
+  serviceAccount:
+    server:
+      create: true
+
   # DaemonSet 部署，每个节点采集日志
   daemonset:
     enabled: true
@@ -11,43 +15,34 @@ promtail:
   config:
     clients:
       - url: http://ai-hr-dev-loki.ai-hr-dev.svc.cluster.local:3100/loki/api/v1/push  # 修改为你的 Loki 服务地址
-    positions:
-      filename: /run/promtail/positions.yaml
-
-    scrape_configs:
-      - job_name: kubernetes-pods
-        kubernetes_sd_configs:
-          - role: pod
-            namespaces:
-              own_namespace: true
-        relabel_configs:
-          # 采集所有 namespace/pod/container 的日志并加标签
-          - source_labels: [__meta_kubernetes_namespace]
-            target_label: namespace
-          - source_labels: [__meta_kubernetes_pod_name]
-            target_label: pod
-          - source_labels: [__meta_kubernetes_pod_container_name]
-            target_label: container
-          - source_labels: [__meta_kubernetes_node_name]
-            target_label: node
-          # 日志路径
-          - action: replace
-            source_labels: [__meta_kubernetes_pod_uid, __meta_kubernetes_pod_container_name]
-            regex: (.+);(.+)
-            replacement: /var/log/pods/$1/*/$2/*.log
-            target_label: __path__
-        # 你可以在此加 pipeline_stages 做日志多行合并或 json 解析
-#
-#  # 自动挂载日志目录
-#  extraVolumes:
-#    - name: varlog
-#      hostPath:
-#        path: /var/log/pods
-#        type: Directory
-#  extraVolumeMounts:
-#    - name: varlog
-#      mountPath: /var/log/pods
-#      readOnly: true
+    logLevel: debug
+    snippets:
+      scrapeConfigs: |
+        - job_name: kubernetes-pods
+          kubernetes_sd_configs:
+            - role: pod
+              namespaces:
+                names: [ai-hr-dev]
+          relabel_configs:
+            # 采集所有 namespace/pod/container 的日志并加标签
+            - source_labels: [__meta_kubernetes_namespace]
+              target_label: namespace
+            - source_labels: [__meta_kubernetes_pod_name]
+              target_label: pod
+            - source_labels: [__meta_kubernetes_pod_container_name]
+              target_label: container
+            - source_labels: [__meta_kubernetes_node_name]
+              target_label: node
+            # 日志路径
+            - action: replace
+              source_labels: 
+                - __meta_kubernetes_namespace
+                - __meta_kubernetes_pod_name
+                - __meta_kubernetes_pod_uid
+                - __meta_kubernetes_pod_container_name
+              regex: (.+);(.+);(.+);(.+)
+              replacement: /var/log/pods/*$3/$4/*.log*
+              target_label: __path__
 
   # 资源限制
   resources:
@@ -57,15 +52,3 @@ promtail:
     requests:
       cpu: 100m
       memory: 128Mi
-
-  # 如需只采集某个 namespace，加如下 relabel 配置
-  # config:
-  #   scrape_configs:
-  #     - job_name: kubernetes-pods
-  #       kubernetes_sd_configs:
-  #         - role: pod
-  #       relabel_configs:
-  #         - action: keep
-  #           source_labels: [__meta_kubernetes_namespace]
-  #           regex: your-namespace
-  #       ... 其它 relabel 保持不变
