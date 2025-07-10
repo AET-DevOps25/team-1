@@ -29,20 +29,11 @@ grafana:
         file: "dashboards/genai.json"
       springboot:
         file: "dashboards/springboot.json"
+      loki:
+        file: "dashboards/loki.json"
 
   ingress:
     enabled: true
     className: nginx
     annotations:
       cert-manager.io/cluster-issuer: letsencrypt-prod
-
-  datasources:
-    datasources.yaml:
-      apiVersion: 1
-      datasources:
-        - name: prometheus
-          uid: prometheus
-          type: prometheus
-          url: http://ai-hr-dev-prometheus-server   # ← Helm 会自动生成此 Service
-          access: proxy
-          isDefault: true
