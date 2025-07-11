@@ -1,4 +1,7 @@
 loki:
+  serviceAccount:
+    create: true
+    name: ai-hr-prod-loki
   gateway:
     ingress:
       enabled: true
