@@ -36,9 +36,9 @@ helm upgrade --install ai-hr-dev ./helm/aihr \
   --set global.imageTag="$(git rev-parse --short HEAD)" \
   --set-file global.jwt.privateKey="${private_key}" \
   --set-file global.jwt.publicKey="${public_key}" \
-  --set charts.service-genai.env.ollamaBaseUrl="${OLLAMA_BASE_URL}" \
-  --set charts.service-genai.env.ollamaModel="${OLLAMA_MODEL}" \
-  --set charts.service-genai.env.ollamaApiKey="${OLLAMA_API_KEY}" \
+  --set global.ollama.ollamaBaseUrl="${OLLAMA_BASE_URL}" \
+  --set global.ollama.ollamaModel="${OLLAMA_MODEL}" \
+  --set global.ollama.ollamaApiKey="${OLLAMA_API_KEY}" \
   --wait --timeout 15m
 
 helm upgrade --install ai-hr-prod ./helm/aihr \
@@ -59,7 +59,7 @@ helm upgrade --install ai-hr-prod ./helm/aihr \
   --set global.imageTag="$(git rev-parse --short HEAD)" \
   --set-file global.jwt.privateKey="${private_key}" \
   --set-file global.jwt.publicKey="${public_key}" \
-  --set charts.service-genai.env.ollamaBaseUrl="${OLLAMA_BASE_URL}" \
-  --set charts.service-genai.env.ollamaModel="${OLLAMA_MODEL}" \
-  --set charts.service-genai.env.ollamaApiKey="${OLLAMA_API_KEY}" \
-  --wait --timeout 15m
+  --set global.ollama.ollamaBaseUrl="${OLLAMA_BASE_URL}" \
+  --set global.ollama.ollamaModel="${OLLAMA_MODEL}" \
+  --set global.ollama.ollamaApiKey="${OLLAMA_API_KEY}" \
+  --wait

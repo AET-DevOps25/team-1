@@ -120,8 +120,8 @@ jobs:
             -f helm/aihr/values-${{ steps.vars.outputs.stage }}-grafana.yaml \
             -f helm/aihr/values-${{ steps.vars.outputs.stage }}-loki.yaml \
             -f helm/aihr/values-${{ steps.vars.outputs.stage }}-frontend.yaml \
-            -f helm/aihr/values-common-promtail.yaml \
             -f helm/aihr/values-common-loki.yaml \
+            -f helm/aihr/values-common-promtail.yaml \
             -f helm/aihr/values-common-prometheus.yaml \
             -f helm/aihr/values-common-grafana.yaml \
             -f helm/aihr/values-common-discord-alert.yaml \
@@ -217,7 +217,7 @@ jobs:
             --set global.imageTag=${{ env.IMAGE_TAG }} \
             --set-file global.jwt.privateKey=priv.pem \
             --set-file global.jwt.publicKey=pub.pem \
-            --set charts.service-genai.env.ollamaBaseUrl=${{ secrets.OLLAMA_BASE_URL }} \
-            --set charts.service-genai.env.ollamaModel=${{ env.OLLAMA_MODEL }} \
-            --set charts.service-genai.env.ollamaApiKey=${{ secrets.OLLAMA_API_KEY }} \
+            --set global.ollama.ollamaBaseUrl=${{ secrets.OLLAMA_BASE_URL }} \
+            --set global.ollama.ollamaModel=${{ env.OLLAMA_MODEL }} \
+            --set global.ollama.ollamaApiKey=${{ secrets.OLLAMA_API_KEY }} \
             --wait --timeout 15m
