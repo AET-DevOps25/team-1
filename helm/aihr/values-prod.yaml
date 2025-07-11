@@ -3,5 +3,5 @@ global:
     stage: prod
     host: api.ai-hr.student.k8s.aet.cit.tum.de
     tlsSecret: ai-hr-prod-tls
-    corsAllowed: "https://ai-hr.student.k8s.aet.cit.tum.de,https://api.ai-hr.student.k8s.aet.cit.tum.de"
+    corsAllowed: "https://ai-hr.student.k8s.aet.cit.tum.de,https://api.ai-hr.student.k8s.aet.cit.tum.de,https://loki.ai-hr.student.k8s.aet.cit.tum.de,https://prometheus.ai-hr.student.k8s.aet.cit.tum.de,https://alertmanager.ai-hr.student.k8s.aet.cit.tum.de"
     authCookieDomain: ".ai-hr.student.k8s.aet.cit.tum.de"
