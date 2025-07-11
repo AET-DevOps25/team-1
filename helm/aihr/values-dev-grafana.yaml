@@ -12,7 +12,7 @@ grafana:
         - name: loki
           uid: loki
           type: loki
-          url: http://ai-hr-prod-loki-gateway
+          url: http://ai-hr-dev-loki-gateway
           access: proxy
           jsonData:
             httpHeaderName1: 'X-Scope-OrgID'

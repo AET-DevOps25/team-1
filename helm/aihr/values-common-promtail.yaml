@@ -14,7 +14,9 @@ promtail:
   # 日志采集与推送配置
   config:
     clients:
-      - url: http://ai-hr-dev-loki.ai-hr-dev.svc.cluster.local:3100/loki/api/v1/push  # 修改为你的 Loki 服务地址
+      - url: http://ai-hr-dev-loki-gateway/loki/api/v1/push
+        tenant_id: "promtail"
+
     logLevel: debug
     snippets:
       scrapeConfigs: |
