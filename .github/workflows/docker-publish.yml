@@ -104,8 +104,8 @@ jobs:
       - name: unzip tgz files inside helm
         run: |
           cd helm/aihr/charts/
-          tar -xvzf grafana-7.3.12.tgz
-          rm grafana-7.3.12.tgz
+          tar -xvzf grafana-9.2.10.tgz
+          rm grafana-9.2.10.tgz
 
       - name: Copy dashboard json
         run: |
@@ -136,7 +136,7 @@ jobs:
             --set global.ollama.ollamaApiKey=${{ secrets.OLLAMA_API_KEY }} \
             --wait --timeout 15m
 
-  deploy-k8s-direcct:
+  deploy-k8s-direct:
     if: ${{ github.event.inputs.image != '' && github.event.inputs.image != null }}
     runs-on: ubuntu-latest
     environment:

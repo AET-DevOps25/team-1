@@ -117,7 +117,7 @@
           "useBackend": false
         }
       ],
-      "title": "AI requets total",
+      "title": "AI requests total",
       "type": "timeseries"
     },
     {
