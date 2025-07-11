@@ -41,7 +41,9 @@
     const msg = document.getElementById("msg");
     // read ?redirect=<uri>
     const params = new URLSearchParams(window.location.search);
-    const redirectUri = params.get("redirect_uri");
+    // support multiple param names and decode value (% encoded from ingress)
+    const rawRedirect = params.get("redirect_uri");
+    const redirectUri = rawRedirect ? decodeURIComponent(rawRedirect) : null;
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
         const email = document.getElementById("email").value;
