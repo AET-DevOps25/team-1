@@ -38,8 +38,6 @@ spec:
           env:
             - name: SERVER_PORT
               value: "{{ .Values.service.port }}"
-            - name: SPRING_PROFILES_ACTIVE
-              value: {{ .Values.env.springProfile | quote }}
 
             # 数据库连接
             - name: DB_HOST
@@ -58,22 +56,12 @@ spec:
                   key: DB_PASSWORD
 
             # 其余业务配置
-            {{- if .Values.global.jwt.privateKey | default .Values.env.jwtPrivateKey }}
-            - name: JWT_PRIVATE_KEY
-              value: {{ .Values.env.jwtPrivateKey | default .Values.global.jwt.privateKey | quote }}
-            {{- end }}
-            {{- if .Values.global.jwt.publicKey | default .Values.env.jwtPublicKey }}
-            - name: JWT_PUBLIC_KEY
-              value: {{ .Values.env.jwtPublicKey | default .Values.global.jwt.publicKey | quote }}
-            {{- end }}
-            - name: CORS_ALLOWED_ORIGINS
-              value: {{ .Values.env.corsAllowed | default .Values.global.env.corsAllowed | quote }}
             - name: OLLAMA_BASE_URL
-              value: {{ .Values.env.ollamaBaseUrl | quote }}
+              value: {{ .Values.global.ollama.ollamaBaseUrl | quote }}
             - name: OLLAMA_MODEL
-              value: {{ .Values.env.ollamaModel | quote }}
+              value: {{ .Values.global.ollama.ollamaModel | quote }}
             - name: OLLAMA_API_KEY
-              value: {{ .Values.env.ollamaApiKey | quote }}
+              value: {{ .Values.global.ollama.ollamaApiKey | quote }}
 
           livenessProbe:
             httpGet:

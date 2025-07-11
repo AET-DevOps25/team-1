@@ -128,7 +128,7 @@ public class AIServiceGrpcClient {
             return ScoreResumeResponse.newBuilder()
                     .setResumeScore(0)
                     .setComment("Error scoring resume: " + e.getMessage())
-                    .setRecommendation(de.tum.devops.grpc.ai.RecommendationEnum.NOT_RECOMMEND)
+                    .setRecommendation(de.tum.devops.grpc.ai.RecommendationEnum.CONSIDER)
                     .build();
         }
     }

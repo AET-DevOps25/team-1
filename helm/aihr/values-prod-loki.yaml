@@ -1,0 +1,15 @@
+loki:
+  gateway:
+    ingress:
+      enabled: true
+      hosts:
+        - host: loki.ai-hr.student.k8s.aet.cit.tum.de
+          paths:
+            - path: /
+              pathType: Prefix
+      tls:
+        - secretName: ai-hr-prod-loki-tls
+          hosts:
+            - loki.ai-hr.student.k8s.aet.cit.tum.de
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod

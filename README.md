@@ -1,5 +1,10 @@
 # README
 
+| Branch      | Status                                                                                                                                                                                                                     |
+|-------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Main        | [![Build and Publish and Deploy](https://github.com/AET-DevOps25/team-1/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/AET-DevOps25/team-1/actions/workflows/docker-publish.yml)                      |
+| Backend-dev | [![Build and Publish and Deploy](https://github.com/AET-DevOps25/team-1/actions/workflows/docker-publish.yml/badge.svg?branch=week8-backend)](https://github.com/AET-DevOps25/team-1/actions/workflows/docker-publish.yml) |
+
 ## 1. Introduction
 
 ### 1.1 Who are the intended users?
@@ -42,7 +47,8 @@ This system is designed with a layered architecture, consisting of the following
     * Components: API Gateway, Job Management Service, Application Management Service, LangChain GenAI Service
 * **Data Storage Layer**
     * Tech: PostgreSQL + pgvector
-    * Details: PostgreSQL serves as the relational database for structured data, while pgvector provides vector database capabilities for RAG.
+    * Details: PostgreSQL serves as the relational database for structured data, while pgvector provides vector database
+      capabilities for RAG.
 * **External Services Layer**
     * Details: OpenAI API for LLM capabilities (specific model TBD).
 
@@ -52,7 +58,8 @@ The backend is implemented using **Spring Boot**, exposing RESTful APIs to suppo
 handles business logic, including:
 
 * Job posting and management (via `Job Management Service`).
-* Candidate application processing, resume filtering, interview generation, and scoring (via `Candidate Application Service`).
+* Candidate application processing, resume filtering, interview generation, and scoring (via
+  `Candidate Application Service`).
 * Integration with external services, such as OpenAI, for GenAI tasks (via `LangChain GenAI Service`).
 
 The `API Gateway` serves as the single entry point, routing requests from UI clients to the appropriate services.

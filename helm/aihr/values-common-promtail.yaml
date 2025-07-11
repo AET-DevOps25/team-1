@@ -1,0 +1,52 @@
+promtail:
+  rbac:
+    create: false
+    namespaced: true
+
+  serviceAccount:
+    server:
+      create: true
+
+  # DaemonSet 部署，每个节点采集日志
+  daemonset:
+    enabled: true
+
+  # 日志采集与推送配置
+  config:
+    logLevel: debug
+    snippets:
+      scrapeConfigs: |
+        - job_name: kubernetes-pods
+          kubernetes_sd_configs:
+            - role: pod
+              namespaces:
+                names: [ai-hr-dev]
+          relabel_configs:
+            # 采集所有 namespace/pod/container 的日志并加标签
+            - source_labels: [__meta_kubernetes_namespace]
+              target_label: namespace
+            - source_labels: [__meta_kubernetes_pod_name]
+              target_label: pod
+            - source_labels: [__meta_kubernetes_pod_container_name]
+              target_label: container
+            - source_labels: [__meta_kubernetes_node_name]
+              target_label: node
+            # 日志路径
+            - action: replace
+              source_labels: 
+                - __meta_kubernetes_namespace
+                - __meta_kubernetes_pod_name
+                - __meta_kubernetes_pod_uid
+                - __meta_kubernetes_pod_container_name
+              regex: (.+);(.+);(.+);(.+)
+              replacement: /var/log/pods/*$3/$4/*.log*
+              target_label: __path__
+
+  # 资源限制
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi

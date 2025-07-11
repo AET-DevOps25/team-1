@@ -9,14 +9,6 @@ image:
 service:
   port: 8079
 
-# 环境变量（非敏感）
-env:
-  springProfile: docker
-  corsAllowed: ""
-  ollamaBaseUrl: ""
-  ollamaModel: ""
-  ollamaApiKey: ""
-
 monitoring:
   enabled: true
   scrapeInterval: 15s

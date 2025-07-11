@@ -1,0 +1,27 @@
+grafana:
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: prometheus
+          uid: prometheus
+          type: prometheus
+          url: http://ai-hr-dev-prometheus-server
+          access: proxy
+          isDefault: true
+        - name: loki
+          uid: loki
+          type: loki
+          url: http://ai-hr-dev-loki-gateway
+          access: proxy
+          jsonData:
+            httpHeaderName1: 'X-Scope-OrgID'
+          secureJsonData:
+            httpHeaderValue1: 'promtail'
+  ingress:
+    hosts:
+      - grafana.ai-hr-dev.student.k8s.aet.cit.tum.de
+    tls:
+      - secretName: ai-hr-dev-grafana-tls
+        hosts:
+          - grafana.ai-hr-dev.student.k8s.aet.cit.tum.de
