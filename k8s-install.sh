@@ -24,6 +24,7 @@ helm upgrade --install ai-hr-dev ./helm/aihr \
   -f "${SCRIPT_DIR}/helm/aihr/values-dev-prometheus.yaml" \
   -f "${SCRIPT_DIR}/helm/aihr/values-dev-grafana.yaml" \
   -f "${SCRIPT_DIR}/helm/aihr/values-dev-loki.yaml" \
+  -f "${SCRIPT_DIR}/helm/aihr/values-dev-promtail.yaml" \
   -f "${SCRIPT_DIR}/helm/aihr/values-dev-frontend.yaml" \
   -f "${SCRIPT_DIR}/helm/aihr/values-common-loki.yaml" \
   -f "${SCRIPT_DIR}/helm/aihr/values-common-promtail.yaml" \
@@ -47,6 +48,7 @@ helm upgrade --install ai-hr-prod ./helm/aihr \
   -f "${SCRIPT_DIR}/helm/aihr/values-prod-prometheus.yaml" \
   -f "${SCRIPT_DIR}/helm/aihr/values-prod-grafana.yaml" \
   -f "${SCRIPT_DIR}/helm/aihr/values-prod-loki.yaml" \
+  -f "${SCRIPT_DIR}/helm/aihr/values-prod-promtail.yaml" \
   -f "${SCRIPT_DIR}/helm/aihr/values-prod-frontend.yaml" \
   -f "${SCRIPT_DIR}/helm/aihr/values-common-loki.yaml" \
   -f "${SCRIPT_DIR}/helm/aihr/values-common-promtail.yaml" \
