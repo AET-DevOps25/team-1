@@ -29,6 +29,8 @@ app:
     private-key: ${JWT_PRIVATE_KEY}
     public-key: ${JWT_PUBLIC_KEY}
     access-token-expiration: 86400000 # 1 day in milliseconds
+  cookie:
+    domain: ${AUTH_COOKIE_DOMAIN:.localhost}
 
 # Logging configuration
 logging:
@@ -41,7 +43,7 @@ logging:
 
 # CORS configuration
 cors:
-  allowed-origins: ${CORS_ALLOWED_ORIGINS:"https://ai-hr.student.k8s.aet.cit.tum.de,https://ai-hr-dev.student.k8s.aet.cit.tum.de"}
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:"https://ai-hr.student.k8s.aet.cit.tum.de,https://ai-hr-dev.student.k8s.aet.cit.tum.de,https://api.ai-hr.student.k8s.aet.cit.tum.de,https://api.ai-hr-dev.student.k8s.aet.cit.tum.de"}
   allowed-methods: GET,POST,PUT,DELETE,OPTIONS
   allowed-headers: "*"
   allow-credentials: true

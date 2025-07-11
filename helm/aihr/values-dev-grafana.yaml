@@ -18,6 +18,11 @@ grafana:
             httpHeaderName1: 'X-Scope-OrgID'
           secureJsonData:
             httpHeaderValue1: 'promtail'
+        - name: alertmanager-prometheus
+          uid: alertmanager-prometheus
+          type: prometheus
+          url: http://ai-hr-dev-alertmanager:9093
+          access: proxy
   ingress:
     hosts:
       - grafana.ai-hr-dev.student.k8s.aet.cit.tum.de

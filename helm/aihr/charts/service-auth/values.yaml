@@ -15,6 +15,7 @@ env:
   corsAllowed: ""
   jwtPrivateKey: ""
   jwtPublicKey: ""
+  authCookieDomain: ""
 
 monitoring:
   enabled: true
