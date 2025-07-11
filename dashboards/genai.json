@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 12,
+  "id": 4,
   "links": [],
   "panels": [
     {
@@ -38,6 +38,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -68,8 +69,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -95,10 +95,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.0.2",
       "targets": [
         {
           "datasource": {
@@ -107,7 +109,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "ai_requests_total{instance=\"198.18.199.161:8000\"}",
+          "expr": "ai_requests_created{method=\"ScoreResume\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": true,
@@ -117,7 +119,7 @@
           "useBackend": false
         }
       ],
-      "title": "AI requests total",
+      "title": "ScoreResume Requests",
       "type": "timeseries"
     },
     {
@@ -137,6 +139,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -167,8 +170,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -194,10 +196,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.0.2",
       "targets": [
         {
           "datasource": {
@@ -206,7 +210,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "ai_requests_created{instance=\"198.18.199.161:8000\"}",
+          "expr": "ai_requests_created{method=\"ScoreInterview\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": true,
@@ -216,7 +220,7 @@
           "useBackend": false
         }
       ],
-      "title": "AI request created",
+      "title": "ScoreInterview Requests",
       "type": "timeseries"
     },
     {
@@ -236,6 +240,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -266,8 +271,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -293,10 +297,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.0.2",
       "targets": [
         {
           "datasource": {
@@ -305,7 +311,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "python_info{instance=\"198.18.199.161:8000\"}",
+          "expr": "ai_requests_created{method=\"ChatReply\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": true,
@@ -315,11 +321,12 @@
           "useBackend": false
         }
       ],
-      "title": "Python Info",
+      "title": "ChatReply Requests",
       "type": "timeseries"
     }
   ],
-  "schemaVersion": 39,
+  "preload": false,
+  "schemaVersion": 41,
   "tags": [],
   "templating": {
     "list": []
@@ -331,7 +338,6 @@
   "timepicker": {},
   "timezone": "browser",
   "title": "GenAI",
-  "uid": "ber4hct3s49a8b",
-  "version": 4,
-  "weekStart": ""
+  "uid": "29aab0c0-b2dc-48a7-8bfa-18cadf563153",
+  "version": 5
 }
