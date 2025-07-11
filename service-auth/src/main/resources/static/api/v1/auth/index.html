@@ -42,8 +42,10 @@
     // read ?redirect=<uri>
     const params = new URLSearchParams(window.location.search);
     // support multiple param names and decode value (% encoded from ingress)
-    const rawRedirect = params.get("redirect_uri");
-    const redirectUri = rawRedirect ? decodeURIComponent(rawRedirect) : null;
+    let redirectUri = params.get("rd") || params.get("redirect");
+    if (redirectUri) {
+        redirectUri = decodeURIComponent(redirectUri);
+    }
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
         const email = document.getElementById("email").value;
@@ -58,10 +60,8 @@
                 const data = await res.json();
                 msg.className = "text-success";
                 msg.innerText = "Login success!";
-                // redirect if param provided
                 if (redirectUri) {
                     window.location.href = redirectUri;
-                    e.defaultPrevented = true;
                 }
                 console.log(data);
             } else {
