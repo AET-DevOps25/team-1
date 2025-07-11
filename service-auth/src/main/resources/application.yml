@@ -29,6 +29,8 @@ app:
     private-key: ${JWT_PRIVATE_KEY}
     public-key: ${JWT_PUBLIC_KEY}
     access-token-expiration: 86400000 # 1 day in milliseconds
+  cookie:
+    domain: ${AUTH_COOKIE_DOMAIN:.localhost}
 
 # Logging configuration
 logging:

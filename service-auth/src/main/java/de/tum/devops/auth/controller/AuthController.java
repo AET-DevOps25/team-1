@@ -2,17 +2,17 @@ package de.tum.devops.auth.controller;
 
 import de.tum.devops.auth.dto.*;
 import de.tum.devops.auth.service.AuthService;
+import de.tum.devops.auth.service.JwtService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * Authentication Controller
@@ -24,9 +24,14 @@ public class AuthController {
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
     private final AuthService authService;
+    private final JwtService jwtService;
 
-    public AuthController(AuthService authService) {
+    @Value("${app.cookie.domain}")
+    private String cookieDomain;
+
+    public AuthController(AuthService authService, JwtService jwtService) {
         this.authService = authService;
+        this.jwtService = jwtService;
     }
 
     /**
@@ -41,7 +46,19 @@ public class AuthController {
 
         logger.info("Login successful for user: {}", authResponse.getUser().getUserID());
 
-        return ResponseEntity.ok(ApiResponse.success("Login successful", authResponse));
+        // create secure cookie with JWT
+        ResponseCookie cookie = ResponseCookie.from("auth_token", authResponse.getAccessToken())
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .domain(cookieDomain)
+                .maxAge(authResponse.getExpiresIn())
+                .sameSite("Strict")
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(ApiResponse.success("Login successful", authResponse));
     }
 
     /**
@@ -85,5 +102,43 @@ public class AuthController {
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created(newHR));
+    }
+
+    /**
+     * GET /api/v1/auth/index.html
+     * Simple login page (HTML form)
+     */
+    @GetMapping(value = "/index.html", produces = MediaType.TEXT_HTML_VALUE)
+    public ResponseEntity<Resource> loginPage() {
+        Resource resource = new ClassPathResource("static/api/v1/auth/index.html");
+        return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).body(resource);
+    }
+
+    /**
+     * GET /api/v1/auth/verify
+     * Verify JWT for HR role; returns 200 when token has ROLE_HR
+     */
+    @GetMapping("/verify")
+    public ResponseEntity<Void> verifyJwt(@CookieValue(name = "auth_token", required = false) String tokenCookie,
+                                          @RequestHeader(name = "Authorization", required = false) String authHeader) {
+        String token = tokenCookie;
+        if (token == null && authHeader != null && authHeader.startsWith("Bearer ")) {
+            token = authHeader.substring(7);
+        }
+
+        if (token == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        try {
+            String role = jwtService.extractRole(token);
+            if ("HR".equals(role)) {
+                return ResponseEntity.ok().build();
+            } else {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
     }
 }

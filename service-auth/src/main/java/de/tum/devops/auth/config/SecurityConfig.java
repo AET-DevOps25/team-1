@@ -55,6 +55,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/login").permitAll()
                         .requestMatchers("/api/v1/auth/register").permitAll()
 
+                        // Login page
+                        .requestMatchers("/api/v1/auth/index.html").permitAll()
+                        .requestMatchers("/api/v1/auth/verify").permitAll()
+
                         // Internal user endpoint (cluster-only)
                         .requestMatchers("/internal/api/v1/users/**").permitAll()
 
