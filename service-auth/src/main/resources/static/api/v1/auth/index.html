@@ -39,6 +39,9 @@
     <script>
         const form = document.getElementById("loginForm");
         const msg = document.getElementById("msg");
+        // read ?redirect=<uri>
+        const params = new URLSearchParams(window.location.search);
+        const redirectUri = params.get("redirect");
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
             const email = document.getElementById("email").value;
@@ -53,6 +56,10 @@
                     const data = await res.json();
                     msg.className = "text-success";
                     msg.innerText = "Login success!";
+                    // redirect if param provided
+                    if (redirectUri) {
+                        window.location.href = redirectUri;
+                    }
                     console.log(data);
                 } else {
                     const err = await res.json().catch(() => ({}));
