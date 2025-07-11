@@ -19,6 +19,7 @@ global:
     tlsSecret: ""      # ai-hr-*-tls
     # CORS
     corsAllowed: ""          # 由 dev / prod 覆盖
+    authCookieDomain: ""     # 由 dev / prod 覆盖
   jwt:
     privateKey: ""           # helm --set-file 注入
     publicKey: ""            # helm --set-file 注入
