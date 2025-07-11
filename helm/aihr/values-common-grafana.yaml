@@ -29,8 +29,6 @@ grafana:
         file: "dashboards/genai.json"
       springboot:
         file: "dashboards/springboot.json"
-      loki:
-        file: "dashboards/loki.json"
 
   ingress:
     enabled: true
