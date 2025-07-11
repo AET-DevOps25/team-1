@@ -16,3 +16,5 @@ loki:
             - loki.ai-hr.student.k8s.aet.cit.tum.de
       annotations:
         cert-manager.io/cluster-issuer: letsencrypt-prod
+        nginx.ingress.kubernetes.io/auth-url: "https://api.ai-hr.student.k8s.aet.cit.tum.de/api/v1/auth/verify"
+        nginx.ingress.kubernetes.io/auth-signin: "https://api.ai-hr.student.k8s.aet.cit.tum.de/api/v1/auth/index.html?redirect=$request_uri"
