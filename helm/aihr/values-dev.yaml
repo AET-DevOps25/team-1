@@ -3,5 +3,5 @@ global:
     stage: dev
     host: api.ai-hr-dev.student.k8s.aet.cit.tum.de
     tlsSecret: ai-hr-dev-tls
-    corsAllowed: "http://localhost:3000,http://localhost:5173,http://localhost:4200,https://ai-hr-dev.student.k8s.aet.cit.tum.de/api/v1/applications"
+    corsAllowed: "http://localhost:3000,http://localhost:5173,http://localhost:4200,https://ai-hr-dev.student.k8s.aet.cit.tum.de,https://api.ai-hr-dev.student.k8s.aet.cit.tum.de"
     authCookieDomain: ".ai-hr-dev.student.k8s.aet.cit.tum.de"
