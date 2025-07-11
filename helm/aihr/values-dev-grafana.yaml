@@ -17,7 +17,7 @@ grafana:
           jsonData:
             httpHeaderName1: 'X-Scope-OrgID'
           secureJsonData:
-            httpHeaderValue1: 'admin'
+            httpHeaderValue1: 'promtail'
   ingress:
     hosts:
       - grafana.ai-hr-dev.student.k8s.aet.cit.tum.de
