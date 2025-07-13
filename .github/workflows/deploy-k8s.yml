@@ -1,0 +1,254 @@
+name: Deploy to Kubernetes (Helm)
+
+on:
+  workflow_dispatch:
+    inputs:
+      kubernetes_namespace:
+        description: 'Target Kubernetes namespace (e.g., niko-team-1, gemini-team-1). Default derived from branch or team-1-dev.'
+        required: false
+        default: ''
+      image_tag:
+        description: 'Docker image tag to deploy (default: latest for main, branch name for others, or commit SHA).'
+        required: false
+        default: ''
+      deploy_frontend:
+        description: 'Deploy Frontend to Kubernetes'
+        required: true
+        type: boolean
+        default: true
+      deploy_backend:
+        description: 'Deploy Backend to Kubernetes'
+        required: true
+        type: boolean
+        default: true
+      branch_ref:
+        description: 'Branch to deploy (default: current branch)'
+        required: false
+        default: ''
+  push:
+    branches:
+      - main # Production deployment
+      - 'feature/**'
+      - 'dev/**'
+  pull_request:
+    branches:
+      - main
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }} # Uses owner/repo as image name base
+  HELM_VERSION: "3.12.0"
+  KUBECTL_VERSION: "1.28.0"
+  PYTHON_VERSION: '3.9'
+  # Default K8s values, can be overridden
+  K8S_DEFAULT_NAMESPACE_PREFIX: "dev"
+  K8S_PROD_NAMESPACE: "team-1-production"
+  CLIENT_DOMAIN: "aihr.student.k8s.aet.cit.tum.de"
+
+jobs:
+  determine_k8s_params:
+    name: Determine K8s Deployment Parameters
+    runs-on: ubuntu-latest
+    outputs:
+      namespace: ${{ steps.params.outputs.namespace }}
+      image_tag: ${{ steps.params.outputs.image_tag }}
+      branch_name: ${{ steps.params.outputs.branch_name }}
+      is_main_branch: ${{ steps.params.outputs.is_main_branch }}
+      helm_action: ${{ steps.params.outputs.helm_action }}
+      build_images: ${{ steps.params.outputs.build_images }}
+      effective_deploy_frontend: ${{ steps.params.outputs.effective_deploy_frontend }}
+      effective_deploy_backend: ${{ steps.params.outputs.effective_deploy_backend }}
+
+    steps:
+      - name: Set K8s Parameters
+        id: params
+        run: |
+          BRANCH_NAME="${{ github.event.inputs.branch_ref || github.ref_name }}"
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+          IS_MAIN_BRANCH=$(echo "$BRANCH_NAME" == "main" || echo "$BRANCH_NAME" == "refs/heads/main")
+          echo "is_main_branch=$IS_MAIN_BRANCH" >> $GITHUB_OUTPUT
+
+          if [[ "$IS_MAIN_BRANCH" == "true" ]]; then
+            NAMESPACE="${{ env.K8S_PROD_NAMESPACE }}"
+            IMAGE_TAG="${{ github.event.inputs.image_tag || 'latest' }}"
+            EFFECTIVE_DEPLOY_FRONTEND=true
+            EFFECTIVE_DEPLOY_BACKEND=true
+          else
+            # Namespace: input, or sanitized branch name, or default dev prefix
+            if [[ -n "${{ github.event.inputs.kubernetes_namespace }}" ]]; then
+              NAMESPACE="${{ github.event.inputs.kubernetes_namespace }}"
+            elif [[ -n "$BRANCH_NAME" ]]; then
+              SANITIZED_BRANCH_NAME=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9-]/-/g' | sed 's/^-*//;s/-*$//' | tr '[:upper:]' '[:lower:]')
+              NAMESPACE="${SANITIZED_BRANCH_NAME:0:15}-team-1" # Max 15 chars from branch
+            else
+              NAMESPACE="${{ env.K8S_DEFAULT_NAMESPACE_PREFIX }}-team-1"
+            fi
+            # Image Tag: input, or commit SHA for feature branches for uniqueness
+            IMAGE_TAG="${{ github.event.inputs.image_tag || github.sha }}"
+            EFFECTIVE_DEPLOY_FRONTEND=${{ github.event.inputs.deploy_frontend || true }}
+            EFFECTIVE_DEPLOY_BACKEND=${{ github.event.inputs.deploy_backend || true }}
+          fi
+          echo "namespace=$NAMESPACE" >> $GITHUB_OUTPUT
+          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "effective_deploy_frontend=$EFFECTIVE_DEPLOY_FRONTEND" >> $GITHUB_OUTPUT
+          echo "effective_deploy_backend=$EFFECTIVE_DEPLOY_BACKEND" >> $GITHUB_OUTPUT
+          
+          # Helm action: install for push/dispatch, lint for PRs (or template for dry-run)
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            HELM_ACTION="lint"
+            BUILD_IMAGES=false # Don't build images for PRs by default
+          else
+            HELM_ACTION="upgrade"
+            BUILD_IMAGES=true  # Build images for push/dispatch
+          fi
+          echo "helm_action=$HELM_ACTION" >> $GITHUB_OUTPUT
+          echo "build_images=$BUILD_IMAGES" >> $GITHUB_OUTPUT
+
+  build_and_push_images:
+    name: Build and Push Docker Images
+    runs-on: ubuntu-latest
+    needs: determine_k8s_params
+    if: needs.determine_k8s_params.outputs.build_images == 'true'
+    permissions:
+      contents: read
+      packages: write # Required to push to GHCR
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.determine_k8s_params.outputs.branch_name }}
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ needs.determine_k8s_params.outputs.image_tag }}
+            type=sha,prefix= # Add short SHA as a tag too
+
+      # This step assumes your docker-compose.yml can be used to identify services to build.
+      # Or you have individual Dockerfiles (e.g., frontend/Dockerfile, service-gateway/Dockerfile)
+      # For a microservice architecture, you might loop through service directories and build each.
+      # Placeholder: This builds all services defined in docker-compose.yml if it has build contexts.
+      # A more robust solution is to have a script or list of services to build.
+      - name: Build and push application images (Frontend)
+        if: needs.determine_k8s_params.outputs.effective_deploy_frontend == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend # Assuming frontend Dockerfile is in ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:${{ needs.determine_k8s_params.outputs.image_tag }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Build and push application images (Service: Gateway)
+        if: needs.determine_k8s_params.outputs.effective_deploy_backend == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./service-gateway
+          file: ./service-gateway/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/service-gateway:${{ needs.determine_k8s_params.outputs.image_tag }}
+          labels: ${{ steps.meta.outputs.labels }}
+      
+      # Add similar build steps for other backend services (service-job, service-application, service-assess, service-genai)
+      # Ensure each service has its own Dockerfile for individual building and tagging.
+      # Example for one more service:
+      - name: Build and push application images (Service: Job)
+        if: needs.determine_k8s_params.outputs.effective_deploy_backend == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./service-job 
+          file: ./service-job/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/service-job:${{ needs.determine_k8s_params.outputs.image_tag }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  deploy_to_kubernetes:
+    name: Deploy to Kubernetes Cluster
+    runs-on: ubuntu-latest
+    needs: [determine_k8s_params, build_and_push_images]
+    # Deploy on push to main, or workflow_dispatch. For PRs, helm_action will be lint.
+    if: needs.determine_k8s_params.outputs.is_main_branch == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'
+    environment: ${{ needs.determine_k8s_params.outputs.is_main_branch == 'true' && 'production' || 'development' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.determine_k8s_params.outputs.branch_name }}
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: ${{ env.KUBECTL_VERSION }}
+
+      - name: Configure kubectl for AET cluster
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+          kubectl config get-contexts
+          kubectl config use-context <your-aet-cluster-context-name> # IMPORTANT: Set your AET context name
+
+      - name: Create Kubernetes Namespace if not exists
+        if: needs.determine_k8s_params.outputs.helm_action == 'upgrade' # Only for actual deployments
+        run: kubectl create namespace ${{ needs.determine_k8s_params.outputs.namespace }} --dry-run=client -o yaml | kubectl apply -f -
+
+      # For PRs, we only lint the chart
+      - name: Helm Lint
+        if: needs.determine_k8s_params.outputs.helm_action == 'lint'
+        run: helm lint ./k8s/helm-charts/team-1-app --namespace ${{ needs.determine_k8s_params.outputs.namespace }}
+
+      - name: Deploy/Upgrade Application with Helm
+        if: needs.determine_k8s_params.outputs.helm_action == 'upgrade'
+        run: |
+          helm ${{ needs.determine_k8s_params.outputs.helm_action }} team-1-app ./k8s/helm-charts/team-1-app \
+            --install \
+            --namespace ${{ needs.determine_k8s_params.outputs.namespace }} \
+            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} \
+            --set image.tag=${{ needs.determine_k8s_params.outputs.image_tag }} \
+            --set frontend.enabled=${{ needs.determine_k8s_params.outputs.effective_deploy_frontend }} \
+            --set serviceGateway.enabled=${{ needs.determine_k8s_params.outputs.effective_deploy_backend }} \
+            # Add similar flags for other backend services, controlled by deploy_backend or more granular flags
+            --set serviceJob.enabled=${{ needs.determine_k8s_params.outputs.effective_deploy_backend }} \
+            --set serviceApplication.enabled=${{ needs.determine_k8s_params.outputs.effective_deploy_backend }} \
+            --set serviceAssess.enabled=${{ needs.determine_k8s_params.outputs.effective_deploy_backend }} \
+            --set serviceGenai.enabled=${{ needs.determine_k8s_params.outputs.effective_deploy_backend }} \
+            --set ingress.enabled=true \
+            --set ingress.hosts[0].host=${{ env.CLIENT_DOMAIN }} \
+            --set ingress.hosts[0].paths[0].path="/" \
+            --set ingress.hosts[0].paths[0].pathType="Prefix" \
+            ${{ needs.determine_k8s_params.outputs.is_main_branch == 'true' && '--values ./k8s/helm-charts/team-1-app/values-prod.yaml' || '' }} \
+            --timeout 10m --wait
+
+      - name: Verify Deployment (if applied)
+        if: needs.determine_k8s_params.outputs.helm_action == 'upgrade'
+        run: |
+          echo "Application deployed to namespace: ${{ needs.determine_k8s_params.outputs.namespace }}"
+          echo "Frontend expected at: http://${{ env.CLIENT_DOMAIN }}/ (if frontend deployed)"
+          kubectl get all -n ${{ needs.determine_k8s_params.outputs.namespace }}
+
+  notify_k8s_failure:
+    name: Notify K8s Failure
+    runs-on: ubuntu-latest
+    needs: [determine_k8s_params, deploy_to_kubernetes]
+    if: failure() && (needs.determine_k8s_params.outputs.is_main_branch == 'true' || github.event_name == 'workflow_dispatch')
+    steps:
+      - name: Notify K8s deployment failure
+        run: echo "Kubernetes Deployment for ${{ needs.determine_k8s_params.outputs.namespace }} with image tag ${{ needs.determine_k8s_params.outputs.image_tag }} FAILED!" 
