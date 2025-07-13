@@ -39,6 +39,8 @@ public class ChatService {
     private final ApplicationRepository applicationRepository;
     private final AIIntegrationService aiIntegrationService;
 
+    private final int aiMessageLimit = 10;
+
     public ChatService(ChatSessionRepository chatSessionRepository,
                        ChatMessageRepository chatMessageRepository,
                        ApplicationRepository applicationRepository,
@@ -99,17 +101,6 @@ public class ChatService {
             logger.warn("Chat session {} is already complete.", sessionId);
             try {
                 emitter.send(SseEmitter.event().name("error").data("Interview session is already complete."));
-                emitter.complete();
-            } catch (Exception e) {
-                logger.error("Error during stream completion for session {}", sessionId, e);
-                emitter.completeWithError(e);
-            }
-            return;
-        }
-        if (session.getMessageCount() >= 20) {
-            logger.warn("Chat session {} has reached the maximum message limit.", sessionId);
-            try {
-                emitter.send(SseEmitter.event().name("error").data("Interview session has reached the interview message limit."));
                 emitter.complete();
             } catch (Exception e) {
                 logger.error("Error during stream completion for session {}", sessionId, e);
@@ -184,9 +175,9 @@ public class ChatService {
         userMessage.setContent(content);
         chatMessageRepository.save(userMessage);
 
-        if (session.getMessageCount() >= 20) {
+        if (session.getMessageCount() >= aiMessageLimit) {
             logger.info("Chat session {} has reached the maximum AI message count. Setting status to complete.", sessionId);
-            completeInterview(session);
+            session = completeInterview(session);
             return session;
         }
 
@@ -222,11 +213,11 @@ public class ChatService {
      * Complete the interview process
      */
     @Transactional
-    public void completeInterview(ChatSession session) {
+    public ChatSession completeInterview(ChatSession session) {
         // Mark chat session as complete
         session.setStatus(ChatStatus.COMPLETE);
         session.setCompletedAt(LocalDateTime.now());
-        chatSessionRepository.save(session);
+        session = chatSessionRepository.saveAndFlush(session);
 
         // Update application status
         Application application = session.getApplication();
@@ -239,6 +230,7 @@ public class ChatService {
         } catch (Exception e) {
             logger.error("Failed to score interview for application {}", application.getApplicationId(), e);
         }
+        return session;
     }
 
     @Transactional(readOnly = true)
