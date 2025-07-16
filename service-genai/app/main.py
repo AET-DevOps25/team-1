@@ -53,12 +53,8 @@ class AIService(ai_pb2_grpc.AIServiceServicer):
         print("NormalQA, request:", request)
         question = request.question
         is_open_rag = request.is_open_rag
-        if is_open_rag:
-            for chunk_content in retrieval.query_rag_stream(question):
-                yield ai_pb2.ChatReplyResponse(ai_message=chunk_content)
-        else:
-            result = retrieval.query_rag(question)
-            yield ai_pb2.ChatReplyResponse(ai_message=result["result"])
+        for chunk_content in retrieval.query_rag_stream(question, is_open_rag):
+            yield ai_pb2.ChatReplyResponse(ai_message=chunk_content)
 
     def ScoreResume(self, request: ai_pb2.ScoreResumeRequest, context):  # type: ignore
         REQUEST_COUNTER.labels("ScoreResume").inc()

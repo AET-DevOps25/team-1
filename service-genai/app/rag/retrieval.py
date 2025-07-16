@@ -41,14 +41,24 @@ def query_rag(query):
     return result
 
 
-def query_rag_stream(query):
+def query_rag_stream(query, is_open_rag):
     llm = get_chat_llm()
-    docs = vector_store.as_retriever(search_kwargs={"k": 2}).invoke(query)
-    context = "\n\n".join([doc.page_content for doc in docs])
-    prompt = ChatPromptTemplate.from_template(
-        "Requirements: If the question is not related to the context, return 'I don't know, please contact HR for more information'.\nQuestion: {query}\nContext: {context}\nAnswer:"
-    )
-    parser = StrOutputParser()
-    chain = prompt | llm | parser
-    for chunk in chain.stream({"query": query, "context": context}):
-        yield chunk
+    if is_open_rag:
+        docs = vector_store.as_retriever(search_kwargs={"k": 2}).invoke(query)
+        context = "\n\n".join([doc.page_content for doc in docs])
+        prompt = ChatPromptTemplate.from_template(
+            "Requirements: If the question is not related to the context, return 'I don't know, please contact HR for more information'.\nQuestion: {query}\nContext: {context}\nAnswer:"
+        )
+        parser = StrOutputParser()
+        chain = prompt | llm | parser
+        for chunk in chain.stream({"query": query, "context": context}):
+            yield chunk
+    else:
+        prompt = ChatPromptTemplate.from_template(
+            "Question: {query}\nAnswer:"
+        )
+        parser = StrOutputParser()
+        chain = prompt | llm | parser
+        for chunk in chain.stream({"query": query}):
+            yield chunk
+
