@@ -128,6 +128,12 @@ public class AIIntegrationService {
         aiServiceClient.chatReplyStream(request, responseObserver);
     }
 
+    @Transactional
+    public void processNormalQAStream(String question, boolean isOpenRag, StreamObserver<ChatReplyResponse> responseObserver) {
+        // Directly call AI service for Normal QA, no db interaction needed
+        aiServiceClient.normalQAStream(question, isOpenRag, responseObserver);
+    }
+
     /**
      * Score a resume against job requirements
      *
