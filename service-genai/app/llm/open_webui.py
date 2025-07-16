@@ -1,7 +1,11 @@
+import logging
+
 import requests
 from langchain_community.chat_models import ChatOllama
 
 from .constant import base_url, model, API_KEY
+
+logger = logging.getLogger(__name__)
 
 API_URL = f"{base_url}/api/generate"
 
@@ -36,7 +40,7 @@ def schema_chat(prompt_system: str, message_user: str, tool: dict):
         "stream": False,
         "tools": [tool]
     }
-    print(payload)
+    logger.info(payload)
     headers = {
         "Authorization": f"Bearer {API_KEY}",
         "Content-Type": "application/json"
@@ -46,9 +50,9 @@ def schema_chat(prompt_system: str, message_user: str, tool: dict):
     data = resp.json()
     try:
         structured = data['message']['tool_calls'][0]['function']['arguments']
-        print("Decode LLM response Success:", structured)
+        logger.warning("Decode LLM response Success:", structured)
     except Exception as e:
-        print("Decode LLM response Failed:", e)
-        print("Original response String:", data)
+        logger.error("Decode LLM response Failed:", e)
+        logger.debug("Original response String:", data)
         structured = None
     return structured
