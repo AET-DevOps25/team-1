@@ -5,8 +5,8 @@ OLLAMA_MODEL=""
 OLLAMA_API_KEY=""
 
 # paste key as one line
-private_key=""
-public_key=""
+echo "JWT_PRIV_KEY" > priv.pem
+echo "JWT_PUB_KEY"  > pub.pem
 
 DISCORD_WEBHOOK=""
 
@@ -35,8 +35,8 @@ helm upgrade --install ai-hr-dev ./helm/aihr \
   --set global.ghcrUser=aet-devops25 \
   --set global.ghcrRepo=team-1 \
   --set global.imageTag="$(git rev-parse --short HEAD)" \
-  --set-file global.jwt.privateKey="${private_key}" \
-  --set-file global.jwt.publicKey="${public_key}" \
+  --set-file global.jwt.privateKey=priv.pem \
+  --set-file global.jwt.publicKey=pub.pem \
   --set global.ollama.ollamaBaseUrl="${OLLAMA_BASE_URL}" \
   --set global.ollama.ollamaModel="${OLLAMA_MODEL}" \
   --set global.ollama.ollamaApiKey="${OLLAMA_API_KEY}" \
@@ -59,8 +59,8 @@ helm upgrade --install ai-hr-prod ./helm/aihr \
   --set global.ghcrUser=aet-devops25 \
   --set global.ghcrRepo=team-1 \
   --set global.imageTag="$(git rev-parse --short HEAD)" \
-  --set-file global.jwt.privateKey="${private_key}" \
-  --set-file global.jwt.publicKey="${public_key}" \
+  --set-file global.jwt.privateKey=priv.pem \
+  --set-file global.jwt.publicKey=pub.pem \
   --set global.ollama.ollamaBaseUrl="${OLLAMA_BASE_URL}" \
   --set global.ollama.ollamaModel="${OLLAMA_MODEL}" \
   --set global.ollama.ollamaApiKey="${OLLAMA_API_KEY}" \
