@@ -9,6 +9,7 @@ from prometheus_client import start_http_server, Counter
 from app.llm import score_resume, score_interview
 from app.llm.open_webui import stream_chat
 from app.proto import ai_pb2, ai_pb2_grpc
+from app.rag import retrieval
 
 # Ensure the parent directory is in PYTHONPATH so that `proto` is importable when launching
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
@@ -25,6 +26,7 @@ class AIService(ai_pb2_grpc.AIServiceServicer):
 
     def ChatReply(self, request: ai_pb2.ChatReplyRequest, context):  # type: ignore
         REQUEST_COUNTER.labels("ChatReply").inc()
+        print("ChatReply, request:", request)
         # Stream response from LLM
 
         messages = [
@@ -46,14 +48,28 @@ class AIService(ai_pb2_grpc.AIServiceServicer):
         for chunk_content in stream_chat(messages):
             yield ai_pb2.ChatReplyResponse(ai_message=chunk_content)
 
+    def NormalQA(self, request: ai_pb2.NormalQARequest, context):  # type: ignore
+        REQUEST_COUNTER.labels("QA").inc()
+        print("NormalQA, request:", request)
+        question = request.question
+        is_open_rag = request.is_open_rag
+        if is_open_rag:
+            for chunk_content in retrieval.query_rag_stream(question):
+                yield ai_pb2.ChatReplyResponse(ai_message=chunk_content)
+        else:
+            result = retrieval.query_rag(question)
+            yield ai_pb2.ChatReplyResponse(ai_message=result["result"])
+
     def ScoreResume(self, request: ai_pb2.ScoreResumeRequest, context):  # type: ignore
         REQUEST_COUNTER.labels("ScoreResume").inc()
+        print("ScoreResume, request:", request)
         resume_score, comment, recommendation = score_resume(request.job_title, request.job_description, request.job_requirements, request.resume_text)
         ai_pb2_recommendation = ai_pb2.RecommendationEnum.Value(recommendation)
         return ai_pb2.ScoreResumeResponse(resume_score=resume_score, comment=comment, recommendation=ai_pb2_recommendation,)
 
     def ScoreInterview(self, request: ai_pb2.ScoreInterviewRequest, context):  # type: ignore
         REQUEST_COUNTER.labels("ScoreInterview").inc()
+        print("ScoreInterview, request:", request)
         interview_score, comment, recommendation = score_interview(request.job_title, request.job_description, request.job_requirements, request.chat_history)
         return ai_pb2.ScoreInterviewResponse(interview_score=interview_score, comment=comment, recommendation=ai_pb2.RecommendationEnum.Value(recommendation),)
 

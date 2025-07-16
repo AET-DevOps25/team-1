@@ -40,6 +40,11 @@ class AIServiceStub(object):
                 request_serializer=ai__pb2.ChatReplyRequest.SerializeToString,
                 response_deserializer=ai__pb2.ChatReplyResponse.FromString,
                 _registered_method=True)
+        self.NormalQA = channel.unary_stream(
+                '/ai.AIService/NormalQA',
+                request_serializer=ai__pb2.NormalQARequest.SerializeToString,
+                response_deserializer=ai__pb2.ChatReplyResponse.FromString,
+                _registered_method=True)
         self.ScoreResume = channel.unary_unary(
                 '/ai.AIService/ScoreResume',
                 request_serializer=ai__pb2.ScoreResumeRequest.SerializeToString,
@@ -58,6 +63,13 @@ class AIServiceServicer(object):
 
     def ChatReply(self, request, context):
         """Streamed chat with AI assistant. Server streams incremental ai_message tokens.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def NormalQA(self, request, context):
+        """Streamed chat with AI, normal QA
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -83,6 +95,11 @@ def add_AIServiceServicer_to_server(servicer, server):
             'ChatReply': grpc.unary_stream_rpc_method_handler(
                     servicer.ChatReply,
                     request_deserializer=ai__pb2.ChatReplyRequest.FromString,
+                    response_serializer=ai__pb2.ChatReplyResponse.SerializeToString,
+            ),
+            'NormalQA': grpc.unary_stream_rpc_method_handler(
+                    servicer.NormalQA,
+                    request_deserializer=ai__pb2.NormalQARequest.FromString,
                     response_serializer=ai__pb2.ChatReplyResponse.SerializeToString,
             ),
             'ScoreResume': grpc.unary_unary_rpc_method_handler(
@@ -123,6 +140,33 @@ class AIService(object):
             target,
             '/ai.AIService/ChatReply',
             ai__pb2.ChatReplyRequest.SerializeToString,
+            ai__pb2.ChatReplyResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def NormalQA(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(
+            request,
+            target,
+            '/ai.AIService/NormalQA',
+            ai__pb2.NormalQARequest.SerializeToString,
             ai__pb2.ChatReplyResponse.FromString,
             options,
             channel_credentials,

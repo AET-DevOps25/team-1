@@ -31,6 +31,12 @@ message ChatReplyResponse {
   string ai_message = 1;
 }
 
+// --------------------------- QA ---------------------------
+message NormalQARequest {
+  string question = 1;
+  bool is_open_rag = 2;
+}
+
 // --------------------------- ScoreResume ---------------------------
 message ScoreResumeRequest {
   string job_title = 1;
@@ -70,6 +76,9 @@ enum RecommendationEnum {
 service AIService {
   // Streamed chat with AI assistant. Server streams incremental ai_message tokens.
   rpc ChatReply(ChatReplyRequest) returns (stream ChatReplyResponse);
+
+  // Streamed chat with AI, normal QA
+  rpc NormalQA(NormalQARequest) returns (stream ChatReplyResponse);
 
   // Scores a resume against job requirements.
   rpc ScoreResume(ScoreResumeRequest) returns (ScoreResumeResponse);
