@@ -23,6 +23,10 @@ grafana:
           type: alertmanager
           url: http://ai-hr-dev-alertmanager:9093
           access: proxy
+          jsonData:
+            implementation: prometheus
+            handleGrafanaManagedAlerts: true
+
   ingress:
     hosts:
       - grafana.ai-hr-dev.student.k8s.aet.cit.tum.de
