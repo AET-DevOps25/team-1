@@ -20,7 +20,7 @@ grafana:
             httpHeaderValue1: 'promtail'
         - name: alertmanager-prometheus
           uid: alertmanager-prometheus
-          type: prometheus
+          type: alertmanager
           url: http://ai-hr-prod-alertmanager:9093
           access: proxy
   ingress:
