@@ -11,7 +11,7 @@ from app.llm.open_webui import get_chat_llm
 
 load_dotenv()
 
-username = os.getenv("DB_USER")
+username = os.getenv("DB_USERNAME")
 password = os.getenv("DB_PASSWORD")
 host = os.getenv("DB_HOST")
 port = os.getenv("DB_PORT")
