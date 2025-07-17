@@ -4,16 +4,7 @@ import './Dashboard.css';
 type SortField = 'name' | 'job' | 'status' | 'date' | 'score' | 'finalScore' | 'hrDecision';
 type SortDirection = 'asc' | 'desc';
 
-interface Assessment {
-  resume_score: number;
-  chat_score: number;
-  final_score: number;
-  ai_resume_analysis: string;
-  ai_chat_summary: string;
-  ai_recommend_status: 'RECOMMEND' | 'NOT_RECOMMEND' | 'CONDITIONAL';
-}
-
-interface Application {
+type Application = {
   application_id: string;
   candidate_name: string;
   email: string;
@@ -22,10 +13,19 @@ interface Application {
   submission_timestamp: string;
   final_score: number | null;
   avatarColor: string;
-  assessment?: Assessment;
-  hr_decision?: 'PENDING' | 'APPROVE' | 'REJECT' | 'INTERVIEW' | 'FOLLOW_UP';
+  assessment?: {
+    resume_score: number;
+    chat_score: number;
+    final_score: number;
+    ai_resume_analysis: string;
+    ai_chat_summary: string;
+    ai_recommend_status: string;
+  };
+  hr_decision?: string;
   hr_comment?: string;
-}
+};
+
+type SortValue = string | number | Date;
 
 const Dashboard: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
@@ -39,7 +39,6 @@ const Dashboard: React.FC = () => {
   const [isHrDecisionModalOpen, setIsHrDecisionModalOpen] = useState<boolean>(false);
   const [newHrDecision, setNewHrDecision] = useState<string>('');
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState<boolean>(false);
-  const [selectedComment, setSelectedComment] = useState<string>('');
 
   const [applications, setApplications] = useState<Application[]>([
     {
@@ -153,7 +152,7 @@ const Dashboard: React.FC = () => {
     }
 
     return filtered.sort((a, b) => {
-      let aVal: any, bVal: any;
+      let aVal: SortValue, bVal: SortValue;
 
       switch (sortField) {
         case 'name':
@@ -203,9 +202,9 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const getSortIcon = (field: SortField) => {
-    if (sortField !== field) return '↕️';
-    return sortDirection === 'asc' ? '↑' : '↓';
+  const getSortIcon = (field: SortField): string => {
+    if (sortField !== field) return '';
+    return sortDirection === 'asc' ? ' ↑' : ' ↓';
   };
 
   const handleStatusClick = (application: Application) => {
@@ -289,7 +288,7 @@ const Dashboard: React.FC = () => {
         setApplications(prevApplications =>
           prevApplications.map(app =>
             app.application_id === selectedApplication.application_id
-              ? { ...app, hr_decision: newHrDecision as any }
+              ? { ...app, hr_decision: newHrDecision as string }
               : app
           )
         );
@@ -304,7 +303,7 @@ const Dashboard: React.FC = () => {
       setApplications(prevApplications =>
         prevApplications.map(app =>
           app.application_id === selectedApplication.application_id
-            ? { ...app, hr_decision: newHrDecision as any }
+            ? { ...app, hr_decision: newHrDecision as string }
             : app
         )
       );
@@ -316,15 +315,7 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const truncateText = (text: string, maxLength: number = 50) => {
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
-  };
 
-  const handleCommentClick = (comment: string) => {
-    setSelectedComment(comment);
-    setIsDetailsModalOpen(true);
-  };
 
   const copyEmailToClipboard = async (email: string) => {
     try {
@@ -368,7 +359,6 @@ const Dashboard: React.FC = () => {
 
   const handleDetailsModalClose = () => {
     setIsDetailsModalOpen(false);
-    setSelectedComment('');
   };
 
   const getStatusDisplay = (status: string) => {
@@ -431,6 +421,9 @@ const Dashboard: React.FC = () => {
               key={option.value} 
               className={`sidebar-item ${selectedStatus === option.value ? 'active' : ''}`}
               onClick={() => setSelectedStatus(option.value)}
+              onKeyDown={(e) => e.key === 'Enter' && setSelectedStatus(option.value)}
+              role="button"
+              tabIndex={0}
             >
               <span>{option.label}</span>
               <span>
@@ -491,6 +484,9 @@ const Dashboard: React.FC = () => {
             <div 
               className="name-company-header sortable"
               onClick={() => handleSort('name')}
+              onKeyDown={(e) => e.key === 'Enter' && handleSort('name')}
+              role="button"
+              tabIndex={0}
               style={{ flexBasis: '25%' }}
             >
               CANDIDATE / JOB {getSortIcon('name')}
@@ -498,6 +494,9 @@ const Dashboard: React.FC = () => {
             <div 
               className="jobs-header sortable"
               onClick={() => handleSort('status')}
+              onKeyDown={(e) => e.key === 'Enter' && handleSort('status')}
+              role="button"
+              tabIndex={0}
               style={{ flexBasis: '10%' }}
             >
               STATUS {getSortIcon('status')}
@@ -505,6 +504,9 @@ const Dashboard: React.FC = () => {
             <div 
               className="assessment-header sortable"
               onClick={() => handleSort('finalScore')}
+              onKeyDown={(e) => e.key === 'Enter' && handleSort('finalScore')}
+              role="button"
+              tabIndex={0}
               style={{ flexBasis: '15%' }}
             >
               SCORES {getSortIcon('finalScore')}
@@ -518,6 +520,9 @@ const Dashboard: React.FC = () => {
             <div 
               className="hr-decision-header sortable"
               onClick={() => handleSort('hrDecision')}
+              onKeyDown={(e) => e.key === 'Enter' && handleSort('hrDecision')}
+              role="button"
+              tabIndex={0}
               style={{ flexBasis: '12%' }}
             >
               HR DECISION {getSortIcon('hrDecision')}
