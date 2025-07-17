@@ -9,9 +9,9 @@ from prometheus_client import start_http_server, Counter
 
 from app.llm import score_resume, score_interview
 from app.llm.open_webui import stream_chat
+from app.mylog import SpringBootStyleJsonFormatter
 from app.proto import ai_pb2, ai_pb2_grpc
 from app.rag import retrieval
-from mylog import SpringBootStyleJsonFormatter
 
 logger = logging.getLogger(__name__)
 
