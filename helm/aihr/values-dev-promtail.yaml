@@ -11,22 +11,21 @@ promtail:
         - job_name: kubernetes-pods
           pipeline_stages:
             - cri: {}
-            - json:
-                expressions:
-                  level: level
-                  logger_name: logger_name
-                  message: message
-                  ts: '@timestamp'
+            - match:
+                selector: '{app=~"ai-hr-dev-application|ai-hr-dev-auth|ai-hr-dev-job|ai-hr-dev-genai"}'
+                stages:
+                  - json:
+                      expressions:
+                        level: "level"
+                        logger_name: "logger_name"
+                        message: "message"
+                        ts: '"@timestamp"'
             - timestamp:
                 source: ts
                 format: RFC3339Nano
-            - lowercase:
-                source: level
             - labels:
-                level
-                logger_name
-            - level:
-                source: level
+                level:
+                logger_name:
           kubernetes_sd_configs:
             - role: pod
               namespaces:
