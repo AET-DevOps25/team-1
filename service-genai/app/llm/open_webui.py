@@ -53,6 +53,6 @@ def schema_chat(prompt_system: str, message_user: str, tool: dict):
         logger.warning("Decode LLM response Success:", structured)
     except Exception as e:
         logger.error("Decode LLM response Failed:", e)
-        logger.debug("Original response String:", data)
+        logger.info("Original response String:", data)
         structured = None
     return structured

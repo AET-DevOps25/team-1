@@ -4,7 +4,6 @@ import sys
 from concurrent import futures
 
 import grpc
-import pythonjsonlogger
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from prometheus_client import start_http_server, Counter
 
@@ -12,13 +11,14 @@ from app.llm import score_resume, score_interview
 from app.llm.open_webui import stream_chat
 from app.proto import ai_pb2, ai_pb2_grpc
 from app.rag import retrieval
+from mylog import SpringBootStyleJsonFormatter
 
 logger = logging.getLogger(__name__)
 
 logHandler = logging.StreamHandler()
-formatter = pythonjsonlogger.json.JsonFormatter()
+formatter = SpringBootStyleJsonFormatter('%(message)s %(name)s %(levelname)s')
 logHandler.setFormatter(formatter)
-logging.getLogger().addHandler(logHandler)  # 配置 root logger，所有logger继承
+logging.getLogger().handlers = [logHandler]
 logging.getLogger().setLevel(logging.DEBUG)
 
 
@@ -27,6 +27,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
     logger.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
+
 
 sys.excepthook = handle_exception
 
