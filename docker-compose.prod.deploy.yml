@@ -10,7 +10,7 @@ services:
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
       - "--providers.docker=true"
-      - "--providers.docker.exposedByDefault=false"
+      - "--providers.docker.exposedbydefault=false"
       - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
       - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
       - "--certificatesresolvers.letsencrypt.acme.email=admin@aihr.com"
@@ -48,7 +48,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "PGPASSWORD=$$POSTGRES_PASSWORD psql -U $$POSTGRES_USER -d ai_db -tAc \"SELECT to_regclass('public.embeddings');\" | grep -q embeddings"
+          "PGPASSWORD=$$POSTGRES_PASSWORD psql -U $$POSTGRES_USER -d postgres -tAc \"SELECT 1 FROM pg_database WHERE datname='ai_db';\" | grep -q 1"
         ]
       interval: 10s
       timeout: 5s
@@ -100,8 +100,6 @@ services:
     depends_on:
       postgresql:
         condition: service_healthy
-      service-auth:
-        condition: service_healthy
     networks:
       - ai-hr-network
     environment:
@@ -138,10 +136,6 @@ services:
     container_name: ai-hr-application
     depends_on:
       postgresql:
-        condition: service_healthy
-      service-auth:
-        condition: service_healthy
-      service-job:
         condition: service_healthy
     networks:
       - ai-hr-network
@@ -194,8 +188,8 @@ services:
       - DB_PORT=${DB_PORT:-5432}
       - DB_USERNAME=${DB_USERNAME:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
-      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL} \
-      - OLLAMA_MODEL=${OLLAMA_MODEL} \
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
+      - OLLAMA_MODEL=${OLLAMA_MODEL}
       - OLLAMA_API_KEY=${OLLAMA_API_KEY}
 
   # Frontend

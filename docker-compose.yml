@@ -42,7 +42,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "PGPASSWORD=$$POSTGRES_PASSWORD psql -U $$POSTGRES_USER -d ai_db -tAc \"SELECT to_regclass('public.embeddings');\" | grep -q embeddings"
+          "PGPASSWORD=$$POSTGRES_PASSWORD psql -U $$POSTGRES_USER -d postgres -tAc \"SELECT 1 FROM pg_database WHERE datname='ai_db';\" | grep -q 1"
         ]
       interval: 10s
       timeout: 5s
