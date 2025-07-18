@@ -55,6 +55,9 @@ jobs:
             SPRING_PROFILES_ACTIVE=docker
             PYTHONDONTWRITEBYTECODE=1
             PYTHONUNBUFFERED=1
+            OLLAMA_BASE_URL="${{ secrets.OLLAMA_BASE_URL }}"
+            OLLAMA_MODEL="${{ vars.OLLAMA_MODEL }}"
+            OLLAMA_API_KEY="${{ secrets.OLLAMA_API_KEY }}"
             EOF
 
       # SSH - pull images and restart containers
@@ -62,7 +65,7 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ vars.EC2_PUBLIC_IP }}
-          username: ${{ vars.AWS_EC2_USER }}
+          username: ${{ secrets.AWS_EC2_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd ~/srv/app
