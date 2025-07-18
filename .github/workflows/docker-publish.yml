@@ -12,6 +12,23 @@ on:
         required: false
 
 jobs:
+  unit-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Gradle cache
+        uses: gradle/gradle-build-action@v3
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Run tests for all modules
+        run: ./gradlew test
+
   build-and-push:
     if: ${{ github.event.inputs.image == '' || github.event.inputs.image == null }}
     runs-on: ubuntu-latest
