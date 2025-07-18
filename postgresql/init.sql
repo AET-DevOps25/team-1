@@ -4,7 +4,7 @@
 CREATE DATABASE user_db;
 CREATE DATABASE job_db;
 CREATE DATABASE application_db;
-CREATE DATABASE ai_db;
+-- CREATE DATABASE ai_db;
 
 -- =======================================
 -- 👤 1. Users schema (user_db)
@@ -121,24 +121,26 @@ CREATE INDEX idx_chat_sess ON chat_messages(session_id);
 -- =======================================
 -- 🧠 4. AI schema (ai_db)
 -- =======================================
+\connect postgres
+CREATE DATABASE ai_db;
 \connect ai_db
 
 CREATE EXTENSION IF NOT EXISTS vector;
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-CREATE TABLE embeddings (
-    embedding_id SERIAL PRIMARY KEY,
-    document_ref TEXT,
-    content      TEXT,
-    embedding    VECTOR(1536),
-    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX idx_embeddings_vector_hnsw
-ON embeddings
-USING hnsw (embedding vector_l2_ops)
-WITH (
-    m = 16,
-    ef_construction = 64
-);
+-- CREATE TABLE embeddings (
+--     embedding_id SERIAL PRIMARY KEY,
+--     document_ref TEXT,
+--     content      TEXT,
+--     embedding    VECTOR(1536),
+--     created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- );
+--
+-- CREATE INDEX idx_embeddings_vector_hnsw
+-- ON embeddings
+-- USING hnsw (embedding vector_l2_ops)
+-- WITH (
+--     m = 16,
+--     ef_construction = 64
+-- );

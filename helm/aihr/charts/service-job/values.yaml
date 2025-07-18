@@ -1,5 +1,11 @@
 replicaCount: 1
 
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 70
+
 image:
   # 默认拼接：ghcr.io/<user>/<repo>-service-job:<tag>
   repository: ""

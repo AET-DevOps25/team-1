@@ -28,6 +28,13 @@ spec:
         - name: genai
           image: "{{ default $defaultRepo .Values.image.repository }}:{{ default $tag .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}

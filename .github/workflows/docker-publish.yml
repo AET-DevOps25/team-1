@@ -5,15 +5,39 @@ on:
     branches:
       - main
   workflow_dispatch:
-    # 如果输入image tag，就跳过build
+    # if input image tag, then skip test and build
     inputs:
       image:
         description: "Image name and tag"
         required: false
 
 jobs:
-  build-and-push:
+  unit-test:
     if: ${{ github.event.inputs.image == '' || github.event.inputs.image == null }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4.4.1
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Make protobuf executable
+        run: chmod +x service-application/protoc-gen-grpc-java-1.73.0-linux-x86_64.exe
+
+      - name: Run tests for all modules
+        run: ./gradlew test
+
+  build-and-push:
+    needs: unit-test
     runs-on: ubuntu-latest
 
     permissions:

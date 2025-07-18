@@ -10,7 +10,7 @@ services:
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
       - "--providers.docker=true"
-      - "--providers.docker.exposedByDefault=false"
+      - "--providers.docker.exposedbydefault=false"
       - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
       - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
       - "--certificatesresolvers.letsencrypt.acme.email=admin@aihr.com"
@@ -20,16 +20,11 @@ services:
     ports:
       - "80:80" # HTTP
       - "443:443" # HTTPS
-      - "8080:8080" # Traefik dashboard
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /home/ubuntu/srv/app/letsencrypt:/letsencrypt
     networks:
       - ai-hr-network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.traefik.rule=Host(`traefik.localhost`)"
-      - "traefik.http.routers.traefik.service=api@internal"
-      - "traefik.http.routers.traefik.entrypoints=web"
 
   # PostgreSQL database
   postgresql:
@@ -48,7 +43,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "PGPASSWORD=$$POSTGRES_PASSWORD psql -U $$POSTGRES_USER -d ai_db -tAc \"SELECT to_regclass('public.embeddings');\" | grep -q embeddings"
+          "PGPASSWORD=$$POSTGRES_PASSWORD psql -U $$POSTGRES_USER -d postgres -tAc \"SELECT 1 FROM pg_database WHERE datname='ai_db';\" | grep -q 1"
         ]
       interval: 10s
       timeout: 5s
@@ -89,8 +84,8 @@ services:
       retries: 3
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.auth.rule=Host(`localhost`) && PathPrefix(`/api/v1/auth`)"
-      - "traefik.http.routers.auth.entrypoints=web"
+      - "traefik.http.routers.auth.rule=Host(`ec2-34-236-4-221.compute-1.amazonaws.com`) && PathPrefix(`/api/v1/auth`)"
+      - "traefik.http.routers.auth.entrypoints=websecure"
       - "traefik.http.services.auth.loadbalancer.server.port=8080"
 
   # Job management service
@@ -99,8 +94,6 @@ services:
     container_name: ai-hr-job
     depends_on:
       postgresql:
-        condition: service_healthy
-      service-auth:
         condition: service_healthy
     networks:
       - ai-hr-network
@@ -128,8 +121,8 @@ services:
       retries: 3
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.job.rule=Host(`localhost`) && PathPrefix(`/api/v1/jobs`)"
-      - "traefik.http.routers.job.entrypoints=web"
+      - "traefik.http.routers.job.rule=Host(`ec2-34-236-4-221.compute-1.amazonaws.com`) && PathPrefix(`/api/v1/jobs`)"
+      - "traefik.http.routers.job.entrypoints=websecure"
       - "traefik.http.services.job.loadbalancer.server.port=8081"
 
   # Application management service
@@ -138,10 +131,6 @@ services:
     container_name: ai-hr-application
     depends_on:
       postgresql:
-        condition: service_healthy
-      service-auth:
-        condition: service_healthy
-      service-job:
         condition: service_healthy
     networks:
       - ai-hr-network
@@ -174,8 +163,8 @@ services:
       retries: 3
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.application.rule=Host(`localhost`) && (PathPrefix(`/api/v1/applications`) || PathPrefix(`/api/v1/chat`) || PathPrefix(`/api/v1/assessments`) || PathPrefix(`/api/v1/files`))"
-      - "traefik.http.routers.application.entrypoints=web"
+      - "traefik.http.routers.application.rule=Host(`ec2-34-236-4-221.compute-1.amazonaws.com`) && (PathPrefix(`/api/v1/applications`) || PathPrefix(`/api/v1/chat`) || PathPrefix(`/api/v1/assessments`) || PathPrefix(`/api/v1/files`))"
+      - "traefik.http.routers.application.entrypoints=websecure"
       - "traefik.http.services.application.loadbalancer.server.port=8082"
 
   # GenAI service
@@ -190,8 +179,12 @@ services:
     environment:
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONUNBUFFERED=1
-      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL} \
-      - OLLAMA_MODEL=${OLLAMA_MODEL} \
+      - DB_HOST=${DB_HOST:-postgresql}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
+      - OLLAMA_MODEL=${OLLAMA_MODEL}
       - OLLAMA_API_KEY=${OLLAMA_API_KEY}
 
   # Frontend
@@ -202,8 +195,10 @@ services:
       - ai-hr-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`localhost`)"
-      - "traefik.http.routers.frontend.entrypoints=web"
+      - "traefik.http.routers.frontend.rule=Host(`ec2-34-236-4-221.compute-1.amazonaws.com`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls=true"
+      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
       - "traefik.http.services.frontend.loadbalancer.server.port=80"
 
 networks:

@@ -198,4 +198,18 @@ public class AIServiceGrpcClient {
             default -> RecommendationEnum.NOT_RECOMMEND;
         };
     }
+
+    public void normalQAStream(String question, boolean isOpenRag, StreamObserver<ChatReplyResponse> responseObserver) {
+        try {
+            NormalQARequest request = NormalQARequest.newBuilder()
+                    .setQuestion(question)
+                    .setIsOpenRag(isOpenRag)
+                    .build();
+
+            asyncStub.normalQA(request, responseObserver);
+        } catch (Exception e) {
+            logger.error("Error starting NormalQA stream", e);
+            responseObserver.onError(e);
+        }
+    }
 }

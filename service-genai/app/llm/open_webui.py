@@ -1,22 +1,11 @@
-import os
+import logging
 
 import requests
-from dotenv import load_dotenv
 from langchain_community.chat_models import ChatOllama
 
-load_dotenv()
-base_url = os.getenv("OLLAMA_BASE_URL")
+from .constant import base_url, model, API_KEY
 
-if base_url is None:
-    raise Exception("OLLAMA_BASE_URL is not set")
-
-model = os.getenv("OLLAMA_MODEL")
-if model is None:
-    raise Exception("OLLAMA_MODEL is not set")
-
-API_KEY = os.getenv("OLLAMA_API_KEY")
-if API_KEY is None:
-    raise Exception("OLLAMA_API_KEY is not set")
+logger = logging.getLogger(__name__)
 
 API_URL = f"{base_url}/api/generate"
 
@@ -51,7 +40,7 @@ def schema_chat(prompt_system: str, message_user: str, tool: dict):
         "stream": False,
         "tools": [tool]
     }
-    print(payload)
+    logger.info(payload)
     headers = {
         "Authorization": f"Bearer {API_KEY}",
         "Content-Type": "application/json"
@@ -61,9 +50,9 @@ def schema_chat(prompt_system: str, message_user: str, tool: dict):
     data = resp.json()
     try:
         structured = data['message']['tool_calls'][0]['function']['arguments']
-        print("Decode LLM response Success:", structured)
+        logger.warning("Decode LLM response Success:", structured)
     except Exception as e:
-        print("Decode LLM response Failed:", e)
-        print("Original response String:", data)
+        logger.error("Decode LLM response Failed:", e)
+        logger.info("Original response String:", data)
         structured = None
     return structured

@@ -1,7 +1,8 @@
 promtail:
   # 日志采集与推送配置
   config:
-    logLevel: debug
+    logLevel: info
+    logFormat: json
     clients:
       - url: http://ai-hr-prod-loki-gateway/loki/api/v1/push
         tenant_id: "promtail"

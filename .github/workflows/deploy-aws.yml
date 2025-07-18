@@ -2,6 +2,10 @@ name: Deploy to AWS
 
 on:
   workflow_dispatch:
+    inputs:
+      image:
+        description: "Image name and tag"
+        required: false
 
 jobs:
   deploy:
@@ -16,7 +20,7 @@ jobs:
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ vars.EC2_PUBLIC_IP }}
-          username: ${{ vars.AWS_EC2_USER }}
+          username: ${{ secrets.AWS_EC2_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           source: "./docker-compose.prod.deploy.yml"
           target: ~/srv/app/
@@ -26,7 +30,7 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ vars.EC2_PUBLIC_IP }}
-          username: ${{ vars.AWS_EC2_USER }}
+          username: ${{ secrets.AWS_EC2_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cat > ~/srv/app/.env <<EOF
@@ -34,10 +38,12 @@ jobs:
             GHCR_USER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
             GHCR_REPO=$(echo '${{ github.event.repository.name }}' | tr '[:upper:]' '[:lower:]')
             GHCR_TAG=$(
-            if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "${{ github.sha }}"
+            if [[ -n "${{ github.event.inputs.image }}" ]]; then
+              echo "${{ github.event.inputs.image }}"
+            elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+              echo "${{ github.sha }}"
             else
-            echo "dev-${{ github.sha }}"
+              echo "dev-${{ github.sha }}"
             fi
             )
             DB_USERNAME=${{ secrets.DB_USERNAME }}
@@ -55,6 +61,9 @@ jobs:
             SPRING_PROFILES_ACTIVE=docker
             PYTHONDONTWRITEBYTECODE=1
             PYTHONUNBUFFERED=1
+            OLLAMA_BASE_URL="${{ secrets.OLLAMA_BASE_URL }}"
+            OLLAMA_MODEL="${{ vars.OLLAMA_MODEL }}"
+            OLLAMA_API_KEY="${{ secrets.OLLAMA_API_KEY }}"
             EOF
 
       # SSH - pull images and restart containers
@@ -62,9 +71,9 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ vars.EC2_PUBLIC_IP }}
-          username: ${{ vars.AWS_EC2_USER }}
+          username: ${{ secrets.AWS_EC2_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd ~/srv/app
-            docker compose -f docker-compose.prod.deploy.yml --env-file .env pull
-            docker compose -f docker-compose.prod.deploy.yml --env-file .env up -d
+            docker compose -f docker-compose.prod.deploy.yml pull
+            docker compose -f docker-compose.prod.deploy.yml up -d

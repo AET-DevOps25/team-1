@@ -39,6 +39,8 @@ public class ChatService {
     private final ApplicationRepository applicationRepository;
     private final AIIntegrationService aiIntegrationService;
 
+    private final int aiMessageLimit = 2;
+
     public ChatService(ChatSessionRepository chatSessionRepository,
                        ChatMessageRepository chatMessageRepository,
                        ApplicationRepository applicationRepository,
@@ -93,23 +95,65 @@ public class ChatService {
 
     public void addCandidateMessageAndGetAiResponseStream(UUID sessionId, String content, UUID candidateId, SseEmitter emitter) {
         // Step 1: Prepare session and save user message (transactional part)
-        ChatSession session = prepareForStreaming(sessionId, content, candidateId);
+        PreparedSession preparedSession = prepareForStreaming(sessionId, content, candidateId);
+        ChatSession session = preparedSession.session;
+
+        final String endingMessage = "Interview session is already complete. Do you have any questions about our company? I can answer some of them if I know it. For security reasons, no further context will be retrieved at this session.";
+
+        StringBuilder fullAiResponse = new StringBuilder();
+
+        // step 2: Check if the session is already complete. If so, then answer as NormalQA
+        if (preparedSession.isAlreadyCompleteMoreThanOnce) {
+            // Use NormalQA stream which needs only user question
+            StreamObserver<de.tum.devops.grpc.ai.ChatReplyResponse> qaObserver = new StreamObserver<>() {
+                @Override
+                public void onNext(de.tum.devops.grpc.ai.ChatReplyResponse response) {
+                    try {
+                        String chunk = response.getAiMessage();
+                        if (!chunk.isEmpty()) {
+                            fullAiResponse.append(chunk);
+                            ChatMessageDto chunkDto = new ChatMessageDto(null, session.getSessionId(), MessageSender.AI, chunk, LocalDateTime.now());
+                            emitter.send(SseEmitter.event().name("message-chunk").data(chunkDto));
+                        }
+                    } catch (IOException e) {
+                        logger.error("Error sending SSE QA chunk for session {}", sessionId, e);
+                    }
+                }
+
+                @Override
+                public void onError(Throwable t) {
+                    logger.error("NormalQA stream error for session {}", sessionId, t);
+                    try {
+                        emitter.send(SseEmitter.event().name("error").data("Error during QA."));
+                    } catch (IOException ignored) {
+                        logger.error("Error sending SSE error for session {}", sessionId, t);
+                    }
+                    emitter.completeWithError(t);
+                }
+
+                @Override
+                public void onCompleted() {
+                    logger.info("NormalQA stream completed for session {}.", sessionId);
+                    fullAiResponse.append("\n").append(endingMessage);
+                    try {
+                        ChatMessage finalMessage = saveFinalAiMessage(session.getSessionId(), fullAiResponse.toString());
+                        emitter.send(SseEmitter.event().name("message-chunk").data("\n").data(endingMessage));
+                        emitter.send(SseEmitter.event().name("stream-end").data(new ChatMessageDto(finalMessage)));
+                    } catch (IOException ignored) {
+                        logger.error("Error sending SSE stream end for session {}", sessionId);
+                    }
+                    emitter.complete();
+                }
+            };
+
+            aiIntegrationService.processNormalQAStream(content, true, qaObserver);
+            return;
+        }
 
         if (session.getStatus() == ChatStatus.COMPLETE) {
             logger.warn("Chat session {} is already complete.", sessionId);
             try {
-                emitter.send(SseEmitter.event().name("error").data("Interview session is already complete."));
-                emitter.complete();
-            } catch (Exception e) {
-                logger.error("Error during stream completion for session {}", sessionId, e);
-                emitter.completeWithError(e);
-            }
-            return;
-        }
-        if (session.getMessageCount() >= 20) {
-            logger.warn("Chat session {} has reached the maximum message limit.", sessionId);
-            try {
-                emitter.send(SseEmitter.event().name("error").data("Interview session has reached the interview message limit."));
+                emitter.send(SseEmitter.event().name("message-chunk").data(endingMessage));
                 emitter.complete();
             } catch (Exception e) {
                 logger.error("Error during stream completion for session {}", sessionId, e);
@@ -118,9 +162,7 @@ public class ChatService {
             return;
         }
 
-        // Step 2: Set up and start the stream (non-transactional part)
-        StringBuilder fullAiResponse = new StringBuilder();
-
+        // Step 3: Set up and start the stream (non-transactional part)
         StreamObserver<de.tum.devops.grpc.ai.ChatReplyResponse> responseObserver = new StreamObserver<>() {
             @Override
             public void onNext(de.tum.devops.grpc.ai.ChatReplyResponse response) {
@@ -168,13 +210,21 @@ public class ChatService {
         aiIntegrationService.processAndGetAIResponseStream(sessionId, session, responseObserver);
     }
 
+    public record PreparedSession(ChatSession session, boolean isAlreadyCompleteMoreThanOnce) {
+    }
+
     @Transactional
-    public ChatSession prepareForStreaming(UUID sessionId, String content, UUID candidateId) {
+    public PreparedSession prepareForStreaming(UUID sessionId, String content, UUID candidateId) {
         ChatSession session = chatSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Chat session not found"));
 
         if (!session.getApplication().getCandidateId().equals(candidateId)) {
             throw new SecurityException("Access denied to this chat session");
+        }
+
+        if (session.getStatus() == ChatStatus.COMPLETE) {
+            logger.warn("Chat session {} is already complete before adding user message.", sessionId);
+            return new PreparedSession(session, true);
         }
 
         ChatMessage userMessage = new ChatMessage();
@@ -184,10 +234,10 @@ public class ChatService {
         userMessage.setContent(content);
         chatMessageRepository.save(userMessage);
 
-        if (session.getMessageCount() >= 20) {
+        if (session.getMessageCount() >= aiMessageLimit) {
             logger.info("Chat session {} has reached the maximum AI message count. Setting status to complete.", sessionId);
-            completeInterview(session);
-            return session;
+            session = completeInterview(session);
+            return new PreparedSession(session, false);
         }
 
         Application application = session.getApplication();
@@ -195,7 +245,7 @@ public class ChatService {
             application.setStatus(ApplicationStatus.AI_INTERVIEW);
             applicationRepository.save(application);
         }
-        return session;
+        return new PreparedSession(session, false);
     }
 
     @Transactional
@@ -222,11 +272,11 @@ public class ChatService {
      * Complete the interview process
      */
     @Transactional
-    public void completeInterview(ChatSession session) {
+    public ChatSession completeInterview(ChatSession session) {
         // Mark chat session as complete
         session.setStatus(ChatStatus.COMPLETE);
         session.setCompletedAt(LocalDateTime.now());
-        chatSessionRepository.save(session);
+        session = chatSessionRepository.saveAndFlush(session);
 
         // Update application status
         Application application = session.getApplication();
@@ -239,6 +289,7 @@ public class ChatService {
         } catch (Exception e) {
             logger.error("Failed to score interview for application {}", application.getApplicationId(), e);
         }
+        return session;
     }
 
     @Transactional(readOnly = true)
