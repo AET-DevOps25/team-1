@@ -12,15 +12,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Free up disk space
-        run: |
-          echo "🔧 Cleaning up disk space to avoid 'no space left' error..."
-          sudo docker system prune -af
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /usr/local/lib/android
-          sudo apt-get clean
-          df -h
-
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -48,11 +39,11 @@ jobs:
             GHCR_REPO=$(echo '${{ github.event.repository.name }}' | tr '[:upper:]' '[:lower:]')
             GHCR_TAG=$(
             if [[ -n "${{ github.event.inputs.image }}" ]]; then
-            echo "${{ github.event.inputs.image }}"
+              echo "${{ github.event.inputs.image }}"
             elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "${{ github.sha }}"
+              echo "${{ github.sha }}"
             else
-            echo "dev-${{ github.sha }}"
+              echo "dev-${{ github.sha }}"
             fi
             )
             DB_USERNAME=${{ secrets.DB_USERNAME }}
@@ -84,5 +75,5 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd ~/srv/app
-            docker compose -f docker-compose.prod.deploy.yml --env-file .env pull
-            docker compose -f docker-compose.prod.deploy.yml --env-file .env up -d
+            docker compose -f docker-compose.prod.deploy.yml pull
+            docker compose -f docker-compose.prod.deploy.yml up -d
