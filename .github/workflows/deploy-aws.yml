@@ -20,7 +20,7 @@ jobs:
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ vars.EC2_PUBLIC_IP }}
-          username: ${{ vars.AWS_EC2_USER }}
+          username: ${{ secrets.AWS_EC2_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           source: "./docker-compose.prod.deploy.yml"
           target: ~/srv/app/
@@ -30,7 +30,7 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ vars.EC2_PUBLIC_IP }}
-          username: ${{ vars.AWS_EC2_USER }}
+          username: ${{ secrets.AWS_EC2_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cat > ~/srv/app/.env <<EOF
