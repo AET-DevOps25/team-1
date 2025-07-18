@@ -4,7 +4,7 @@
 CREATE DATABASE user_db;
 CREATE DATABASE job_db;
 CREATE DATABASE application_db;
-CREATE DATABASE ai_db;
+-- CREATE DATABASE ai_db;
 
 -- =======================================
 -- 👤 1. Users schema (user_db)
@@ -121,6 +121,8 @@ CREATE INDEX idx_chat_sess ON chat_messages(session_id);
 -- =======================================
 -- 🧠 4. AI schema (ai_db)
 -- =======================================
+\connect postgres
+CREATE DATABASE ai_db;
 \connect ai_db
 
 CREATE EXTENSION IF NOT EXISTS vector;
