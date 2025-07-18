@@ -8,6 +8,7 @@ from langchain_postgres.vectorstores import PGVector
 
 from app.llm.embedding import OllamaEmbeddings
 from app.llm.open_webui import get_chat_llm
+from app.rag.init_db import init_db
 
 load_dotenv()
 
@@ -28,6 +29,8 @@ vector_store = PGVector(
     # TODO: comment below when prod
     # pre_delete_collection=True
 )
+
+init_db()
 
 
 def query_rag(query):
@@ -61,4 +64,3 @@ def query_rag_stream(query, is_open_rag):
         chain = prompt | llm | parser
         for chunk in chain.stream({"query": query}):
             yield chunk
-
