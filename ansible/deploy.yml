@@ -8,13 +8,13 @@
         update_cache: yes
       when: ansible_os_family == "Debian"
 
-    - name: Install Docker and Docker Compose plugin (for Ubuntu)
-      apt:
-        name:
-          - docker.io
-          - docker-compose-plugin
-        state: present
+    - name: Install Docker using official script (for Ubuntu)
+      shell: |
+        curl -fsSL https://get.docker.com | bash
+      args:
+        executable: /bin/bash
       when: ansible_os_family == "Debian"
+      become: true
 
     - name: Add the user to the docker group
       user:
@@ -28,14 +28,14 @@
         state: directory
         mode: '0755'
 
-    - name: Copy .env to server
-      copy:
-        src: .env
-        dest: /srv/app/.env
-        mode: '0600'
+    - name: Create letsencrypt
+      file:
+        path: /srv/app/letsencrypt
+        state: directory
+        mode: '0755'
 
-    - name: Copy docker-compose.prod.yml to server
-      copy:
-        src: docker-compose.prod.yml
-        dest: /srv/app/docker-compose.prod.yml
-        mode: '0644'
+    - name: Create acme.json
+      file:
+        path: /srv/app/letsencrypt/acme.json
+        state: touch
+        mode: '0600'
