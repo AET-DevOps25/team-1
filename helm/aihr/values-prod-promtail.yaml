@@ -9,6 +9,23 @@ promtail:
     snippets:
       scrapeConfigs: |
         - job_name: kubernetes-pods
+          pipeline_stages:
+            - cri: {}
+            - match:
+                selector: '{app=~"ai-hr-prod-application|ai-hr-prod-auth|ai-hr-job|ai-hr-prod-genai"}'
+                stages:
+                  - json:
+                      expressions:
+                        level: "level"
+                        logger_name: "logger_name"
+                        message: "message"
+                        ts: '"@timestamp"'
+            - timestamp:
+                source: ts
+                format: RFC3339Nano
+            - labels:
+                level:
+                logger_name:
           kubernetes_sd_configs:
             - role: pod
               namespaces:
