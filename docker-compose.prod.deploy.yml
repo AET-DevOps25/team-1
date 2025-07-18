@@ -20,20 +20,11 @@ services:
     ports:
       - "80:80" # HTTP
       - "443:443" # HTTPS
-      - "8080:8080" # Traefik dashboard
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./letsencrypt:/letsencrypt
+      - /home/ubuntu/srv/app/letsencrypt:/letsencrypt
     networks:
       - ai-hr-network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.traefik.rule=Host(`ec2-34-236-4-221.compute-1.amazonaws.com`)"
-      - "traefik.http.routers.traefik.service=api@internal"
-      - "traefik.http.routers.traefik.entrypoints=web"
-      - "traefik.http.routers.traefik.entrypoints=websecure"
-      - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.traefik.tls=true"
 
   # PostgreSQL database
   postgresql:
@@ -93,8 +84,8 @@ services:
       retries: 3
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.auth.rule=Host(`localhost`) && PathPrefix(`/api/v1/auth`)"
-      - "traefik.http.routers.auth.entrypoints=web"
+      - "traefik.http.routers.auth.rule=Host(`ec2-34-236-4-221.compute-1.amazonaws.com`) && PathPrefix(`/api/v1/auth`)"
+      - "traefik.http.routers.auth.entrypoints=websecure"
       - "traefik.http.services.auth.loadbalancer.server.port=8080"
 
   # Job management service
@@ -130,8 +121,8 @@ services:
       retries: 3
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.job.rule=Host(`localhost`) && PathPrefix(`/api/v1/jobs`)"
-      - "traefik.http.routers.job.entrypoints=web"
+      - "traefik.http.routers.job.rule=Host(`ec2-34-236-4-221.compute-1.amazonaws.com`) && PathPrefix(`/api/v1/jobs`)"
+      - "traefik.http.routers.job.entrypoints=websecure"
       - "traefik.http.services.job.loadbalancer.server.port=8081"
 
   # Application management service
@@ -172,8 +163,8 @@ services:
       retries: 3
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.application.rule=Host(`localhost`) && (PathPrefix(`/api/v1/applications`) || PathPrefix(`/api/v1/chat`) || PathPrefix(`/api/v1/assessments`) || PathPrefix(`/api/v1/files`))"
-      - "traefik.http.routers.application.entrypoints=web"
+      - "traefik.http.routers.application.rule=Host(`ec2-34-236-4-221.compute-1.amazonaws.com`) && (PathPrefix(`/api/v1/applications`) || PathPrefix(`/api/v1/chat`) || PathPrefix(`/api/v1/assessments`) || PathPrefix(`/api/v1/files`))"
+      - "traefik.http.routers.application.entrypoints=websecure"
       - "traefik.http.services.application.loadbalancer.server.port=8082"
 
   # GenAI service
@@ -204,8 +195,10 @@ services:
       - ai-hr-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`localhost`)"
-      - "traefik.http.routers.frontend.entrypoints=web"
+      - "traefik.http.routers.frontend.rule=Host(`ec2-34-236-4-221.compute-1.amazonaws.com`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls=true"
+      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
       - "traefik.http.services.frontend.loadbalancer.server.port=80"
 
 networks:
