@@ -5,7 +5,7 @@ on:
     branches:
       - main
   workflow_dispatch:
-    # 如果输入image tag，就跳过build
+    # if input image tag, then skip test and build
     inputs:
       image:
         description: "Image name and tag"
@@ -18,8 +18,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Gradle cache
-        uses: gradle/gradle-build-action@v3
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4.4.1
 
       - name: Set up JDK
         uses: actions/setup-java@v4
