@@ -50,7 +50,24 @@ loki:
 
   chunksCache:
     # default is 500MB, with limited memory keep this smaller
-    writebackSizeLimit: 10MB
+    writebackSizeLimit: 50MB
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 100m
+        memory: 512Mi
+
+  resultsCache:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 100m
+        memory: 512Mi
+
 
   # Enable minio for storage
   minio:
