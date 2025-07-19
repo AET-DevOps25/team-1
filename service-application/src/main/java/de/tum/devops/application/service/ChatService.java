@@ -136,7 +136,7 @@ public class ChatService {
                     logger.info("NormalQA stream completed for session {}.", sessionId);
                     fullAiResponse.append("\n").append(endingMessage);
                     try {
-                        ChatMessage finalMessage = saveFinalAiMessage(session.getSessionId(), fullAiResponse.toString());
+                        ChatMessage finalMessage = saveFinalAiMessage(session.getSessionId(), fullAiResponse.toString(), false);
                         emitter.send(SseEmitter.event().name("message-chunk").data("\n").data(endingMessage));
                         emitter.send(SseEmitter.event().name("stream-end").data(new ChatMessageDto(finalMessage)));
                     } catch (IOException ignored) {
@@ -196,7 +196,7 @@ public class ChatService {
                 logger.info("AI stream completed for session {}.", sessionId);
                 try {
                     // Save the final message and get the entity back
-                    ChatMessage finalMessage = saveFinalAiMessage(session.getSessionId(), fullAiResponse.toString());
+                    ChatMessage finalMessage = saveFinalAiMessage(session.getSessionId(), fullAiResponse.toString(), true);
                     // Send the final, complete DTO
                     emitter.send(SseEmitter.event().name("stream-end").data(new ChatMessageDto(finalMessage)));
                     emitter.complete();
@@ -249,7 +249,7 @@ public class ChatService {
     }
 
     @Transactional
-    public ChatMessage saveFinalAiMessage(UUID sessionId, String content) {
+    public ChatMessage saveFinalAiMessage(UUID sessionId, String content, boolean isSaveToDB) {
         ChatSession session = chatSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Chat session not found during final save."));
 
@@ -259,12 +259,16 @@ public class ChatService {
         aiMessage.setSession(session);
         aiMessage.setSender(MessageSender.AI);
         aiMessage.setContent(content);
-        chatMessageRepository.save(aiMessage);
+        if (isSaveToDB) {
+            chatMessageRepository.save(aiMessage);
 
-        Integer aiMessageCount = session.getMessageCount();
-        session.setMessageCount(aiMessageCount + 1);
+            Integer aiMessageCount = session.getMessageCount();
+            session.setMessageCount(aiMessageCount + 1);
 
-        chatSessionRepository.save(session);
+            chatSessionRepository.save(session);
+        } else {
+            aiMessage.setSentAt(LocalDateTime.now());
+        }
         return aiMessage;
     }
 
