@@ -47,7 +47,7 @@ class UserServiceUTest {
         UserDto dto = userService.convertToDto(user);
 
         // Assert
-        assertEquals(user.getUserId(), dto.getUserID());
+        assertEquals(user.getUserId(), dto.getUserId());
         assertEquals(user.getFullName(), dto.getFullName());
         assertEquals(user.getEmail(), dto.getEmail());
         assertEquals(user.getRole(), dto.getRole());

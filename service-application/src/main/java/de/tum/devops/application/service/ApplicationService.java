@@ -191,10 +191,10 @@ public class ApplicationService {
             logger.warn("Job not found for application: {}", application.getApplicationId());
         } else {
             try {
-                UserDto hrCreator = authWebClient.fetchUser(job.getHrCreator().getUserID()).block();
+                UserDto hrCreator = authWebClient.fetchUser(job.getHrCreator().getUserId()).block();
                 job.setHrCreator(hrCreator);
             } catch (Exception e) {
-                logger.error("HR creator not found for job when converting Application to dto: {}", job.getJobID(), e);
+                logger.error("HR creator not found for job when converting Application to dto: {}", job.getJobId(), e);
             }
         }
 
@@ -224,9 +224,9 @@ public class ApplicationService {
         applicationDto.setResumeText(null);
         applicationDto.setResumeFilePath(null);
         try {
-            applicationDto.getJob().getHrCreator().setUserID(null);
+            applicationDto.getJob().getHrCreator().setUserId(null);
         } catch (Exception e) {
-            logger.error("HR creator not found for job when hiding important fields for candidate: {}", applicationDto.getJob().getJobID(), e);
+            logger.error("HR creator not found for job when hiding important fields for candidate: {}", applicationDto.getJob().getJobId(), e);
         }
         applicationDto.setAssessment(null);
     }

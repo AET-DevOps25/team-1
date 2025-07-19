@@ -230,7 +230,7 @@ public class JobService {
     }
 
     private JobDto hideSensitiveData(JobDto jobDto) {
-        jobDto.getHrCreator().setUserID(null);
+        jobDto.getHrCreator().setUserId(null);
         return jobDto;
     }
 }

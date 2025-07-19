@@ -11,7 +11,7 @@ import java.util.UUID;
  * Schema definition:
  * CreateApplicationRequest:
  * properties:
- * jobID: string (uuid)
+ * jobId: string (uuid)
  * resumeFile: binary (required)
  */
 public class SubmitApplicationRequest {

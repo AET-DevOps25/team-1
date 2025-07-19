@@ -12,8 +12,8 @@ import java.util.UUID;
  * Schema definition:
  * ChatSessionDto:
  * properties:
- * sessionID: string (uuid)
- * applicationID: string (uuid)
+ * sessionId: string (uuid)
+ * applicationId: string (uuid)
  * status: string (enum: [ACTIVE, COMPLETED, EXPIRED])
  * startTimestamp: string (date-time)
  * endTimestamp: string (date-time)

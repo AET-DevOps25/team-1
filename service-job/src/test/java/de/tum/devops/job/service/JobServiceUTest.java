@@ -59,7 +59,7 @@ class JobServiceUTest {
         JobDto dto = jobService.getJobById(job.getJobId(), "CANDIDATE", false);
 
         // Assert
-        assertNull(dto.getHrCreator().getUserID());
+        assertNull(dto.getHrCreator().getUserId());
     }
 
     @Test

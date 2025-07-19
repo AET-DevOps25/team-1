@@ -10,7 +10,7 @@ import java.util.UUID;
 public class UserDto {
 
     @Nullable
-    private UUID userID;
+    private UUID userId;
     private String fullName;
     private String email;
     private String role;
@@ -19,8 +19,8 @@ public class UserDto {
     public UserDto() {
     }
 
-    public UserDto(@Nullable UUID userID, String fullName, String email, String role) {
-        this.userID = userID;
+    public UserDto(@Nullable UUID userId, String fullName, String email, String role) {
+        this.userId = userId;
         this.fullName = fullName;
         this.email = email;
         this.role = role;
@@ -28,12 +28,12 @@ public class UserDto {
 
     // Getters and Setters
     @Nullable
-    public UUID getUserID() {
-        return userID;
+    public UUID getUserId() {
+        return userId;
     }
 
-    public void setUserID(@Nullable UUID userID) {
-        this.userID = userID;
+    public void setUserId(@Nullable UUID userId) {
+        this.userId = userId;
     }
 
     public String getFullName() {

@@ -8,7 +8,7 @@ import java.util.UUID;
  */
 public class JobDto {
 
-    private UUID jobID;
+    private UUID jobId;
     private String title;
     private String description;
     private String requirements;
@@ -21,10 +21,10 @@ public class JobDto {
     public JobDto() {
     }
 
-    public JobDto(UUID jobID, String title, String description, String requirements,
+    public JobDto(UUID jobId, String title, String description, String requirements,
                   JobStatus status, LocalDateTime createdAt,
                   LocalDateTime updatedAt, UserDto hrCreator) {
-        this.jobID = jobID;
+        this.jobId = jobId;
         this.title = title;
         this.description = description;
         this.requirements = requirements;
@@ -35,12 +35,12 @@ public class JobDto {
     }
 
     // Getters and Setters
-    public UUID getJobID() {
-        return jobID;
+    public UUID getJobId() {
+        return jobId;
     }
 
-    public void setJobID(UUID jobID) {
-        this.jobID = jobID;
+    public void setJobId(UUID jobId) {
+        this.jobId = jobId;
     }
 
     public String getTitle() {
