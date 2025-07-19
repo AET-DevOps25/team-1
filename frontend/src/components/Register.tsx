@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import apiConfig from '../utils/api';
 import './Login.css';
 
 interface ModalProps {
@@ -84,19 +85,38 @@ const Register: React.FC = () => {
     }
 
     try {
-      console.log('Registration data:', formData);
-      setSuccess('Registration successful! Please login to continue.');
-      setIsModalOpen(true);
-      
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
+      const response = await fetch(apiConfig.getFullURL('/api/v1/auth/register'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName: `${formData.firstName} ${formData.lastName}`.trim(),
+          email: formData.email,
+          password: formData.password
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data?.success) {
+        if (data.data?.accessToken) {
+          const token = data.data.accessToken;
+          const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
+          document.cookie = `auth_token=${token}; expires=${expires}; path=/; SameSite=Strict; Secure`;
+          localStorage.setItem('token', token);
+        }
+        setSuccess('Registration successful! Redirecting...');
+        setIsModalOpen(true);
+        setTimeout(() => navigate('/'), 1500);
+      } else {
+        const backendMsg = data?.message || (data?.errors?.[0]?.message ?? 'Registration failed');
+        setError(backendMsg);
+        setIsModalOpen(true);
+      }
 
     } catch (err) {
-      const errorMessage = (err instanceof Error) ? err.message : 'Registration failed';
+      const errorMessage = err instanceof Error ? err.message : 'Registration failed';
       setError(errorMessage);
       setIsModalOpen(true);
-      console.error('Registration error:', errorMessage);
     }
   };
 
