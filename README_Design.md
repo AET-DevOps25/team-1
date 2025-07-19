@@ -143,19 +143,42 @@ CREATE INDEX idx_chat_sess ON chat_messages (session_id);
 ```sql
 CREATE
 EXTENSION IF NOT EXISTS vector;
+```
 
-CREATE TABLE embeddings
-(
-    embedding_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    document_ref TEXT,
-    content      TEXT,
-    embedding    VECTOR(1536),
-    created_at   TIMESTAMP        DEFAULT CURRENT_TIMESTAMP
-);
+Use langchain pgvector to generate official recommended tables.
 
-CREATE INDEX idx_embed_hnsw
-    ON embeddings USING hnsw (embedding vector_l2_ops)
-    WITH (m = 16, ef_construction = 64);
+```
+ai_db=# \d langchain_pg_collection;
+Table "public.langchain_pg_collection"
+Column   |       Type        | Collation | Nullable | Default 
+-----------+-------------------+-----------+----------+---------
+ uuid      | uuid              |           | not null | 
+ name      | character varying |           | not null | 
+ cmetadata | json              |           |          | 
+Indexes:
+    "langchain_pg_collection_pkey" PRIMARY KEY, btree (uuid)
+    "langchain_pg_collection_name_key" UNIQUE CONSTRAINT, btree (name)
+Referenced by:
+    TABLE "langchain_pg_embedding" CONSTRAINT "langchain_pg_embedding_collection_id_fkey" FOREIGN KEY (collection_id) REFERENCES langchain_pg_collection(uuid) ON
+DELETE
+CASCADE
+
+ai_db=# \d langchain_pg_embedding;
+Table "public.langchain_pg_embedding"
+Column     |       Type        | Collation | Nullable | Default 
+---------------+-------------------+-----------+----------+---------
+ id            | character varying |           | not null | 
+ collection_id | uuid              |           |          | 
+ embedding     | vector(8192)      |           |          | 
+ document      | character varying |           |          | 
+ cmetadata     | jsonb             |           |          | 
+Indexes:
+    "langchain_pg_embedding_pkey" PRIMARY KEY, btree (id)
+    "ix_cmetadata_gin" gin (cmetadata jsonb_path_ops)
+Foreign-key constraints:
+    "langchain_pg_embedding_collection_id_fkey" FOREIGN KEY (collection_id) REFERENCES langchain_pg_collection(uuid) ON
+DELETE
+CASCADE
 ```
 
 ---
