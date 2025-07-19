@@ -44,7 +44,7 @@ public class AuthController {
 
         AuthResponse authResponse = authService.login(request.getEmail(), request.getPassword());
 
-        logger.info("Login successful for user: {}", authResponse.getUser().getUserID());
+        logger.info("Login successful for user: {}", authResponse.getUser().getUserId());
 
         // create secure cookie with JWT
         ResponseCookie cookie = ResponseCookie.from("auth_token", authResponse.getAccessToken())
@@ -74,7 +74,7 @@ public class AuthController {
                 request.getEmail(),
                 request.getPassword());
 
-        logger.info("Registration successful for user: {}", authResponse.getUser().getUserID());
+        logger.info("Registration successful for user: {}", authResponse.getUser().getUserId());
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created(authResponse));
@@ -98,7 +98,7 @@ public class AuthController {
                 request.getPassword(),
                 requestorId);
 
-        logger.info("HR user created: {} by HR user: {}", newHR.getUserID(), requestorId);
+        logger.info("HR user created: {} by HR user: {}", newHR.getUserId(), requestorId);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created(newHR));

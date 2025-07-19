@@ -7,13 +7,13 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * ChatSession DTO according to api-documentation.yaml
+ * ChatSession DTO according to api-openapi-original-design.yaml
  * <p>
  * Schema definition:
  * ChatSessionDto:
  * properties:
- * sessionID: string (uuid)
- * applicationID: string (uuid)
+ * sessionId: string (uuid)
+ * applicationId: string (uuid)
  * status: string (enum: [ACTIVE, COMPLETED, EXPIRED])
  * startTimestamp: string (date-time)
  * endTimestamp: string (date-time)

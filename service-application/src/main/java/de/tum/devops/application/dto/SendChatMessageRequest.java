@@ -4,8 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 
 /**
  * Request DTO for sending chat messages according to
- * api-documentation.yaml
- * 
+ * api-openapi-original-design.yaml
+ * <p>
  * Schema definition:
  * SendChatMessageRequest:
  * properties:

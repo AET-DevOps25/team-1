@@ -1,8 +1,8 @@
 package de.tum.devops.auth.dto;
 
 /**
- * Authentication response DTO according to api-documentation.yaml
- * 
+ * Authentication response DTO according to api-openapi-original-design.yaml
+ * <p>
  * Schema definition:
  * AuthResponse:
  * properties:

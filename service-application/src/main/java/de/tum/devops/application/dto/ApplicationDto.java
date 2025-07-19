@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Application DTO according to api-documentation.yaml
+ * Application DTO according to api-openapi-original-design.yaml
  * <p>
  * Schema definition:
  * ApplicationDto:

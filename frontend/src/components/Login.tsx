@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import apiConfig from '../utils/api';
 import './Login.css'; 
 
 interface ModalProps {
@@ -47,12 +48,37 @@ const Login: React.FC = () => {
       return;
     }
 
-    const loginData = { email, password };
-    console.log('Login data:', loginData);
-
     try {
-      alert("Logged in"); 
-      navigate('/dashboard'); 
+      const response = await fetch(apiConfig.getFullURL('/api/v1/auth/login'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data?.success) {
+        const role = data.data?.user?.role ?? '';
+        const token: string | undefined = data.data?.accessToken;
+        if (token) {
+          const expiresSec: number = data.data?.expiresIn ?? 3600;
+          const expires = new Date(Date.now() + expiresSec * 1000).toUTCString();
+          document.cookie = `auth_token=${token}; expires=${expires}; path=/; SameSite=Strict; Secure`;
+          localStorage.setItem('token', token);
+          localStorage.setItem('role', role);
+        }
+
+        // roles : HR or CANDIDATE
+        if (role === 'HR') {
+          navigate('/dashboard');
+        } else {
+          navigate('/');
+        }
+      } else {
+        const errMsg = data?.message || (data?.errors?.[0]?.message ?? 'Login failed');
+        setError(errMsg);
+        setIsModalOpen(true);
+      }
 
     } catch (err) {
       const errorMessage = (err instanceof Error) ? err.message : 'Error';
@@ -93,10 +119,6 @@ const Login: React.FC = () => {
             aria-label="Password"
           />
         </div>
-        
-        <Link to="/forgot-password" className="forgot-password-link">
-          Forgot password
-        </Link>
 
         <button 
           onClick={handleLogin} 

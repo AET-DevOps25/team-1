@@ -6,12 +6,12 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * User DTO according to api-documentation.yaml
+ * User DTO according to api-openapi-original-design.yaml
  * <p>
  * Schema definition:
  * UserDto:
  * properties:
- * userID: string (uuid)
+ * userId: string (uuid)
  * fullName: string (maxLength: 255)
  * email: string (email, maxLength: 255)
  * role: string (enum: [CANDIDATE, HR])
@@ -19,7 +19,7 @@ import java.util.UUID;
  */
 public class UserDto {
 
-    private UUID userID;
+    private UUID userId;
     private String fullName;
     private String email;
     private UserRole role;
@@ -29,8 +29,8 @@ public class UserDto {
     public UserDto() {
     }
 
-    public UserDto(UUID userID, String fullName, String email, UserRole role, LocalDateTime createdAt) {
-        this.userID = userID;
+    public UserDto(UUID userId, String fullName, String email, UserRole role, LocalDateTime createdAt) {
+        this.userId = userId;
         this.fullName = fullName;
         this.email = email;
         this.role = role;
@@ -38,12 +38,12 @@ public class UserDto {
     }
 
     // Getters and Setters
-    public UUID getUserID() {
-        return userID;
+    public UUID getUserId() {
+        return userId;
     }
 
-    public void setUserID(UUID userID) {
-        this.userID = userID;
+    public void setUserId(UUID userId) {
+        this.userId = userId;
     }
 
     public String getFullName() {

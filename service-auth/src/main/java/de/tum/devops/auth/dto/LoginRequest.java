@@ -5,8 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
- * Login request DTO according to api-documentation.yaml
- * 
+ * Login request DTO according to api-openapi-original-design.yaml
+ * <p>
  * Schema definition:
  * LoginRequest:
  * properties:

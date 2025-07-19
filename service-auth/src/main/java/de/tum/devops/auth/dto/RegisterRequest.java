@@ -5,8 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
- * Register request DTO according to api-documentation.yaml
- * 
+ * Register request DTO according to api-openapi-original-design.yaml
+ * <p>
  * Schema definition:
  * RegisterRequest:
  * properties:
@@ -26,7 +26,7 @@ public class RegisterRequest {
     private String email;
 
     @NotBlank(message = "Password is required")
-    @Size(min = 6, message = "Password must be at least 6 characters")
+    @Size(min = 5, message = "Password must be at least 5 characters")
     private String password;
 
     // Constructors

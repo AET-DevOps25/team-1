@@ -162,7 +162,7 @@ paths:
                             sentAt:
                               type: "string"
                               description: ""
-                          description: "ChatMessage DTO according to api-documentation.yaml\n\
+                          description: "ChatMessage DTO according to api-openapi-original-design.yaml\n\
                             \nSchema definition:\nChatMessageDto:\nproperties:\nmessageId:\
                             \ string (uuid)\nsessionId: string (uuid)\nsender: string\
                             \ (enum: [AI, CANDIDATE])\ncontent: string\nsentAt: string\
@@ -3596,7 +3596,7 @@ paths:
                                   type: "string"
                                   description: ""
                               description: ""
-                          description: "Application DTO according to api-documentation.yaml\n\
+                          description: "Application DTO according to api-openapi-original-design.yaml\n\
                             <p>\nSchema definition:\nApplicationDto:\nproperties:\n\
                             applicationId: string (uuid)\njobId: string (uuid)\ncandidateId:\
                             \ string (uuid)\nstatus: string (enum: [SUBMITTED, AI_SCREENING,\
