@@ -1,5 +1,23 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { 
+  Button, 
+  Paper, 
+  Typography, 
+  Box, 
+  Tabs, 
+  Tab, 
+  Chip,
+  TextField
+} from '@mui/material';
+import { 
+  People as PeopleIcon,
+  Work as WorkIcon,
+  PersonAdd as PersonAddIcon,
+  Add as AddIcon,
+  Dashboard as DashboardIcon,
+  Logout as LogoutIcon
+} from '@mui/icons-material';
 import type { ViewMode } from '../types/dashboard';
 import { logout } from '../utils/auth';
 
@@ -25,99 +43,96 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    if (window.confirm('Are you sure you want to logout?')) {
-      logout();
-      navigate('/login', { replace: true });
-    }
+    logout();
+    navigate('/login', { replace: true });
   };
 
   return (
-    <header className="dashboard-header">
-      <div className="search-bar-container" style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-        <div>
-          <button 
-            style={{ 
-              marginRight: 8, 
-              padding: '6px 12px', 
-              backgroundColor: selectedView==='applications' ? '#1a1a1a' : '#ecf0f1', 
-              color: selectedView==='applications' ? '#fff' : '#1a1a1a', 
-              border: 'none', 
-              borderRadius: 4, 
-              cursor: 'pointer' 
-            }}
-            onClick={() => onViewChange('applications')}
-          >
-            Applications
-          </button>
-          <button 
-            style={{ 
-              padding: '6px 12px', 
-              backgroundColor: selectedView==='jobs' ? '#1a1a1a' : '#ecf0f1', 
-              color: selectedView==='jobs' ? '#fff' : '#1a1a1a', 
-              border: 'none', 
-              borderRadius: 4, 
-              cursor: 'pointer' 
-            }}
-            onClick={() => onViewChange('jobs')}
-          >
-            Jobs
-          </button>
-        </div>
-        <input 
-          type="text" 
-          placeholder="Search candidates, jobs, emails..." 
-          className="search-input"
-          value={searchTerm}
-          onChange={(e) => onSearchChange(e.target.value)}
-        />
-        <span className="results-count">{resultsCount} applications</span>
-      </div>
-      <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <div className="user-moon">TEAM1 ADMIN</div>
-        <button 
-          style={{ 
-            padding: '6px 12px', 
-            backgroundColor: '#2ecc71', 
-            color: '#fff', 
-            border: 'none', 
-            borderRadius: 4, 
-            cursor: 'pointer' 
-          }}
-          onClick={onAddHrClick}
+    <Paper elevation={1} sx={{ mb: 3 }}>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 3, pt: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <DashboardIcon sx={{ fontSize: 28, color: 'primary.main' }} />
+            <Typography variant="h5" component="h1" sx={{ fontWeight: 'bold' }}>
+              HR Dashboard
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Chip 
+              label="TEAM1 ADMIN" 
+              color="primary" 
+              variant="outlined"
+              sx={{ fontWeight: 'bold' }}
+            />
+            <Button 
+              variant="contained"
+              color="success"
+              startIcon={<PersonAddIcon />}
+              onClick={onAddHrClick}
+              sx={{ textTransform: 'none' }}
+            >
+              Add HR
+            </Button>
+            <Button 
+              variant="contained"
+              color="error"
+              startIcon={<LogoutIcon />}
+              onClick={handleLogout}
+              sx={{ textTransform: 'none' }}
+            >
+              Logout
+            </Button>
+          </Box>
+        </Box>
+        
+        <Tabs 
+          value={selectedView === 'applications' ? 0 : 1} 
+          onChange={(_, newValue) => onViewChange(newValue === 0 ? 'applications' : 'jobs')}
+          sx={{ mb: 2 }}
         >
-          Add HR
-        </button>
-        {selectedView==='jobs' && (
-        <button 
-          style={{ 
-            padding:'6px 12px', 
-            backgroundColor:'#2ecc71', 
-            color:'#fff', 
-            border:'none', 
-            borderRadius:4, 
-            cursor:'pointer' 
-          }}
-          onClick={onCreateJobClick}
-        >
-          Create Job
-        </button>)}
-        <button 
-          style={{ 
-            padding: '6px 12px', 
-            backgroundColor: '#e74c3c', 
-            color: '#fff', 
-            border: 'none', 
-            borderRadius: 4, 
-            cursor: 'pointer',
-            marginLeft: '10px'
-          }}
-          onClick={handleLogout}
-          title="Logout"
-        >
-          Logout
-        </button>
-      </div>
-    </header>
+          <Tab 
+            icon={<PeopleIcon />} 
+            label={`Applications (${resultsCount})`} 
+            iconPosition="start"
+            sx={{ textTransform: 'none', fontWeight: 'bold' }}
+          />
+          <Tab 
+            icon={<WorkIcon />} 
+            label="Jobs" 
+            iconPosition="start"
+            sx={{ textTransform: 'none', fontWeight: 'bold' }}
+          />
+        </Tabs>
+      </Box>
+      
+      <Box sx={{ p: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+          <TextField
+            placeholder="Search candidates, jobs, emails..."
+            value={searchTerm}
+            onChange={(e) => onSearchChange(e.target.value)}
+            size="small"
+            sx={{ minWidth: 300 }}
+          />
+          <Chip 
+            label={`${resultsCount} results`} 
+            color="default" 
+            size="small"
+          />
+          {selectedView === 'jobs' && (
+            <Button 
+              variant="contained"
+              color="success"
+              startIcon={<AddIcon />}
+              onClick={onCreateJobClick}
+              sx={{ textTransform: 'none' }}
+            >
+              Create Job
+            </Button>
+          )}
+        </Box>
+      </Box>
+    </Paper>
   );
 };
 

@@ -345,9 +345,7 @@ const CandidateChat: React.FC = () => {
       console.error('Error finishing interview:', err);
     }
     
-    setTimeout(() => {
-      navigate('/candidate-dashboard');
-    }, 2000);
+    // Removed automatic redirection to allow transcript viewing
   };
 
   if (!isInitialized) {
@@ -394,21 +392,20 @@ const CandidateChat: React.FC = () => {
           </div>
         </div>
         <button
-          onClick={finishInterviewEarly}
-          disabled={isInterviewFinished}
+          onClick={isInterviewFinished ? () => navigate('/candidate-dashboard') : finishInterviewEarly}
           style={{
-            backgroundColor: isInterviewFinished ? '#d1d5db' : '#dc2626',
-            color: isInterviewFinished ? '#6b7280' : '#fff',
+            backgroundColor: isInterviewFinished ? '#2563eb' : '#dc2626',
+            color: '#fff',
             border: 'none',
             padding: '8px 16px',
             borderRadius: '8px',
             fontSize: '14px',
             fontWeight: '500',
-            cursor: isInterviewFinished ? 'not-allowed' : 'pointer',
+            cursor: 'pointer',
             transition: 'all 0.2s'
           }}
         >
-          {isInterviewFinished ? 'Redirecting...' : 'Finish Interview'}
+          {isInterviewFinished ? 'Return to Dashboard' : 'Finish Interview'}
         </button>
       </div>
 
@@ -614,7 +611,7 @@ const CandidateChat: React.FC = () => {
           color: '#9ca3af',
           textAlign: 'center'
         }}>
-          Press Enter to send • {isInterviewFinished ? 'Interview completed, redirecting to dashboard...' : 'Be thoughtful and detailed in your responses'}
+          {isInterviewFinished ? 'Interview completed! You can review your conversation above. Click "Return to Dashboard" when ready.' : 'Press Enter to send • Be thoughtful and detailed in your responses'}
         </div>
       </div>
       

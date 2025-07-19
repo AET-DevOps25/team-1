@@ -8,15 +8,13 @@ const Sidebar: React.FC<SidebarProps> = () => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    if (window.confirm('Are you sure you want to logout?')) {
-      logout();
-      navigate('/login', { replace: true });
-    }
+    logout();
+    navigate('/login', { replace: true });
   };
 
   return (
     <div className="sidebar">
-      <div className="logo">TEAM1</div>
+      <div className="logo">Back</div>
       
       <div className="sidebar-section">
         <div className="sidebar-title">NAVIGATION</div>

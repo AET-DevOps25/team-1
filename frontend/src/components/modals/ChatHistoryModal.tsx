@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography, IconButton, Chip } from '@mui/material';
+import { Close as CloseIcon, Person as PersonIcon, SmartToy as AIIcon } from '@mui/icons-material';
 import type { Application } from '../../types/dashboard';
 import apiConfig from '../../utils/api';
 import { getValidToken } from '../../utils/auth';
@@ -210,225 +212,187 @@ const ChatHistoryModal: React.FC<ChatHistoryModalProps> = ({
     }
   };
 
-  const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return date.toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
-  };
-
-  const getMessageIcon = (sender: string) => {
-    return sender === 'AI' ? 'AI' : 'USER';
-  };
 
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div 
-        className="modal-content" 
-        onClick={(e) => e.stopPropagation()} 
-        style={{ 
-          maxWidth: '800px', 
-          maxHeight: '80vh',
+    <Dialog
+      open={isOpen}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      PaperProps={{
+        sx: {
+          height: '85vh',
           display: 'flex',
           flexDirection: 'column'
-        }}
-      >
-        <div className="modal-header">
-          <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-            Chat History
-            {application && (
-              <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#666' }}>
-                - {application.candidate_name || application.candidate?.fullName}
-              </span>
-            )}
-          </h3>
-          <button className="modal-close" onClick={onClose}>×</button>
-        </div>
-        
-        <div className="modal-body" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 0 }}>
+        }
+      }}
+    >
+      <DialogTitle sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        pb: 1,
+        borderBottom: '1px solid #e0e0e0'
+      }}>
+        <Typography variant="h6" component="div">
+          AI Interview Chat History
           {application && (
-            <div style={{ 
-              backgroundColor: '#f8f9fa', 
-              padding: '15px 20px', 
-              borderBottom: '1px solid #e9ecef',
-              fontSize: '14px'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <strong>{application.candidate_name || application.candidate?.fullName}</strong>
-                  <span style={{ margin: '0 10px', color: '#666' }}>•</span>
-                  <span style={{ color: '#666' }}>
-                    {application.job_title || application.job?.title}
-                  </span>
-                </div>
-                {sessionId && (
-                  <div style={{ fontSize: '12px', color: '#666' }}>
-                    Session: {sessionId.substring(0, 8)}...
-                  </div>
-                )}
-              </div>
-            </div>
+            <Typography variant="caption" display="block" color="text.secondary">
+              {application.candidate_name || application.candidate?.fullName} - {application.job_title || application.job?.title}
+            </Typography>
           )}
+        </Typography>
+        <IconButton onClick={onClose} size="small">
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
 
-          <div style={{ 
-            flex: 1, 
-            overflowY: 'auto', 
-            padding: '20px',
-            backgroundColor: '#fafafa',
-            minHeight: '400px'
+      <DialogContent sx={{ 
+        flex: 1, 
+        display: 'flex', 
+        flexDirection: 'column',
+        p: 0,
+        overflow: 'hidden'
+      }}>
+        {application && (
+          <Box sx={{ 
+            backgroundColor: '#f8f9fa', 
+            p: 2, 
+            borderBottom: '1px solid #e0e0e0'
           }}>
-            {isLoading ? (
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'center', 
-                alignItems: 'center', 
-                height: '200px',
-                color: '#666'
-              }}>
-                <div>
-                  <div style={{ fontSize: '24px', marginBottom: '10px' }}>💬</div>
-                  Loading chat history...
-                </div>
-              </div>
-            ) : error ? (
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'center', 
-                alignItems: 'center', 
-                height: '200px',
-                color: '#e74c3c',
-                textAlign: 'center'
-              }}>
-                <div>
-                  <div style={{ fontSize: '24px', marginBottom: '10px' }}>⚠️</div>
-                  <div>{error}</div>
-                </div>
-              </div>
-            ) : messages.length === 0 ? (
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'center', 
-                alignItems: 'center', 
-                height: '200px',
-                color: '#666',
-                textAlign: 'center'
-              }}>
-                <div>
-                  <div style={{ fontSize: '48px', marginBottom: '15px' }}>💬</div>
-                  <div style={{ fontSize: '18px', marginBottom: '8px' }}>No Chat History</div>
-                  <div style={{ fontSize: '14px' }}>
-                    This candidate hasn't started the interview yet.
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <>
-                {messages.map((message, index) => (
-                  <div 
-                    key={message.messageId || index} 
-                    style={{ 
-                      marginBottom: '20px',
-                      display: 'flex',
-                      flexDirection: message.sender === 'CANDIDATE' ? 'row-reverse' : 'row',
-                      alignItems: 'flex-start',
-                      gap: '12px'
-                    }}
-                  >
-                    <div style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '50%',
-                      backgroundColor: message.sender === 'CANDIDATE' ? '#3498db' : '#2ecc71',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '18px',
-                      flexShrink: 0
-                    }}>
-                      {getMessageIcon(message.sender)}
-                    </div>
-
-                    <div style={{ 
-                      maxWidth: '70%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: message.sender === 'CANDIDATE' ? 'flex-end' : 'flex-start'
-                    }}>
-                      <div style={{
-                        fontSize: '12px',
-                        color: '#666',
-                        marginBottom: '4px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px'
-                      }}>
-                        <span style={{ fontWeight: 'bold' }}>
-                          {message.sender === 'CANDIDATE' ? 'Candidate' : 'AI Interviewer'}
-                        </span>
-                        <span>•</span>
-                        <span>{formatTimestamp(message.sentAt)}</span>
-                      </div>
-
-                      <div style={{
-                        backgroundColor: message.sender === 'CANDIDATE' ? '#3498db' : '#ffffff',
-                        color: message.sender === 'CANDIDATE' ? '#ffffff' : '#333333',
-                        padding: '12px 16px',
-                        borderRadius: '18px',
-                        borderTopLeftRadius: message.sender === 'AI' ? '6px' : '18px',
-                        borderTopRightRadius: message.sender === 'CANDIDATE' ? '6px' : '18px',
-                        boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
-                        lineHeight: '1.4',
-                        wordWrap: 'break-word',
-                        border: message.sender === 'AI' ? '1px solid #e1e8ed' : 'none'
-                      }}>
-                        {message.content}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </>
-            )}
-          </div>
-        </div>
-        
-        <div className="modal-footer" style={{ 
-          padding: '15px 20px', 
-          borderTop: '1px solid #e9ecef',
-          backgroundColor: '#f8f9fa'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: '14px', color: '#666' }}>
-              {messages.length > 0 ? (
-                `${messages.length} message${messages.length !== 1 ? 's' : ''} in this conversation`
-              ) : (
-                'Read-only view for HR personnel'
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                  {application.candidate_name || application.candidate?.fullName}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Application ID: {(application.applicationId || application.application_id || '').substring(0, 8)}...
+                </Typography>
+              </Box>
+              {sessionId && (
+                <Chip 
+                  label={`Session: ${sessionId.substring(0, 8)}...`} 
+                  size="small" 
+                  variant="outlined"
+                />
               )}
-            </div>
-            <button 
-              className="btn-cancel" 
-              onClick={onClose}
-              style={{ 
-                backgroundColor: '#6c757d', 
-                color: 'white',
-                border: 'none',
-                padding: '8px 16px',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+            </Box>
+          </Box>
+        )}
+
+        <Box sx={{ 
+          flex: 1, 
+          overflowY: 'auto', 
+          p: 2,
+          backgroundColor: '#fafafa'
+        }}>
+          {isLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+              <Typography color="text.secondary">Loading chat history...</Typography>
+            </Box>
+          ) : error ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4, textAlign: 'center' }}>
+              <Box>
+                <Typography variant="h4" sx={{ mb: 2 }}>⚠️</Typography>
+                <Typography color="error">{error}</Typography>
+              </Box>
+            </Box>
+          ) : messages.length === 0 ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4, textAlign: 'center' }}>
+              <Box>
+                <Typography variant="h3" sx={{ mb: 2 }}>💬</Typography>
+                <Typography variant="h6" sx={{ mb: 1 }}>No Chat History</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  This candidate hasn't started the interview yet.
+                </Typography>
+              </Box>
+            </Box>
+          ) : (
+            <>
+              {messages.map((message, index) => (
+                <Box
+                  key={message.messageId || index}
+                  sx={{
+                    display: 'flex',
+                    flexDirection: message.sender === 'CANDIDATE' ? 'row-reverse' : 'row',
+                    alignItems: 'flex-start',
+                    gap: 2,
+                    mb: 3
+                  }}
+                >
+                  <Box sx={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: '50%',
+                    backgroundColor: message.sender === 'CANDIDATE' ? '#3498db' : '#2ecc71',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    flexShrink: 0,
+                    fontWeight: 'bold'
+                  }}>
+                    {message.sender === 'CANDIDATE' ? <PersonIcon /> : <AIIcon />}
+                  </Box>
+
+                  <Box sx={{ 
+                    maxWidth: '70%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: message.sender === 'CANDIDATE' ? 'flex-end' : 'flex-start'
+                  }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5 }}>
+                      {message.sender === 'CANDIDATE' ? 'Candidate' : 'AI Interviewer'}
+                    </Typography>
+
+                    <Box sx={{
+                      backgroundColor: message.sender === 'CANDIDATE' ? '#3498db' : '#ffffff',
+                      color: message.sender === 'CANDIDATE' ? '#ffffff' : '#333333',
+                      p: 2,
+                      borderRadius: 2,
+                      borderTopLeftRadius: message.sender === 'AI' ? 0.5 : 2,
+                      borderTopRightRadius: message.sender === 'CANDIDATE' ? 0.5 : 2,
+                      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+                      lineHeight: 1.4,
+                      wordWrap: 'break-word',
+                      border: message.sender === 'AI' ? '1px solid #e1e8ed' : 'none'
+                    }}>
+                      {message.content}
+                    </Box>
+                  </Box>
+                </Box>
+              ))}
+              <div ref={messagesEndRef} />
+            </>
+          )}
+        </Box>
+      </DialogContent>
+        
+      <DialogActions sx={{ 
+        p: 2, 
+        borderTop: '1px solid #e0e0e0',
+        backgroundColor: '#f8f9fa'
+      }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+          <Typography variant="body2" color="text.secondary">
+            {messages.length > 0 ? (
+              `${messages.length} message${messages.length !== 1 ? 's' : ''} in this conversation`
+            ) : (
+              'Read-only view for HR personnel'
+            )}
+          </Typography>
+          <Button 
+            variant="outlined"
+            onClick={onClose}
+            startIcon={<CloseIcon />}
+          >
+            Close
+          </Button>
+        </Box>
+      </DialogActions>
+    </Dialog>
   );
 };
 

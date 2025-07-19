@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Box, Typography, IconButton } from '@mui/material';
-import { Close as CloseIcon, Send as SendIcon } from '@mui/icons-material';
+import { Close as CloseIcon, Send as SendIcon, Stop as StopIcon } from '@mui/icons-material';
 import apiConfig from '../../utils/api';
 import { getValidToken } from '../../utils/auth';
 import type { Application } from '../../types/dashboard';
@@ -57,6 +57,7 @@ const CandidateChatModal: React.FC<CandidateChatModalProps> = ({
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [isStoppingInterview, setIsStoppingInterview] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const scrollToBottom = () => {
@@ -110,16 +111,26 @@ const CandidateChatModal: React.FC<CandidateChatModalProps> = ({
       const data = await response.json();
       console.log('Chat initialization response:', data);
 
-      if (data.success && data.data?.session) {
-        const session = data.data.session;
-        setSessionId(session.sessionId || session.session_id);
-        setIsInterviewFinished(session.finished || false);
+      if (data.success && data.data) {
+        const newSessionId = data.data.session.sessionId;
+        console.log('Chat session initialized with ID:', newSessionId);
+        setSessionId(newSessionId);
         
-        if (session.finished) {
-          console.log('Interview already finished');
+        const existingMessages = await loadChatHistory(newSessionId);
+        
+        if (data.data.initialMessage && existingMessages.length === 0) {
+          const initialMessage = {
+            messageId: data.data.initialMessage.messageId,
+            sessionId: data.data.initialMessage.sessionId,
+            sender: 'AI' as const,
+            content: data.data.initialMessage.content,
+            sentAt: data.data.initialMessage.sentAt
+          };
+          setMessages([initialMessage]);
+        } else if (existingMessages.length > 0) {
+          setMessages(existingMessages);
         }
         
-        await loadChatHistory(session.sessionId);
         setIsInitialized(true);
       } else {
         console.error('Failed to get session from response:', data);
@@ -133,7 +144,7 @@ const CandidateChatModal: React.FC<CandidateChatModalProps> = ({
 
   const loadChatHistory = async (sessionId: string) => {
     const token = getValidToken();
-    if (!token) return;
+    if (!token) return [];
 
     try {
       const response = await fetch(apiConfig.getFullURL(`/api/v1/chat/${sessionId}/messages?page=0&size=100`), {
@@ -155,11 +166,13 @@ const CandidateChatModal: React.FC<CandidateChatModalProps> = ({
             finished: true
           }));
           setMessages(chatMessages);
+          return chatMessages;
         }
       }
     } catch (error) {
       console.error('Error loading chat history:', error);
     }
+    return [];
   };
 
   const sendMessage = async () => {
@@ -295,11 +308,7 @@ const CandidateChatModal: React.FC<CandidateChatModalProps> = ({
               } else if (eventType === 'interview-finished') {
                 console.log('Interview finished event received');
                 setIsInterviewFinished(true);
-                if (onInterviewComplete) {
-                  setTimeout(() => {
-                    onInterviewComplete();
-                  }, 2000);
-                }
+                // Removed automatic modal closure to allow transcript viewing
               }
               
               eventType = '';
@@ -342,13 +351,67 @@ const CandidateChatModal: React.FC<CandidateChatModalProps> = ({
     }
   };
 
-  const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
+
+  const stopInterview = async () => {
+    if (!application || isStoppingInterview || isInterviewFinished) return;
+
+    const confirmStop = window.confirm('Are you sure you want to stop the interview?');
+    if (!confirmStop) return;
+
+    const token = getValidToken();
+    if (!token) {
+      console.error('No valid token found');
+      return;
+    }
+
+    setIsStoppingInterview(true);
+
+    try {
+      const applicationId = application.applicationId || application.application_id;
+      if (!applicationId) {
+        throw new Error('No application ID found');
+      }
+
+      const response = await fetch(apiConfig.getFullURL(`/api/v1/applications/${applicationId}/chat/complete`), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setIsInterviewFinished(true);
+          const stopMessage: ChatMessage = {
+            sender: 'AI',
+            content: 'Interview has been stopped by candidate. Thank you for your time. Your responses have been recorded.',
+            sentAt: new Date().toISOString(),
+            finished: true
+          };
+          setMessages(prev => [...prev, stopMessage]);
+          
+          if (onInterviewComplete) {
+            setTimeout(() => {
+              onInterviewComplete();
+            }, 2000);
+          }
+        } else {
+          console.error('Failed to stop interview:', data.message);
+          alert('Failed to stop interview. Please try again.');
+        }
+      } else {
+        console.error('Failed to stop interview:', response.status);
+        alert('Failed to stop interview. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error stopping interview:', error);
+      alert('Error stopping interview. Please try again.');
+    } finally {
+      setIsStoppingInterview(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -440,7 +503,7 @@ const CandidateChatModal: React.FC<CandidateChatModalProps> = ({
                     alignItems: message.sender === 'CANDIDATE' ? 'flex-end' : 'flex-start'
                   }}>
                     <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5 }}>
-                      {message.sender === 'CANDIDATE' ? 'You' : 'AI Interviewer'} • {formatTimestamp(message.sentAt)}
+                      {message.sender === 'CANDIDATE' ? 'You' : 'AI Interviewer'}
                     </Typography>
 
                     <Box sx={{
@@ -476,8 +539,11 @@ const CandidateChatModal: React.FC<CandidateChatModalProps> = ({
             borderTop: '1px solid #c8e6c9',
             textAlign: 'center'
           }}>
-            <Typography variant="body2" color="success.main" fontWeight="bold">
+            <Typography variant="body2" color="success.main" fontWeight="bold" sx={{ mb: 1 }}>
               ✅ Interview Completed! Your responses have been recorded.
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              You can review your full conversation above. Close this window when you're done.
             </Typography>
           </Box>
         )}
@@ -511,7 +577,50 @@ const CandidateChatModal: React.FC<CandidateChatModalProps> = ({
             >
               Send
             </Button>
+            {!isInterviewFinished && (
+              <Button
+                variant="outlined"
+                color="error"
+                onClick={stopInterview}
+                disabled={isStoppingInterview || isLoading}
+                startIcon={<StopIcon />}
+                sx={{ 
+                  minWidth: 'auto', 
+                  px: 2,
+                  ml: 1,
+                  borderColor: '#e74c3c',
+                  color: '#e74c3c',
+                  '&:hover': {
+                    borderColor: '#c0392b',
+                    backgroundColor: '#fdf2f2'
+                  }
+                }}
+              >
+                {isStoppingInterview ? 'Stopping...' : 'Stop Interview'}
+              </Button>
+            )}
           </Box>
+        </DialogActions>
+      )}
+
+      {isInterviewFinished && (
+        <DialogActions sx={{ 
+          p: 2, 
+          borderTop: '1px solid #e0e0e0',
+          backgroundColor: '#fff',
+          justifyContent: 'center'
+        }}>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={onClose}
+            sx={{ 
+              minWidth: 120,
+              textTransform: 'none'
+            }}
+          >
+            Close Window
+          </Button>
         </DialogActions>
       )}
     </Dialog>

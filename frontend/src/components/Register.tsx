@@ -106,7 +106,15 @@ const Register: React.FC = () => {
         }
         setSuccess('Registration successful! Redirecting...');
         setIsModalOpen(true);
-        setTimeout(() => navigate('/'), 1500);
+
+        setTimeout(() => {
+          const role = data.data?.user?.role ?? '';
+          if (role === 'HR') {
+            navigate('/dashboard');
+          } else {
+            navigate('/');
+          }
+        }, 1500);
       } else {
         const backendMsg = data?.message || (data?.errors?.[0]?.message ?? 'Registration failed');
         setError(backendMsg);

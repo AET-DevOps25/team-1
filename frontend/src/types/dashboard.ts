@@ -1,4 +1,4 @@
-export type SortField = 'name' | 'job' | 'status' | 'date' | 'score' | 'finalScore' | 'hrDecision';
+export type SortField = 'name' | 'job' | 'status' | 'date' | 'score' | 'finalScore' | 'hrDecision' | 'resumeScore' | 'chatScore';
 export type SortDirection = 'asc' | 'desc';
 export type ViewMode = 'applications' | 'jobs';
 
@@ -6,7 +6,11 @@ export interface Assessment {
   assessmentId: string;
   resumeScore: number;
   chatScore: number;
+  interviewScore?: number;
   finalScore: number;
+  resumeComment?: string;
+  interviewComment?: string;
+  recommendation?: string;
   aiResumeAnalysis: string;
   aiChatSummary: string;
   aiRecommendStatus: string;
@@ -23,6 +27,7 @@ export interface Application {
   jobId: string;
   candidateId: string;
   status: string;
+  chatStatus?: string;
   createdAt: string;
   updatedAt: string;
   candidate: {

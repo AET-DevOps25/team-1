@@ -210,7 +210,7 @@ const JobApplications: React.FC = () => {
               textDecoration: 'underline'
             }}
           >
-            ← TEAM1
+            ← 
           </button>
         </div>
         
@@ -303,10 +303,11 @@ const JobApplications: React.FC = () => {
             padding: '15px', 
             margin: '0 20px 20px 20px',
             borderRadius: '8px',
-            border: '1px solid #e9ecef'
+            border: '1px solid #e9ecef',
+            wordWrap: 'break-word'
           }}>
             <h4 style={{ margin: '0 0 10px 0', color: '#2c3e50' }}>Job Description</h4>
-            <p style={{ margin: 0, lineHeight: '1.5', color: '#555' }}>{jobInfo.description}</p>
+            <p style={{ margin: 0, lineHeight: '1.5', color: '#555', textWrap: 'wrap' }}>{jobInfo.description}</p>
           </div>
         )}
 
@@ -327,13 +328,6 @@ const JobApplications: React.FC = () => {
             color: '#7f8c8d' 
           }}>
             <div style={{ fontSize: '48px', marginBottom: '20px' }}>📝</div>
-            <h3>No Applications Found</h3>
-            <p>
-              {applications.length === 0 
-                ? "This job hasn't received any applications yet."
-                : "No applications match your current filters."
-              }
-            </p>
             {selectedStatus !== 'ALL' && (
               <button 
                 onClick={() => setSelectedStatus('ALL')}

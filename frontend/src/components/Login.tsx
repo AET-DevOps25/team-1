@@ -68,6 +68,7 @@ const Login: React.FC = () => {
           localStorage.setItem('role', role);
         }
 
+        // roles : HR or CANDIDATE
         if (role === 'HR') {
           navigate('/dashboard');
         } else {

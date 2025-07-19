@@ -27,12 +27,10 @@ const DetailsModal: React.FC<DetailsModalProps> = ({
 
   const getHrDecisionDisplay = (decision?: string) => {
     switch (decision) {
-      case 'PENDING': return 'Pending Review';
-      case 'APPROVE': return 'Approved';
-      case 'REJECT': return 'Rejected';
-      case 'INTERVIEW': return 'Schedule Interview';
-      case 'FOLLOW_UP': return 'Follow Up';
-      default: return 'Pending Review';
+      case 'SHORTLISTED': return 'Shortlisted';
+      case 'REJECTED': return 'Rejected';
+      case 'HIRED': return 'Hired';
+      default: return 'No Decision';
     }
   };
 
@@ -79,22 +77,22 @@ const DetailsModal: React.FC<DetailsModalProps> = ({
                     <strong>Resume Score:</strong> {selectedApplication.assessment?.resumeScore}
                   </div>
                   <div>
-                    <strong>Chat Score:</strong> {selectedApplication.assessment?.chatScore}
+                    <strong>Interview Score:</strong> {selectedApplication.assessment?.interviewScore ?? selectedApplication.assessment?.chatScore ?? 'N/A'}
                   </div>
                   <div>
-                    <strong>Final Score:</strong> {selectedApplication.assessment?.finalScore}
+                    <strong>Final Score:</strong> {selectedApplication.assessment?.finalScore ?? 'N/A'}
                   </div>
                   <div>
                     <strong>AI Recommendation:</strong> 
                     <span style={{ 
                       marginLeft: '8px',
-                      backgroundColor: getAiRecommendColor(selectedApplication.assessment?.aiRecommendStatus),
+                      backgroundColor: getAiRecommendColor(selectedApplication.assessment?.recommendation),
                       color: 'white',
                       padding: '2px 6px',
                       borderRadius: '4px',
                       fontSize: '12px'
                     }}>
-                      {getAiRecommendDisplay(selectedApplication.assessment?.aiRecommendStatus)}
+                      {getAiRecommendDisplay(selectedApplication.assessment?.recommendation)}
                     </span>
                   </div>
                 </div>
@@ -109,12 +107,12 @@ const DetailsModal: React.FC<DetailsModalProps> = ({
                     fontSize: '14px',
                     border: '1px solid #e9ecef'
                   }}>
-                    {selectedApplication.assessment?.aiResumeAnalysis}
+                    {selectedApplication.assessment?.resumeComment ?? selectedApplication.assessment?.aiResumeAnalysis ?? 'No analysis available'}
                   </div>
                 </div>
                 
                 <div style={{ marginBottom: '20px' }}>
-                  <h5 style={{ color: '#2c3e50', marginBottom: '10px' }}>AI Chat Summary:</h5>
+                  <h5 style={{ color: '#2c3e50', marginBottom: '10px' }}>AI Interview Summary:</h5>
                   <div style={{ 
                     padding: '12px', 
                     backgroundColor: '#f8f9fa', 
@@ -123,9 +121,10 @@ const DetailsModal: React.FC<DetailsModalProps> = ({
                     fontSize: '14px',
                     border: '1px solid #e9ecef'
                   }}>
-                    {selectedApplication.assessment?.aiChatSummary}
+                    {selectedApplication.assessment?.interviewComment ?? selectedApplication.assessment?.aiChatSummary ?? 'No interview summary available'}
                   </div>
                 </div>
+                
               </div>
             )}
             

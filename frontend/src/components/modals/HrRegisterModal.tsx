@@ -99,7 +99,7 @@ const HrRegisterModal: React.FC<HrRegisterModalProps> = ({
             <input
               type="password"
               name="password"
-              placeholder="Password (minimum 6 characters)"
+              placeholder="Password (longer than 5 characters)"
               value={hrForm.password}
               onChange={onInputChange}
               style={{ 
@@ -115,7 +115,7 @@ const HrRegisterModal: React.FC<HrRegisterModalProps> = ({
               </div>
             )}
             <div style={{ color: '#666', fontSize: '11px', marginTop: '4px' }}>
-              Password must be at least 6 characters long
+              Password must be longer than 5 characters
             </div>
           </div>
         </div>

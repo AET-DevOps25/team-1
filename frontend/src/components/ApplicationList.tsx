@@ -97,6 +97,22 @@ const ApplicationList: React.FC<ApplicationListProps> = ({
     return sortDirection === 'asc' ? ' ↑' : ' ↓';
   };
 
+  const hasChatHistory = (application: Application): boolean => {
+    const statusesWithChat = ['AI_INTERVIEW', 'COMPLETED', 'SHORTLISTED', 'REJECTED', 'HIRED'];
+    const statusesWithoutChat = ['SUBMITTED', 'AI_SCREENING'];
+    
+    if (statusesWithoutChat.includes(application.status)) {
+      return false;
+    }
+    
+    if (statusesWithChat.includes(application.status)) {
+      return true;
+    }
+    
+    const hasChatScore = application.assessment?.chatScore !== undefined || application.assessment?.chat_score !== undefined;
+    return hasChatScore;
+  };
+
   const copyEmailToClipboard = async (email?: string) => {
     try {
       if (email) {
@@ -155,22 +171,18 @@ const ApplicationList: React.FC<ApplicationListProps> = ({
 
   const getHrDecisionDisplay = (decision?: string) => {
     switch (decision) {
-      case 'PENDING': return 'Pending Review';
-      case 'APPROVE': return 'Approved';
-      case 'REJECT': return 'Rejected';
-      case 'INTERVIEW': return 'Schedule Interview';
-      case 'FOLLOW_UP': return 'Follow Up';
-      default: return 'Pending Review';
+      case 'SHORTLISTED': return 'Shortlisted';
+      case 'REJECTED': return 'Rejected';
+      case 'HIRED': return 'Hired';
+      default: return 'No Decision';
     }
   };
 
   const getHrDecisionColor = (decision?: string) => {
     switch (decision) {
-      case 'PENDING': return '#95a5a6';
-      case 'APPROVE': return '#27ae60';
-      case 'REJECT': return '#e74c3c';
-      case 'INTERVIEW': return '#3498db';
-      case 'FOLLOW_UP': return '#f39c12';
+      case 'SHORTLISTED': return '#f39c12';
+      case 'REJECTED': return '#e74c3c';
+      case 'HIRED': return '#27ae60';
       default: return '#95a5a6';
     }
   };
@@ -196,7 +208,7 @@ const ApplicationList: React.FC<ApplicationListProps> = ({
           onKeyDown={(e) => e.key === 'Enter' && onSort('name')}
           role="button"
           tabIndex={0}
-          style={{ flexBasis: '25%' }}
+          style={{ flexBasis: '20%' }}
         >
           CANDIDATE / JOB {getSortIcon('name')}
         </div>
@@ -206,25 +218,45 @@ const ApplicationList: React.FC<ApplicationListProps> = ({
           onKeyDown={(e) => e.key === 'Enter' && onSort('status')}
           role="button"
           tabIndex={0}
-          style={{ flexBasis: '10%' }}
+          style={{ flexBasis: '8%' }}
         >
           STATUS {getSortIcon('status')}
         </div>
         <div 
-          className="assessment-header sortable"
+          className="resume-score-header sortable"
+          onClick={() => onSort('resumeScore')}
+          onKeyDown={(e) => e.key === 'Enter' && onSort('resumeScore')}
+          role="button"
+          tabIndex={0}
+          style={{ flexBasis: '8%' }}
+        >
+          RESUME {getSortIcon('resumeScore')}
+        </div>
+        <div 
+          className="interview-score-header sortable"
+          onClick={() => onSort('chatScore')}
+          onKeyDown={(e) => e.key === 'Enter' && onSort('chatScore')}
+          role="button"
+          tabIndex={0}
+          style={{ flexBasis: '8%' }}
+        >
+          INTERVIEW {getSortIcon('chatScore')}
+        </div>
+        <div 
+          className="final-score-header sortable"
           onClick={() => onSort('finalScore')}
           onKeyDown={(e) => e.key === 'Enter' && onSort('finalScore')}
           role="button"
           tabIndex={0}
-          style={{ flexBasis: '15%' }}
+          style={{ flexBasis: '8%' }}
         >
-          SCORES {getSortIcon('finalScore')}
+          FINAL {getSortIcon('finalScore')}
         </div>
         <div 
-          className="ai-recommend-header"
+          className="interview-comment-header"
           style={{ flexBasis: '12%' }}
         >
-          AI RECOMMEND
+          RECOMMENDATION
         </div>
         <div 
           className="hr-decision-header sortable"
@@ -232,34 +264,27 @@ const ApplicationList: React.FC<ApplicationListProps> = ({
           onKeyDown={(e) => e.key === 'Enter' && onSort('hrDecision')}
           role="button"
           tabIndex={0}
-          style={{ flexBasis: '12%' }}
+          style={{ flexBasis: '10%' }}
         >
           HR DECISION {getSortIcon('hrDecision')}
         </div>
         <div 
           className="details-header"
-          style={{ flexBasis: '18%' }}
+          style={{ flexBasis: '12%' }}
         >
           DETAILS
         </div>
         <div 
           className="chat-header"
-          style={{ flexBasis: '18%' }}
+          style={{ flexBasis: '14%' }}
         >
           CHAT
-        </div>
-        <div 
-          className="stage-header sortable"
-          onClick={() => onSort('date')}
-          style={{ flexBasis: '8%' }}
-        >
-          DATE {getSortIcon('date')}
         </div>
       </div>
       
       {applications.map(application => (
         <div key={application.applicationId || application.application_id} className="candidate-item">
-          <div className="name-company" style={{ flexBasis: '25%' }}>
+          <div className="name-company" style={{ flexBasis: '20%' }}>
             <span className={`avatar-dot ${application.avatarColor}`}></span>
             <div className="candidate-info">
               <span className="candidate-name">
@@ -283,7 +308,7 @@ const ApplicationList: React.FC<ApplicationListProps> = ({
             </div>
           </div>
           
-          <div className="jobs" style={{ flexBasis: '10%' }}>
+          <div className="jobs" style={{ flexBasis: '8%' }}>
             <span 
               className="status-badge clickable"
               style={{ 
@@ -302,77 +327,124 @@ const ApplicationList: React.FC<ApplicationListProps> = ({
             </span>
           </div>
           
-          <div className="assessment-scores" style={{ flexBasis: '15%' }}>
-            {application.assessment ? (
-              <div style={{ fontSize: '12px' }}>
-                <div>Resume: {application.assessment?.resumeScore}</div>
-                <div>Chat: {application.assessment?.chatScore}</div>
-                <div style={{ fontWeight: 'bold' }}>Final: {application.assessment?.finalScore}</div>
-                {isHrUser() && (
-                  <Button
-                    variant="text"
-                    size="small"
-                    startIcon={<AssessmentIcon />}
-                    onClick={() => triggerManualScoring(application)}
-                    disabled={scoringApplications.has(application.applicationId || application.application_id || '')}
-                    sx={{ 
-                      textTransform: 'none',
-                      fontSize: '10px',
-                      minWidth: 'auto',
-                      mt: 0.5,
-                      p: 0.5
-                    }}
-                  >
-                    {scoringApplications.has(application.applicationId || application.application_id || '') ? 'Scoring...' : 'Re-score'}
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <div style={{ fontSize: '12px', color: '#95a5a6' }}>
-                <div>Pending</div>
-                {isHrUser() && (
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<AssessmentIcon />}
-                    onClick={() => triggerManualScoring(application)}
-                    disabled={scoringApplications.has(application.applicationId || application.application_id || '')}
-                    sx={{ 
-                      textTransform: 'none',
-                      fontSize: '10px',
-                      mt: 0.5,
-                      minWidth: 'auto'
-                    }}
-                  >
-                    {scoringApplications.has(application.applicationId || application.application_id || '') ? 'Scoring...' : 'Score Now'}
-                  </Button>
-                )}
-              </div>
-            )}
+          <div className="resume-score" style={{ flexBasis: '8%' }}>
+            <div style={{ fontSize: '12px', textAlign: 'center' }}>
+              {(() => {
+                const resumeScore = application.assessment?.resumeScore;
+                return resumeScore !== undefined && resumeScore !== null ? (
+                  <span style={{ fontWeight: 'bold' }}>{resumeScore}</span>
+                ) : (
+                  <span style={{ color: '#95a5a6' }}>-</span>
+                );
+              })()}
+            </div>
+          </div>
+          
+          <div className="interview-score" style={{ flexBasis: '8%' }}>
+            <div style={{ fontSize: '12px', textAlign: 'center' }}>
+              {(() => {
+                // Check for both API formats
+                const interviewScore = application.assessment?.interviewScore ?? application.assessment?.chatScore;
+                // Check if interview was completed by looking at chat status or interview comment
+                const hasInterview = application.chatStatus === 'COMPLETE' || 
+                                   application.assessment?.interviewComment || 
+                                   application.assessment?.aiChatSummary;
+                
+                if (hasInterview && interviewScore !== null && interviewScore !== undefined) {
+                  return <span style={{ fontWeight: 'bold' }}>{interviewScore}</span>;
+                } else if (hasInterview && (interviewScore === null || interviewScore === undefined)) {
+                  return <span style={{ color: '#f39c12' }}>Pending Score</span>;
+                } else {
+                  return <span style={{ color: '#95a5a6' }}>No Interview</span>;
+                }
+              })()}
+            </div>
+          </div>
+          
+          <div className="final-score" style={{ flexBasis: '8%' }}>
+            <div style={{ fontSize: '12px', textAlign: 'center' }}>
+              {(() => {
+                const finalScore = application.assessment?.finalScore;
+                return finalScore !== undefined && finalScore !== null ? (
+                  <span style={{ fontWeight: 'bold', color: '#2c3e50' }}>{finalScore}</span>
+                ) : (
+                  <span style={{ color: '#95a5a6' }}>-</span>
+                );
+              })()}
+              {isHrUser() && (
+                <Button
+                  variant="text"
+                  size="small"
+                  startIcon={<AssessmentIcon />}
+                  onClick={() => triggerManualScoring(application)}
+                  disabled={scoringApplications.has(application.applicationId || application.application_id || '')}
+                  sx={{ 
+                    textTransform: 'none',
+                    fontSize: '8px',
+                    minWidth: 'auto',
+                    mt: 0.5,
+                    p: 0.3,
+                    display: 'block'
+                  }}
+                >
+                  {scoringApplications.has(application.applicationId || application.application_id || '') ? 'Scoring...' : 'Re-score'}
+                </Button>
+              )}
+            </div>
           </div>
           
           <div className="ai-recommend" style={{ flexBasis: '12%' }}>
-            {application.assessment ? (
-              <div style={{ fontSize: '12px' }}>
-                <span 
-                  style={{ 
-                    backgroundColor: getAiRecommendColor(application.assessment?.aiRecommendStatus),
-                    color: 'white',
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    fontSize: '10px',
-                    fontWeight: 'bold'
-                  }}
-                >
-                  {getAiRecommendDisplay(application.assessment?.aiRecommendStatus)}
-                </span>
-              </div>
-            ) : (
-              <span style={{ color: '#95a5a6' }}>No recommendation</span>
-            )}
+            <div style={{ fontSize: '11px' }}>
+              {(() => {
+                // Check for both API formats
+                const recommendStatus = application.assessment?.recommendation ?? application.assessment?.aiRecommendStatus;
+                
+                // Debug logging
+                if (application.candidate_name === 'cand cand') {
+                  console.log('Debug - Candidate:', application.candidate_name);
+                  console.log('Debug - Recommendation Status:', recommendStatus);
+                  console.log('Debug - Full Assessment:', application.assessment);
+                }
+                
+                return recommendStatus ? (
+                  <span 
+                    style={{ 
+                      backgroundColor: getAiRecommendColor(recommendStatus),
+                      color: 'white',
+                      padding: '3px 6px',
+                      borderRadius: '3px',
+                      fontSize: '10px',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    {getAiRecommendDisplay(recommendStatus)}
+                  </span>
+                ) : (
+                  <span style={{ color: '#95a5a6' }}>Pending</span>
+                );
+              })()}
+              {(() => {
+                // Check for both interview comment formats
+                const interviewComment = application.assessment?.interviewComment ?? application.assessment?.aiChatSummary;
+                return interviewComment && (
+                  <div style={{ 
+                    marginTop: '4px', 
+                    fontSize: '10px', 
+                    color: '#666',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical'
+                  }}>
+                    {interviewComment}
+                  </div>
+                );
+              })()}
+            </div>
           </div>
           
-          <div className="hr-decision" style={{ flexBasis: '12%' }}>
+          <div className="hr-decision" style={{ flexBasis: '10%' }}>
             <span 
               className="status-badge clickable"
               style={{ 
@@ -391,7 +463,7 @@ const ApplicationList: React.FC<ApplicationListProps> = ({
             </span>
           </div>
           
-          <div className="details" style={{ flexBasis: '18%' }}>
+          <div className="details" style={{ flexBasis: '12%' }}>
             <Button 
               variant="outlined"
               color="primary"
@@ -400,19 +472,20 @@ const ApplicationList: React.FC<ApplicationListProps> = ({
               onClick={() => onDetailsClick(application)}
               sx={{ 
                 textTransform: 'none',
-                fontSize: '12px'
+                fontSize: '11px'
               }}
             >
-              View Details
+              Details
             </Button>
           </div>
 
-          <div className="chat" style={{ flexBasis: '18%' }}>
+          <div className="chat" style={{ flexBasis: '14%' }}>
             <Button 
               variant={isHrUser() ? 'outlined' : 'contained'}
               color={isHrUser() ? 'secondary' : 'primary'}
               size="small"
               startIcon={isHrUser() ? <VisibilityIcon /> : <ChatIcon />}
+              disabled={isHrUser() && !hasChatHistory(application)}
               onClick={() => {
                 setSelectedChatApplication(application);
                 if (isHrUser()) {
@@ -423,46 +496,23 @@ const ApplicationList: React.FC<ApplicationListProps> = ({
               }}
               sx={{ 
                 textTransform: 'none',
-                fontSize: '12px',
+                fontSize: '11px',
                 bgcolor: isHrUser() ? 'transparent' : '#3498db',
                 '&:hover': {
                   bgcolor: isHrUser() ? '#f3e5f5' : '#2980b9'
-                }
+                },
+                opacity: isHrUser() && !hasChatHistory(application) ? 0.6 : 1
               }}
-              title={isHrUser() ? 'View chat history (read-only)' : 'Start/continue chat'}
+              title={isHrUser() ? 
+                (hasChatHistory(application) ? 'View chat history (read-only)' : 'No interview chat available yet') : 
+                'Start/continue chat'
+              }
             >
-              {isHrUser() ? 'View Chat' : 'Chat'}
+              {isHrUser() ? 
+                (hasChatHistory(application) ? 'Chat' : 'No Interview') : 
+                'Chat'
+              }
             </Button>
-          </div>
-          
-          <div className="stage" style={{ flexBasis: '8%' }}>
-            <div style={{ fontSize: '12px' }}>
-              {(() => {
-                const possibleDates = [
-                  application.submission_timestamp,
-                  application.createdAt, 
-                  application.updatedAt
-                ];
-                
-                for (const dateValue of possibleDates) {
-                  if (dateValue) {
-                    try {
-                      const date = new Date(dateValue);
-                      if (!isNaN(date.getTime())) {
-                        return date.toLocaleDateString('en-US', {
-                          month: '2-digit',
-                          day: '2-digit', 
-                          year: 'numeric'
-                        });
-                      }
-                    } catch (error) {
-                    }
-                  }
-                }
-                
-                return '--';
-              })()}
-            </div>
           </div>
         </div>
       ))}

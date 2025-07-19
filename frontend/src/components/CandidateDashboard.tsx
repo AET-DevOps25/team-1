@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Snackbar, Alert } from '@mui/material';
-import { 
+import {
   CloudUpload as CloudUploadIcon,
   Send as SendIcon,
   Check as CheckIcon,
@@ -14,14 +14,14 @@ import { useJobs } from '../hooks/useJobs';
 import { useApplications, useApplicationFiltering } from '../hooks/useApplications';
 import { logout, getValidToken } from '../utils/auth';
 import Sidebar from './Sidebar';
-import ApplicationList from './ApplicationList';
+import CandidateApplicationList from './CandidateApplicationList';
 import apiConfig from '../utils/api';
 import './Dashboard.css';
 
 const CandidateDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [selectedView, setSelectedView] = useState<ViewMode>('jobs');
-  
+
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -69,20 +69,18 @@ const CandidateDashboard: React.FC = () => {
   };
 
   const handleLogout = () => {
-    if (window.confirm('Are you sure you want to logout?')) {
-      logout();
-      navigate('/login', { replace: true });
-    }
+    logout();
+    navigate('/login', { replace: true });
   };
 
   const hasAppliedToJob = (jobId: string) => {
-    return applications.some(app => 
+    return applications.some(app =>
       app.jobId === jobId && app.status !== 'REJECTED'
     );
   };
 
   const getJobApplicationStatus = (jobId: string) => {
-    const application = applications.find(app => 
+    const application = applications.find(app =>
       app.jobId === jobId
     );
     return application?.status;
@@ -102,12 +100,12 @@ const CandidateDashboard: React.FC = () => {
     if (!allowedTypes.includes(file.type)) {
       return 'Please upload a PDF, DOC, or DOCX file only.';
     }
-    
+
     const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
       return 'File size must be less than 10MB.';
     }
-    
+
     return null;
   };
 
@@ -128,48 +126,33 @@ const CandidateDashboard: React.FC = () => {
     }
 
     try {
-      console.log('=== JOB APPLICATION DEBUG ===');
-      console.log('Job object:', job);
-      console.log('Job object keys:', Object.keys(job));
-      console.log('Job object values:', Object.values(job));
-      console.log('Full job object structure:', JSON.stringify(job, null, 2));
-      
-      const possibleIdFields = ['jobId', 'id', 'job_id', 'applicationId', '_id', 'uuid', 'identifier', 'pk'];
-      possibleIdFields.forEach(field => {
-        console.log(`${field}:`, (job as any)[field]);
-      });
-      
-      console.log('Resume file:', resumeFile);
-      console.log('File name:', resumeFile?.name);
-      console.log('File type:', resumeFile?.type);
-      console.log('File size:', resumeFile?.size);
-      console.log('Token preview:', token ? `${token.substring(0, 20)}...` : 'NO TOKEN');
-      
-      if (resumeFile && !window.confirm('Server is returning 500 error. Try without file first?')) {
-        console.log('Trying simple JSON request first...');
+
+      if (resumeFile) {
         try {
           const actualJobId = job.jobId;
-          console.log('Simple request using job ID:', actualJobId);
-          
+
           if (!actualJobId) {
             throw new Error('No valid job ID found in job object for simple request');
           }
-          
-          console.log('Trying /api/v1/applications endpoint for simple request...');
-          let simpleRes = await fetch(apiConfig.getFullURL('/api/v1/applications'), {
+          let formdata = new FormData()
+          formdata.append("jobId", actualJobId)
+          formdata.append("resumeFile", resumeFile, "");
+
+          let myHeaders = new Headers();
+          myHeaders.append("Authorization", `Bearer ${token}`);
+          // myHeaders.append("Content-Type", "multipart/form-data");
+
+          var requestOptions = {
             method: 'POST',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ jobId: actualJobId }),
-            credentials: 'include'
-          });
-          
-          console.log('Simple request status:', simpleRes.status);
-          const simpleText = await simpleRes.text();
-          console.log('Simple request response:', simpleText);
-          
+            headers: myHeaders,
+            body: formdata,
+            credentials: 'include' as RequestCredentials
+          };
+
+
+          let simpleRes = await fetch(apiConfig.getFullURL('/api/v1/applications'), requestOptions);
+
+
           if (simpleRes.ok) {
             showSnackbar('Application submitted successfully!', 'success');
             setSelectedView('applications');
@@ -181,25 +164,25 @@ const CandidateDashboard: React.FC = () => {
           console.error('Simple request also failed:', simpleErr);
         }
       }
-      
+
       let requestBody;
       let requestHeaders;
-      
+
       if (resumeFile) {
-          const formData = new FormData();
-        
+        const formData = new FormData();
+
         const actualJobId = job.jobId;
         console.log('Using job ID:', actualJobId);
-        
+
         if (!actualJobId) {
           throw new Error('No valid job ID found in job object');
         }
-        
+
         formData.append('jobId', actualJobId);
         formData.append('resumeFile', resumeFile);
-        
+
         console.log('Using FormData approach with file');
-        
+
         console.log('FormData contents:');
         for (const [key, value] of formData.entries()) {
           if (value instanceof File) {
@@ -208,7 +191,7 @@ const CandidateDashboard: React.FC = () => {
             console.log(`${key}: ${value}`);
           }
         }
-        
+
         requestBody = formData;
         requestHeaders = {
           Authorization: `Bearer ${token}`,
@@ -216,11 +199,11 @@ const CandidateDashboard: React.FC = () => {
       } else {
         const actualJobId = job.jobId;
         console.log('Using job ID for JSON:', actualJobId);
-        
+
         if (!actualJobId) {
           throw new Error('No valid job ID found in job object');
         }
-        
+
         console.log('Using JSON approach without file');
         requestBody = JSON.stringify({ jobId: actualJobId });
         requestHeaders = {
@@ -236,18 +219,18 @@ const CandidateDashboard: React.FC = () => {
         body: requestBody,
         credentials: 'include'
       });
-      
+
       console.log('Final request URL:', res.url);
       console.log('Request headers:', requestHeaders);
       console.log('Request body type:', typeof requestBody);
       console.log('Request body instanceof FormData:', requestBody instanceof FormData);
-      
+
       console.log('Response status:', res.status);
       console.log('Response headers:', Object.fromEntries(res.headers.entries()));
-      
+
       const responseText = await res.text();
       console.log('Raw response text:', responseText);
-      
+
       let data;
       try {
         data = JSON.parse(responseText);
@@ -256,7 +239,7 @@ const CandidateDashboard: React.FC = () => {
         console.error('Failed to parse response as JSON:', parseError);
         throw new Error(`Server returned non-JSON response: ${responseText}`);
       }
-      
+
       if (res.ok && data?.success) {
         showSnackbar('Application submitted successfully!', 'success');
         setSelectedView('applications');
@@ -290,7 +273,7 @@ const CandidateDashboard: React.FC = () => {
             <Button
               variant={selectedView === 'jobs' ? 'contained' : 'outlined'}
               onClick={() => setSelectedView('jobs')}
-              sx={{ 
+              sx={{
                 marginRight: 1,
                 bgcolor: selectedView === 'jobs' ? '#1a1a1a' : 'transparent',
                 color: selectedView === 'jobs' ? '#fff' : '#1a1a1a',
@@ -306,7 +289,7 @@ const CandidateDashboard: React.FC = () => {
             <Button
               variant={selectedView === 'applications' ? 'contained' : 'outlined'}
               onClick={() => setSelectedView('applications')}
-              sx={{ 
+              sx={{
                 bgcolor: selectedView === 'applications' ? '#1a1a1a' : 'transparent',
                 color: selectedView === 'applications' ? '#fff' : '#1a1a1a',
                 borderColor: '#1a1a1a',
@@ -319,15 +302,15 @@ const CandidateDashboard: React.FC = () => {
               Applications
             </Button>
           </div>
-          
+
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div className="user-moon">CANDIDATE</div>
-            <Button 
+            <Button
               variant="contained"
               color="error"
               onClick={handleLogout}
               startIcon={<LogoutIcon />}
-              sx={{ 
+              sx={{
                 textTransform: 'none',
                 borderRadius: 1
               }}
@@ -404,7 +387,7 @@ const CandidateDashboard: React.FC = () => {
                               applyForJob(job, file);
                             }
                           }
-                                          e.target.value = '';
+                          e.target.value = '';
                         }}
                       />
                       {hasAppliedToJob(job.jobId) ? (
@@ -437,7 +420,7 @@ const CandidateDashboard: React.FC = () => {
                             onClick={() => {
                               setSelectedView('applications');
                             }}
-                            sx={{ 
+                            sx={{
                               textTransform: 'none',
                               fontSize: '12px'
                             }}
@@ -478,7 +461,7 @@ const CandidateDashboard: React.FC = () => {
                                 applyForJob(job);
                               }
                             }}
-                            sx={{ 
+                            sx={{
                               textTransform: 'none',
                               fontSize: '12px'
                             }}
@@ -504,14 +487,11 @@ const CandidateDashboard: React.FC = () => {
           <div style={{ padding: 24 }}>
             {isLoadingApplications && <p>Loading applications…</p>}
             {!isLoadingApplications && (
-              <ApplicationList
+              <CandidateApplicationList
                 applications={filteredApplications}
                 sortField={sortField}
                 sortDirection={sortDirection}
                 onSort={handleSort}
-                onStatusClick={() => {}}
-                onHrDecisionClick={() => {}}
-                onDetailsClick={() => {}}
                 onRefreshApplications={() => {
                   fetchApplications();
                 }}
@@ -520,7 +500,7 @@ const CandidateDashboard: React.FC = () => {
           </div>
         )}
       </div>
-      
+
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}

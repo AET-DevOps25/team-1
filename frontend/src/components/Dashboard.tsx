@@ -1,9 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Container } from '@mui/material';
 import './Dashboard.css';
 import apiConfig from '../utils/api';
+import DashboardHeader from './DashboardHeader';
+import ApplicationsView from './ApplicationsView';
+import JobsView from './JobsView';
+import DetailsModal from './modals/DetailsModal';
 
-type SortField = 'name' | 'job' | 'status' | 'date' | 'score' | 'finalScore' | 'hrDecision';
+type SortField = 'name' | 'job' | 'status' | 'date' | 'score' | 'finalScore' | 'hrDecision' | 'resumeScore' | 'chatScore';
 type SortDirection = 'asc' | 'desc';
 
 type Application = {
@@ -49,7 +53,6 @@ type Application = {
 type SortValue = string | number | Date;
 
 const Dashboard: React.FC = () => {
-  const navigate = useNavigate();
 
   type ViewMode = 'applications' | 'jobs';
   const [selectedView, setSelectedView] = useState<ViewMode>('applications');
@@ -191,7 +194,7 @@ const Dashboard: React.FC = () => {
   const [currentPage] = useState(0);
   const [pageSize] = useState(20);
   const [, setTotalApplications] = useState(0);
-  const [, setIsLoadingApplications] = useState(false);
+  const [isLoadingApplications, setIsLoadingApplications] = useState(false);
 
   const fetchApplications = async (page: number = 0, size: number = 20, jobId?: string, status?: string) => {
     setIsLoadingApplications(true);
@@ -222,16 +225,28 @@ const Dashboard: React.FC = () => {
             job_title: app.job?.title,
             submission_timestamp: app.createdAt,
             final_score: app.assessment?.finalScore || null,
+            chatStatus: app.chatStatus,
             avatarColor: ['blue', 'gray', 'green', 'purple', 'orange'][Math.floor(Math.random() * 5)],
             hr_decision: app.hrDecision,
             hr_comment: app.hrComments,
             assessment: app.assessment ? {
+              resumeScore: app.assessment.resumeScore,
+              chatScore: app.assessment.chatScore,
+              interviewScore: app.assessment.interviewScore,
+              finalScore: app.assessment.finalScore,
+              resumeComment: app.assessment.resumeComment,
+              interviewComment: app.assessment.interviewComment,
+              recommendation: app.assessment.recommendation,
+              aiResumeAnalysis: app.assessment.aiResumeAnalysis,
+              aiChatSummary: app.assessment.aiChatSummary,
+              aiRecommendStatus: app.assessment.aiRecommendStatus,
+              // Keep snake_case for backward compatibility
               resume_score: app.assessment.resumeScore,
-              chat_score: app.assessment.chatScore,
+              chat_score: app.assessment.chatScore || app.assessment.interviewScore,
               final_score: app.assessment.finalScore,
               ai_resume_analysis: app.assessment.aiResumeAnalysis,
               ai_chat_summary: app.assessment.aiChatSummary,
-              ai_recommend_status: app.assessment.aiRecommendStatus
+              ai_recommend_status: app.assessment.aiRecommendStatus || app.assessment.recommendation
             } : undefined
           }));
           
@@ -411,6 +426,14 @@ const Dashboard: React.FC = () => {
           aVal = a.assessment?.finalScore ?? 0;
           bVal = b.assessment?.finalScore ?? 0;
           break;
+        case 'resumeScore':
+          aVal = a.assessment?.resumeScore ?? 0;
+          bVal = b.assessment?.resumeScore ?? 0;
+          break;
+        case 'chatScore':
+          aVal = (a.assessment as any)?.interviewScore ?? a.assessment?.chatScore ?? 0;
+          bVal = (b.assessment as any)?.interviewScore ?? b.assessment?.chatScore ?? 0;
+          break;
         case 'hrDecision':
           aVal = a.hr_decision || a.hrDecision || 'PENDING';
           bVal = b.hr_decision || b.hrDecision || 'PENDING';
@@ -434,10 +457,6 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const getSortIcon = (field: SortField): string => {
-    if (sortField !== field) return '';
-    return sortDirection === 'asc' ? ' ↑' : ' ↓';
-  };
 
   const handleStatusClick = (application: Application) => {
     setSelectedApplication(application);
@@ -495,7 +514,7 @@ const Dashboard: React.FC = () => {
 
   const handleHrDecisionClick = (application: Application) => {
     setSelectedApplication(application);
-    setNewHrDecision(application.hr_decision || 'PENDING');
+    setNewHrDecision(application.hr_decision || 'SHORTLISTED');
     setIsHrDecisionModalOpen(true);
   };
 
@@ -505,14 +524,17 @@ const Dashboard: React.FC = () => {
     setIsUpdating(true);
     
     try {
-      const response = await fetch(apiConfig.getFullURL(`/api/applications/${selectedApplication.application_id}/hr-decision`), {
-        method: 'PUT',
+      const token = localStorage.getItem('token') || '';
+      const applicationId = selectedApplication.applicationId || selectedApplication.application_id;
+      
+      const response = await fetch(apiConfig.getFullURL(`/api/v1/applications/${applicationId}`), {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          hr_decision: newHrDecision,
-          updated_by: 'team1_admin'
+          hrDecision: newHrDecision
         }),
       });
 
@@ -549,35 +571,7 @@ const Dashboard: React.FC = () => {
 
 
 
-  const copyEmailToClipboard = async (email?: string) => {
-    try {
-      if (email) {
-        await navigator.clipboard.writeText(email);
-      }
-      alert('Email copied to clipboard!');
-    } catch (err) {
-      console.error('Failed to copy email:', err);
-      alert('Failed to copy email');
-    }
-  };
 
-  const getAiRecommendDisplay = (status?: string) => {
-    switch (status) {
-      case 'RECOMMEND': return 'Recommend';
-      case 'NOT_RECOMMEND': return 'Not Recommend';
-      case 'CONDITIONAL': return 'Conditional';
-      default: return 'Pending';
-    }
-  };
-
-  const getAiRecommendColor = (status?: string) => {
-    switch (status) {
-      case 'RECOMMEND': return '#27ae60';
-      case 'NOT_RECOMMEND': return '#e74c3c';
-      case 'CONDITIONAL': return '#f39c12';
-      default: return '#95a5a6';
-    }
-  };
 
   const handleModalClose = () => {
     setIsModalOpen(false);
@@ -595,6 +589,11 @@ const Dashboard: React.FC = () => {
     setIsDetailsModalOpen(false);
   };
 
+  const handleDetailsClick = (application: Application) => {
+    setSelectedApplication(application);
+    setIsDetailsModalOpen(true);
+  };
+
   const getStatusDisplay = (status: string) => {
     switch (status) {
       case 'SUBMITTED': return 'New Application';
@@ -608,408 +607,54 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'SUBMITTED': return '#3498db';
-      case 'AI_SCREENING': return '#f39c12';
-      case 'AI_INTERVIEW': return '#e67e22';
-      case 'COMPLETED': return '#9b59b6';
-      case 'SHORTLISTED': return '#27ae60';
-      case 'REJECTED': return '#e74c3c';
-      case 'HIRED': return '#2ecc71';
-      default: return '#95a5a6';
-    }
-  };
-
   const getHrDecisionDisplay = (decision?: string) => {
     switch (decision) {
-      case 'PENDING': return 'Pending Review';
-      case 'APPROVE': return 'Approved';
-      case 'REJECT': return 'Rejected';
-      case 'INTERVIEW': return 'Schedule Interview';
-      case 'FOLLOW_UP': return 'Follow Up';
-      default: return 'Pending Review';
+      case 'SHORTLISTED': return 'Shortlisted';
+      case 'REJECTED': return 'Rejected';
+      case 'HIRED': return 'Hired';
+      default: return 'No Decision';
     }
   };
 
-  const getHrDecisionColor = (decision?: string) => {
-    switch (decision) {
-      case 'PENDING': return '#95a5a6';
-      case 'APPROVE': return '#27ae60';
-      case 'REJECT': return '#e74c3c';
-      case 'INTERVIEW': return '#3498db';
-      case 'FOLLOW_UP': return '#f39c12';
-      default: return '#95a5a6';
-    }
-  };
 
   return (
-    <div className="dashboard-container">
+    <Container maxWidth="xl" sx={{ py: 3 }}>
+      <DashboardHeader
+        selectedView={selectedView}
+        searchTerm={searchTerm}
+        resultsCount={filteredAndSortedApplications.length}
+        onViewChange={setSelectedView}
+        onSearchChange={setSearchTerm}
+        onAddHrClick={() => setIsHrRegisterModalOpen(true)}
+        onCreateJobClick={openCreateJobModal}
+      />
 
-      <div className="main-content">
-        <header className="dashboard-header">
-          <div className="search-bar-container" style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-            <div>
-              <button 
-                style={{ marginRight: 8, padding: '6px 12px', backgroundColor: selectedView==='applications' ? '#1a1a1a' : '#ecf0f1', color: selectedView==='applications' ? '#fff' : '#1a1a1a', border: 'none', borderRadius: 4, cursor: 'pointer' }}
-                onClick={() => setSelectedView('applications')}
-              >
-                Applications
-              </button>
-              <button 
-                style={{ padding: '6px 12px', backgroundColor: selectedView==='jobs' ? '#1a1a1a' : '#ecf0f1', color: selectedView==='jobs' ? '#fff' : '#1a1a1a', border: 'none', borderRadius: 4, cursor: 'pointer' }}
-                onClick={() => setSelectedView('jobs')}
-              >
-                Jobs
-              </button>
-            </div>
-            <input 
-              type="text" 
-              placeholder="Search candidates, jobs, emails..." 
-              className="search-input"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <span className="results-count">{filteredAndSortedApplications.length} applications</span>
-          </div>
-          <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div className="user-moon">TEAM1 ADMIN</div>
-            <button 
-              style={{ padding: '6px 12px', backgroundColor: '#2ecc71', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}
-              onClick={() => setIsHrRegisterModalOpen(true)}
-            >
-              Add HR
-            </button>
-            <button 
-              style={{ padding: '6px 12px', backgroundColor: '#e74c3c', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}
-              onClick={() => {
-                localStorage.removeItem('token');
-                window.location.href = '/login';
-              }}
-            >
-              Logout
-            </button>
-            {selectedView==='jobs' && (
-            <button 
-              style={{ padding:'6px 12px', backgroundColor:'#2ecc71', color:'#fff', border:'none', borderRadius:4, cursor:'pointer' }}
-              onClick={openCreateJobModal}
-            >
-              Create Job
-            </button>)}
-          </div>
-        </header>
+      {selectedView === 'applications' && (
+        <ApplicationsView
+          applications={filteredAndSortedApplications}
+          sortField={sortField}
+          sortDirection={sortDirection}
+          isLoading={isLoadingApplications}
+          onSort={handleSort}
+          onStatusClick={handleStatusClick}
+          onHrDecisionClick={handleHrDecisionClick}
+          onDetailsClick={handleDetailsClick}
+          onRefreshApplications={() => {
+            fetchApplications(currentPage, pageSize);
+          }}
+        />
+      )}
 
-        {selectedView === 'applications' && (
-        <div className="candidate-list">
-          <div className="candidate-list-header">
-            <div 
-              className="name-company-header sortable"
-              onClick={() => handleSort('name')}
-              onKeyDown={(e) => e.key === 'Enter' && handleSort('name')}
-              role="button"
-              tabIndex={0}
-              style={{ flexBasis: '25%' }}
-            >
-              CANDIDATE / JOB {getSortIcon('name')}
-            </div>
-            <div 
-              className="jobs-header sortable"
-              onClick={() => handleSort('status')}
-              onKeyDown={(e) => e.key === 'Enter' && handleSort('status')}
-              role="button"
-              tabIndex={0}
-              style={{ flexBasis: '10%' }}
-            >
-              STATUS {getSortIcon('status')}
-            </div>
-            <div 
-              className="assessment-header sortable"
-              onClick={() => handleSort('finalScore')}
-              onKeyDown={(e) => e.key === 'Enter' && handleSort('finalScore')}
-              role="button"
-              tabIndex={0}
-              style={{ flexBasis: '15%' }}
-            >
-              SCORES {getSortIcon('finalScore')}
-            </div>
-            <div 
-              className="ai-recommend-header"
-              style={{ flexBasis: '12%' }}
-            >
-              AI RECOMMEND
-            </div>
-            <div 
-              className="hr-decision-header sortable"
-              onClick={() => handleSort('hrDecision')}
-              onKeyDown={(e) => e.key === 'Enter' && handleSort('hrDecision')}
-              role="button"
-              tabIndex={0}
-              style={{ flexBasis: '12%' }}
-            >
-              HR DECISION {getSortIcon('hrDecision')}
-            </div>
-            <div 
-              className="details-header"
-              style={{ flexBasis: '18%' }}
-            >
-              DETAILS
-            </div>
-            <div 
-              className="chat-header"
-              style={{ flexBasis: '18%' }}
-            >
-              CHAT
-            </div>
-            <div 
-              className="stage-header sortable"
-              onClick={() => handleSort('date')}
-              style={{ flexBasis: '8%' }}
-            >
-              DATE {getSortIcon('date')}
-            </div>
-          </div>
-          
-          {filteredAndSortedApplications.map(application => (
-            <div key={application.applicationId || application.application_id} className="candidate-item">
-              <div className="name-company" style={{ flexBasis: '25%' }}>
-                <span className={`avatar-dot ${application.avatarColor}`}></span>
-                <div className="candidate-info">
-                  <span className="candidate-name">
-                    {application.candidate_name}
-                    <span 
-                      style={{ 
-                        marginLeft: '8px', 
-                        cursor: 'pointer', 
-                        color: '#3498db',
-                        fontSize: '12px'
-                      }}
-                      onClick={() => copyEmailToClipboard(application.email)}
-                      title={`Copy email: ${application.email}`}
-                    >
-                      📧
-                    </span>
-                  </span>
-                  <span className="candidate-company">
-                    {application.job_title}
-                  </span>
-                </div>
-              </div>
-              
-              <div className="jobs" style={{ flexBasis: '10%' }}>
-                <span 
-                  className="status-badge clickable"
-                  style={{ 
-                    backgroundColor: getStatusColor(application.status),
-                    color: 'white',
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    fontSize: '11px',
-                    fontWeight: 'bold',
-                    cursor: 'pointer'
-                  }}
-                  onClick={() => handleStatusClick(application)}
-                  title="Click to change status"
-                >
-                  {getStatusDisplay(application.status)}
-                </span>
-              </div>
-              
-              <div className="assessment-scores" style={{ flexBasis: '15%' }}>
-                {application.assessment ? (
-                  <div style={{ fontSize: '12px' }}>
-                    <div>Resume: {application.assessment?.resumeScore}</div>
-                    <div>Chat: {application.assessment?.chatScore}</div>
-                    <div style={{ fontWeight: 'bold' }}>Final: {application.assessment?.finalScore}</div>
-                  </div>
-                ) : (
-                  <span style={{ color: '#95a5a6' }}>Pending</span>
-                )}
-              </div>
-              
-              <div className="ai-recommend" style={{ flexBasis: '12%' }}>
-                {application.assessment ? (
-                  <div style={{ fontSize: '12px' }}>
-                    <span 
-                      style={{ 
-                        backgroundColor: getAiRecommendColor(application.assessment?.aiRecommendStatus),
-                        color: 'white',
-                        padding: '4px 8px',
-                        borderRadius: '4px',
-                        fontSize: '10px',
-                        fontWeight: 'bold'
-                      }}
-                    >
-                      {getAiRecommendDisplay(application.assessment?.aiRecommendStatus)}
-                    </span>
-                  </div>
-                ) : (
-                  <span style={{ color: '#95a5a6' }}>No recommendation</span>
-                )}
-              </div>
-              
-              <div className="hr-decision" style={{ flexBasis: '12%' }}>
-                <span 
-                  className="status-badge clickable"
-                  style={{ 
-                    backgroundColor: getHrDecisionColor(application.hr_decision),
-                    color: 'white',
-                    padding: '4px 6px',
-                    borderRadius: '4px',
-                    fontSize: '10px',
-                    fontWeight: 'bold',
-                    cursor: 'pointer'
-                  }}
-                  onClick={() => handleHrDecisionClick(application)}
-                  title="Click to change HR decision"
-                >
-                  {getHrDecisionDisplay(application.hr_decision)}
-                </span>
-              </div>
-              
-              <div className="details" style={{ flexBasis: '18%' }}>
-                <button 
-                  style={{
-                    backgroundColor: '#3498db',
-                    color: 'white',
-                    border: 'none',
-                    padding: '6px 12px',
-                    borderRadius: '4px',
-                    fontSize: '12px',
-                    cursor: 'pointer'
-                  }}
-                  onClick={() => {
-                    setSelectedApplication(application);
-                    setIsDetailsModalOpen(true);
-                  }}
-                >
-                  View Details
-                </button>
-              </div>
+      {selectedView === 'jobs' && (
+        <JobsView
+          jobs={jobs}
+          isLoading={isJobsLoading}
+          onEditJob={openEditJobModal}
+          onToggleJobStatus={toggleJobStatus}
+          onRefreshJobs={refreshJobs}
+        />
+      )}
 
-              <div className="chat" style={{ flexBasis: '18%' }}>
-                <button 
-                  style={{
-                    backgroundColor: '#3498db',
-                    color: 'white',
-                    border: 'none',
-                    padding: '6px 12px',
-                    borderRadius: '4px',
-                    fontSize: '12px',
-                    cursor: 'pointer'
-                  }}
-                  onClick={() => {
-                    setSelectedApplication(application);
-                    navigate(`/chat/${application.applicationId || application.application_id}`);
-                  }}
-                >
-                  Chat
-                </button>
-              </div>
-              
-              <div className="stage" style={{ flexBasis: '8%' }}>
-                <div style={{ fontSize: '12px' }}>
-                  {(() => {
-                    const possibleDates = [
-                      application.submission_timestamp,
-                      application.createdAt, 
-                      application.updatedAt
-                    ];
-                    
-                    for (const dateValue of possibleDates) {
-                      if (dateValue) {
-                        try {
-                          const date = new Date(dateValue);
-                          if (!isNaN(date.getTime())) {
-                            return date.toLocaleDateString('en-US', {
-                              month: '2-digit',
-                              day: '2-digit', 
-                              year: 'numeric'
-                            });
-                          }
-                        } catch (error) {
-                        }
-                      }
-                    }
-                    
-                    return '--';
-                  })()}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        )}
-
-        {filteredAndSortedApplications.length === 0 && (
-          <div className="empty-state" style={{ 
-            textAlign: 'center', 
-            padding: '40px', 
-            color: '#7f8c8d' 
-          }}>
-            <p>No applications found matching your criteria.</p>
-          </div>
-        )}
-
-        {selectedView === 'jobs' && (
-          <div className="jobs-list">
-            <div className="candidate-list-header">
-              <div style={{ flexBasis: '40%', fontWeight: 'bold' }}>JOB TITLE</div>
-              <div style={{ flexBasis: '15%', fontWeight: 'bold' }}>STATUS</div>
-              <div style={{ flexBasis: '25%', fontWeight: 'bold' }}>CREATED</div>
-              <div style={{ flexBasis: '20%', fontWeight: 'bold' }}>ACTION</div>
-              <div style={{ marginLeft:'auto' }}>
-                <button onClick={refreshJobs} style={{ border:'none', background:'transparent', cursor:'pointer', fontSize:16, color:'#3498db'  }}>Refresh</button>
-              </div>
-            </div>
-            {isJobsLoading && <div style={{ textAlign:'center', padding:20 }}>Loading jobs…</div>}
-            {jobs.map(job => (
-              <div key={getJobId(job)} className="candidate-item">
-                <div style={{ flexBasis: '40%' }}>{job.title}</div>
-                <div style={{ flexBasis: '15%' }}>
-                  <span style={{ backgroundColor: job.status==='OPEN' ? '#27ae60' : job.status==='CLOSED' ? '#e74c3c' : '#95a5a6', color:'#fff', padding:'4px 8px', borderRadius:4, fontSize:12 }}>
-                    {job.status}
-                  </span>
-                </div>
-                <div style={{ flexBasis: '25%' }}>
-                  {(() => {
-                    try {
-                      const date = new Date(job.createdAt);
-                      if (!isNaN(date.getTime())) {
-                        return date.toLocaleDateString('en-US', {
-                          month: '2-digit',
-                          day: '2-digit', 
-                          year: 'numeric'
-                        });
-                      }
-                    } catch (error) {
-                    }
-                    return '--';
-                  })()}
-                </div>
-                <div style={{ flexBasis: '20%' }}>
-                  <button 
-                    style={{ padding:'4px 8px', marginRight:6, border:'none', borderRadius:4, cursor:'pointer', backgroundColor: '#8e44ad', color:'#fff' }}
-                    onClick={() => openEditJobModal(job)}
-                  >
-                    Edit
-                  </button>
-                  <button 
-                    style={{ padding:'4px 8px', border:'none', borderRadius:4, cursor:'pointer', backgroundColor: '#3498db', color:'#fff' }}
-                    onClick={() => toggleJobStatus(job)}
-                  >
-                    {job.status === 'OPEN' ? 'Close' : 'Open'}
-                  </button>
-                </div>
-              </div>
-            ))}
-            {jobs.length === 0 && (
-              <div className="empty-state" style={{ textAlign:'center', padding:40, color:'#7f8c8d' }}>
-                <p>No jobs found.</p>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
 
       {isModalOpen && selectedApplication && (
         <div className="modal-overlay" onClick={handleModalClose}>
@@ -1089,11 +734,9 @@ const Dashboard: React.FC = () => {
                 <label>Select HR Decision:</label>
                 <div className="status-grid">
                   {[
-                    { value: 'PENDING', label: 'Pending Review', icon: '⏳', description: 'Awaiting HR review' },
-                    { value: 'APPROVE', label: 'Approved', icon: '✅', description: 'Candidate approved for hire' },
-                    { value: 'REJECT', label: 'Rejected', icon: '❌', description: 'Candidate rejected' },
-                    { value: 'INTERVIEW', label: 'Schedule Interview', icon: '📅', description: 'Schedule additional interview' },
-                    { value: 'FOLLOW_UP', label: 'Follow Up', icon: '📞', description: 'Requires follow-up action' }
+                    { value: 'SHORTLISTED', label: 'Shortlisted', icon: '⭐', description: 'Candidate shortlisted for further consideration' },
+                    { value: 'REJECTED', label: 'Rejected', icon: '❌', description: 'Candidate rejected' },
+                    { value: 'HIRED', label: 'Hired', icon: '🎉', description: 'Candidate successfully hired' }
                   ].map(option => (
                     <div 
                       key={option.value}
@@ -1131,108 +774,11 @@ const Dashboard: React.FC = () => {
         </div>
       )}
 
-      {isDetailsModalOpen && selectedApplication && (
-        <div className="modal-overlay" onClick={handleDetailsModalClose}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '700px' }}>
-            <div className="modal-header">
-              <h3>Candidate Details - {selectedApplication.candidate_name}</h3>
-              <button className="modal-close" onClick={handleDetailsModalClose}>×</button>
-            </div>
-            
-            <div className="modal-body">
-              <div className="candidate-details">
-                <h4>{selectedApplication.candidate_name}</h4>
-                <p>{selectedApplication.job_title}</p>
-                <p>Email: {selectedApplication.email}</p>
-                <p>Status: <span className="status-highlight">{getStatusDisplay(selectedApplication.status)}</span></p>
-                <p>HR Decision: <span className="status-highlight">{getHrDecisionDisplay(selectedApplication.hr_decision)}</span></p>
-                
-                {selectedApplication.assessment && (
-                  <div style={{ marginTop: '20px' }}>
-                    <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
-                      <div>
-                        <strong>Resume Score:</strong> {selectedApplication.assessment?.resumeScore}
-                      </div>
-                      <div>
-                        <strong>Chat Score:</strong> {selectedApplication.assessment?.chatScore}
-                      </div>
-                      <div>
-                        <strong>Final Score:</strong> {selectedApplication.assessment?.finalScore}
-                      </div>
-                      <div>
-                        <strong>AI Recommendation:</strong> 
-                        <span style={{ 
-                          marginLeft: '8px',
-                          backgroundColor: getAiRecommendColor(selectedApplication.assessment?.aiRecommendStatus),
-                          color: 'white',
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                          fontSize: '12px'
-                        }}>
-                          {getAiRecommendDisplay(selectedApplication.assessment?.aiRecommendStatus)}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div style={{ marginBottom: '20px' }}>
-                      <h5 style={{ color: '#2c3e50', marginBottom: '10px' }}>AI Resume Analysis:</h5>
-                      <div style={{ 
-                        padding: '12px', 
-                        backgroundColor: '#f8f9fa', 
-                        borderRadius: '4px',
-                        lineHeight: '1.5',
-                        fontSize: '14px',
-                        border: '1px solid #e9ecef'
-                      }}>
-                        {selectedApplication.assessment?.aiResumeAnalysis}
-                      </div>
-                    </div>
-                    
-                    <div style={{ marginBottom: '20px' }}>
-                      <h5 style={{ color: '#2c3e50', marginBottom: '10px' }}>AI Chat Summary:</h5>
-                      <div style={{ 
-                        padding: '12px', 
-                        backgroundColor: '#f8f9fa', 
-                        borderRadius: '4px',
-                        lineHeight: '1.5',
-                        fontSize: '14px',
-                        border: '1px solid #e9ecef'
-                      }}>
-                        {selectedApplication.assessment?.aiChatSummary}
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
-                {selectedApplication.hr_comment && (
-                  <div style={{ marginTop: '20px' }}>
-                    <h5 style={{ color: '#2c3e50', marginBottom: '10px' }}>HR Comment:</h5>
-                    <div style={{ 
-                      padding: '12px', 
-                      backgroundColor: '#fff3cd', 
-                      borderRadius: '4px',
-                      lineHeight: '1.5',
-                      fontSize: '14px',
-                      border: '1px solid #ffeaa7'
-                    }}>
-                      {selectedApplication.hr_comment}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            <div className="modal-footer">
-              <button 
-                className="btn-cancel" 
-                onClick={handleDetailsModalClose}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DetailsModal
+        isOpen={isDetailsModalOpen}
+        selectedApplication={selectedApplication}
+        onClose={handleDetailsModalClose}
+      />
 
       {isHrRegisterModalOpen && (
         <div className="modal-overlay" onClick={() => setIsHrRegisterModalOpen(false)}>
@@ -1261,11 +807,14 @@ const Dashboard: React.FC = () => {
               <input
                 type="password"
                 name="password"
-                placeholder="Password"
+                placeholder="Password (longer than 5 characters)"
                 value={hrForm.password}
                 onChange={handleHrInputChange}
                 style={{ width: '100%', marginBottom: 10, padding: 8 }}
               />
+              <div style={{ color: '#666', fontSize: '11px', marginBottom: 10 }}>
+                Password must be longer than 5 characters
+              </div>
             </div>
             <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
               <button className="btn-cancel" onClick={() => setIsHrRegisterModalOpen(false)}>Cancel</button>
@@ -1316,7 +865,8 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+
+    </Container>
   );
 };
 
