@@ -1,231 +1,79 @@
-name: Deploy to AWS (Terraform + Ansible)
+name: Deploy to AWS
 
 on:
   workflow_dispatch:
     inputs:
-      resource_prefix:
-        description: 'Prefix for AWS resources (e.g., niko-, gemini-). Default is branch name or dev-.'
+      image:
+        description: "Image name and tag"
         required: false
-        default: ''
-      enable_frontend:
-        description: 'Deploy Frontend to EC2'
-        required: true
-        type: boolean
-        default: true
-      enable_backend:
-        description: 'Deploy Backend to EC2'
-        required: true
-        type: boolean
-        default: true
-      branch_ref:
-        description: 'Branch to deploy (default: current branch)'
-        required: false
-        default: ''
-  push:
-    branches:
-      - main # Production deployment
-      - 'feature/**' # For feature branches, can be dev deployments
-      - 'dev/**'
-  pull_request:
-    branches:
-      - main
-
-env:
-  AWS_REGION: us-west-2
-  TF_VERSION: "1.5.7" # Match installed version or use latest stable
-  ANSIBLE_VERSION: "6.0.0" # Or your preferred version
-  PYTHON_VERSION: '3.9'
-  # Default enable flags, can be overridden by inputs
-  ENABLE_FRONTEND: true 
-  ENABLE_BACKEND: true
 
 jobs:
-  determine_params:
-    name: Determine Deployment Parameters
+  deploy:
     runs-on: ubuntu-latest
-    outputs:
-      resource_prefix: ${{ steps.params.outputs.resource_prefix }}
-      tf_action: ${{ steps.params.outputs.tf_action }}
-      branch_name: ${{ steps.params.outputs.branch_name }}
-      is_main_branch: ${{ steps.params.outputs.is_main_branch }}
-      enable_frontend: ${{ steps.params.outputs.enable_frontend }}
-      enable_backend: ${{ steps.params.outputs.enable_backend }}
-
-    steps:
-      - name: Set Parameters
-        id: params
-        run: |
-          BRANCH_NAME="${{ github.event.inputs.branch_ref || github.ref_name }}"
-          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
-          
-          IS_MAIN_BRANCH=$(echo "$BRANCH_NAME" == "main" || echo "$BRANCH_NAME" == "refs/heads/main")
-          echo "is_main_branch=$IS_MAIN_BRANCH" >> $GITHUB_OUTPUT
-
-          # Determine resource_prefix
-          if [[ "$IS_MAIN_BRANCH" == "true" ]]; then
-            RESOURCE_PREFIX="prod-"
-          elif [[ -n "${{ github.event.inputs.resource_prefix }}" ]]; then
-            RESOURCE_PREFIX="${{ github.event.inputs.resource_prefix }}-"
-          elif [[ -n "$BRANCH_NAME" ]]; then
-            SANITIZED_BRANCH_NAME=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9-]/-/g' | sed 's/^-*//;s/-*$//' | tr '[:upper:]' '[:lower:]')
-            RESOURCE_PREFIX="${SANITIZED_BRANCH_NAME:0:10}-" # Max 10 chars from branch + hyphen
-          else
-            RESOURCE_PREFIX="dev-"
-          fi
-          echo "resource_prefix=$RESOURCE_PREFIX" >> $GITHUB_OUTPUT
-
-          # Determine Terraform action (plan for PRs, apply for push/dispatch)
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            TF_ACTION="plan"
-          else
-            TF_ACTION="apply"
-          fi
-          echo "tf_action=$TF_ACTION" >> $GITHUB_OUTPUT
-
-          # Determine frontend/backend deployment based on inputs or defaults
-          if [[ "$IS_MAIN_BRANCH" == "true" ]]; then
-            CURRENT_ENABLE_FRONTEND=true
-            CURRENT_ENABLE_BACKEND=true
-          else
-            # Use workflow input if provided, otherwise use env var default
-            if [[ -n "${{ github.event.inputs.enable_frontend }}" ]]; then
-              CURRENT_ENABLE_FRONTEND=${{ github.event.inputs.enable_frontend }}
-            else
-              CURRENT_ENABLE_FRONTEND=${{ env.ENABLE_FRONTEND }}
-            fi
-            if [[ -n "${{ github.event.inputs.enable_backend }}" ]]; then
-              CURRENT_ENABLE_BACKEND=${{ github.event.inputs.enable_backend }}
-            else
-              CURRENT_ENABLE_BACKEND=${{ env.ENABLE_BACKEND }}
-            fi
-          fi
-          echo "enable_frontend=$CURRENT_ENABLE_FRONTEND" >> $GITHUB_OUTPUT
-          echo "enable_backend=$CURRENT_ENABLE_BACKEND" >> $GITHUB_OUTPUT
-
-  terraform:
-    name: Terraform Infrastructure
-    runs-on: ubuntu-latest
-    needs: determine_params
-    environment: ${{ needs.determine_params.outputs.is_main_branch == 'true' && 'production' || 'development' }}
-    outputs:
-      load_balancer_dns: ${{ steps.apply_terraform.outputs.load_balancer_dns }}
-      db_endpoint: ${{ steps.apply_terraform.outputs.db_endpoint }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      # SCP - docker-compose.prod.deploy.yml - server
+      - name: Upload docker-compose.prod.deploy.yml to remote server
+        uses: appleboy/scp-action@v0.1.7
         with:
-          ref: ${{ needs.determine_params.outputs.branch_name }}
+          host: ${{ vars.EC2_PUBLIC_IP }}
+          username: ${{ secrets.AWS_EC2_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "./docker-compose.prod.deploy.yml"
+          target: ~/srv/app/
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      # remote generate .env
+      - name: Create .env on remote server
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          host: ${{ vars.EC2_PUBLIC_IP }}
+          username: ${{ secrets.AWS_EC2_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cat > ~/srv/app/.env <<EOF
+            # GitHub Container Registry
+            GHCR_USER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
+            GHCR_REPO=$(echo '${{ github.event.repository.name }}' | tr '[:upper:]' '[:lower:]')
+            GHCR_TAG=$(
+            if [[ -n "${{ github.event.inputs.image }}" ]]; then
+              echo "${{ github.event.inputs.image }}"
+            elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+              echo "${{ github.sha }}"
+            else
+              echo "dev-${{ github.sha }}"
+            fi
+            )
+            DB_USERNAME=${{ secrets.DB_USERNAME }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            DB_PORT=5432
+            DB_HOST=postgresql
+            JWT_PRIVATE_KEY="${{ secrets.JWT_PRIVATE_KEY }}"
+            JWT_PUBLIC_KEY="${{ secrets.JWT_PUBLIC_KEY }}"
+            CORS_ALLOWED_ORIGINS=${{ vars.CORS_ALLOWED_ORIGINS }}
+            AUTH_SERVER_PORT=8080
+            JOB_SERVER_PORT=8081
+            APPLICATION_SERVER_PORT=8082
+            ASSESS_SERVER_PORT=8083
+            GENAI_SERVER_PORT=8079
+            SPRING_PROFILES_ACTIVE=docker
+            PYTHONDONTWRITEBYTECODE=1
+            PYTHONUNBUFFERED=1
+            OLLAMA_BASE_URL="${{ secrets.OLLAMA_BASE_URL }}"
+            OLLAMA_MODEL="${{ vars.OLLAMA_MODEL }}"
+            OLLAMA_API_KEY="${{ secrets.OLLAMA_API_KEY }}"
+            EOF
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+      # SSH - pull images and restart containers
+      - name: Pull images and restart containers remotely
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          terraform_version: ${{ env.TF_VERSION }}
-
-      - name: Terraform Init
-        id: init
-        working-directory: ./terraform
-        run: terraform init
-
-      - name: Terraform Plan
-        id: plan
-        working-directory: ./terraform
-        run: |
-          terraform plan \
-            -var="aws_region=${{ env.AWS_REGION }}" \
-            -var="resource_prefix=${{ needs.determine_params.outputs.resource_prefix }}" \
-            -var="key_name=${{ secrets.AWS_KEY_PAIR_NAME }}" \
-            -var="db_password=${{ secrets.DB_PASSWORD }}" \
-            -var="enable_frontend=${{ needs.determine_params.outputs.enable_frontend }}" \
-            -var="enable_backend=${{ needs.determine_params.outputs.enable_backend }}" \
-            -var="common_tags={Project=\"team-1-hr-app\", Environment=\"${{ needs.determine_params.outputs.is_main_branch == 'true' && 'production' || 'development' }}\", ManagedBy=\"terraform\", Branch=\"${{ needs.determine_params.outputs.branch_name }}\"}" \
-            -out=tfplan
-
-      - name: Terraform Apply
-        id: apply_terraform
-        if: needs.determine_params.outputs.tf_action == 'apply' && (needs.determine_params.outputs.is_main_branch == 'true' || github.event_name == 'workflow_dispatch')
-        working-directory: ./terraform
-        run: |
-          terraform apply -auto-approve tfplan
-          echo "load_balancer_dns=$(terraform output -raw ec2_load_balancer_dns)" >> $GITHUB_OUTPUT
-          echo "db_endpoint=$(terraform output -raw rds_endpoint)" >> $GITHUB_OUTPUT
-
-  ansible_deploy:
-    name: Deploy Application with Ansible
-    runs-on: ubuntu-latest
-    needs: [determine_params, terraform]
-    if: needs.determine_params.outputs.tf_action == 'apply' && (needs.determine_params.outputs.is_main_branch == 'true' || github.event_name == 'workflow_dispatch')
-    environment: ${{ needs.determine_params.outputs.is_main_branch == 'true' && 'production' || 'development' }}
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.determine_params.outputs.branch_name }}
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install Ansible and dependencies
-        run: |
-          pip install ansible==${{ env.ANSIBLE_VERSION }}
-          pip install boto3 botocore # For EC2 dynamic inventory if used, or AWS modules
-
-      - name: Configure AWS credentials (for Ansible AWS modules if needed)
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Set up SSH key for Ansible
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.ANSIBLE_SSH_PRIVATE_KEY }} # Store your EC2 key pair's private key
-
-      # This step assumes you have an EC2 instance to deploy to. 
-      # The public IP can be an output from Terraform, or use dynamic inventory.
-      # For simplicity, using Terraform output. This requires instance to be ready.
-      - name: Create Ansible Inventory
-        run: |
-          echo "[ec2_instances]" > inventory.ini
-          # This needs the public IP of an instance. ALB DNS is for users, not direct SSH.
-          # Terraform output for individual instance IPs would be needed if not using dynamic inventory.
-          # For now, this is a placeholder. Ansible usually targets instances in ASG via dynamic inventory or known IPs.
-          # Let's assume we need to get the IP of an instance from the ASG, which is non-trivial here directly.
-          # Placeholder: Use ALB DNS for now, though Ansible connects to EC2 IPs.
-          echo "${{ needs.terraform.outputs.load_balancer_dns }} ansible_user=ec2-user" >> inventory.ini 
-          echo "Warning: Ansible inventory currently uses ALB DNS as a placeholder. Needs actual EC2 IP(s)."
-
-      - name: Run Ansible playbook
-        working-directory: ./ansible # Assuming playbook is in ansible/playbooks
-        env:
-            ANSIBLE_HOST_KEY_CHECKING: "False"
-        run: |
-          ansible-playbook -i ../inventory.ini playbooks/deploy.yml \
-            -e "resource_prefix=${{ needs.determine_params.outputs.resource_prefix }}" \
-            -e "enable_frontend=${{ needs.determine_params.outputs.enable_frontend }}" \
-            -e "enable_backend=${{ needs.determine_params.outputs.enable_backend }}" \
-            -e "db_endpoint=${{ needs.terraform.outputs.db_endpoint }}" \
-            -e "db_password=${{ secrets.DB_PASSWORD }}" \
-            -e "git_repo_url=https://github.com/${{ github.repository }}.git" \
-            -e "git_branch=${{ needs.determine_params.outputs.branch_name }}"
-            # Add other necessary vars for your playbook, like db_user, db_name from secrets/vars
-
-  notify_failure:
-    name: Notify on Failure
-    runs-on: ubuntu-latest
-    needs: [terraform, ansible_deploy]
-    if: failure() && (needs.determine_params.outputs.is_main_branch == 'true' || github.event_name == 'workflow_dispatch')
-    steps:
-      - name: Notify deployment failure
-        run: echo "AWS Deployment for ${{ needs.determine_params.outputs.resource_prefix }} on branch ${{ needs.determine_params.outputs.branch_name }} FAILED!"
+          host: ${{ vars.EC2_PUBLIC_IP }}
+          username: ${{ secrets.AWS_EC2_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cd ~/srv/app
+            docker compose -f docker-compose.prod.deploy.yml pull
+            docker compose -f docker-compose.prod.deploy.yml up -d
