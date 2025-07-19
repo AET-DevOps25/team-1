@@ -8,7 +8,67 @@ on:
         required: false
 
 jobs:
+  unit-test:
+    if: ${{ github.event.inputs.image == '' || github.event.inputs.image == null }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4.4.1
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Make protobuf executable
+        run: chmod +x service-application/protoc-gen-grpc-java-1.73.0-linux-x86_64.exe
+
+      - name: Run tests for all modules
+        run: ./gradlew test
+
+  build-and-push:
+    needs: unit-test
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Generate .env with proper tag
+        run: |
+          echo "GHCR_USER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" > .env
+          echo "GHCR_REPO=$(echo '${{ github.event.repository.name }}' | tr '[:upper:]' '[:lower:]')" >> .env
+          echo "GHCR_TAG=aws-${{ github.sha }}" >> .env
+          echo "VITE_API_BASE_URL='${{ vars.EC2_PUBLIC_IP }}'" >> .env
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build all images via docker compose
+        run: docker compose -f docker-compose.prod.yml build
+
+      - name: Push all images via docker compose
+        run: docker compose -f docker-compose.prod.yml push
+
   deploy:
+    needs: build-and-push
     runs-on: ubuntu-latest
 
     steps:
@@ -40,10 +100,8 @@ jobs:
             GHCR_TAG=$(
             if [[ -n "${{ github.event.inputs.image }}" ]]; then
               echo "${{ github.event.inputs.image }}"
-            elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-              echo "${{ github.sha }}"
             else
-              echo "dev-${{ github.sha }}"
+              echo "aws-${{ github.sha }}"
             fi
             )
             DB_USERNAME=${{ secrets.DB_USERNAME }}
