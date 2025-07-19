@@ -5,6 +5,17 @@
 | Main        | [![Build and Publish and Deploy](https://github.com/AET-DevOps25/team-1/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/AET-DevOps25/team-1/actions/workflows/docker-publish.yml)                      |
 | Backend-dev | [![Build and Publish and Deploy](https://github.com/AET-DevOps25/team-1/actions/workflows/docker-publish.yml/badge.svg?branch=week8-backend)](https://github.com/AET-DevOps25/team-1/actions/workflows/docker-publish.yml) |
 
+## Table of Contents
+
+- [1. Introduction](#1-introduction)
+- [2. System Description](#2-system-description)
+- [3. UML Diagrams](#3-uml-diagrams)
+- [4. Backlog](#4-backlog)
+- [5. Branch Name Template](#5-branch-name-template)
+- [6. Commit Template](#6-commit-template)
+- [7. Getting Started](#7-getting-started)
+- [8. API Reference (OpenAPI)](#8-api-reference-openapi)
+
 ## 1. Introduction
 
 ### 1.1 Who are the intended users?
@@ -161,3 +172,74 @@ git commit -m "feat: add a new feature" \
 * **test**: Adding missing tests or correcting existing tests
 * **refactor**: Refactoring code without changing business logic (e.g., changing variable names, structures, code style)
 * **perf**: Optimizing performance by improving code logic
+
+## 7. Getting Started
+
+The following subsections outline the key environment files and automation scripts used during **local development**, **image build**, and **deployment**.
+
+### 7.1 `.env` / `example.env`
+Copy `example.env` to `.env` and customise environment variables such as database credentials, JWT keys, and `VITE_API_BASE_URL`. All services load `.env` automatically.
+
+```bash
+cp example.env .env
+```
+
+### 7.2 `docker-compose-db.yml`
+Start **PostgreSQL + pgvector** only – perfect for frontend/backend development when other micro-services are not required.
+
+```bash
+docker compose -f docker-compose-db.yml up -d
+```
+
+### 7.3 `docker-compose.yml`
+Launch **all backend + frontend** services for a complete local stack.
+
+```bash
+docker compose up --build -d
+```
+
+### 7.4 `docker-compose.prod.yml`
+**Build** production-grade images only (does not run them). Mainly used in CI pipelines.
+
+```bash
+docker compose -f docker-compose.prod.yml build
+```
+
+### 7.5 `docker-compose.prod.deploy.yml`
+**Run** the images built in step 7.4. Useful for staging or on-premise deployments.
+
+```bash
+docker compose -f docker-compose.prod.deploy.yml up -d
+```
+
+### 7.6 `terraform/terraform.sh`
+Infrastructure-as-Code – provision cloud resources (VPC, RDS, EKS, etc.) with **Terraform**.
+
+```bash
+./terraform/terraform.sh apply
+```
+
+### 7.7 `ansible/ansible.sh`
+Use **Ansible** to install dependencies, distribute configuration, and deploy services to the provisioned hosts.
+
+```bash
+./ansible/ansible.sh
+```
+
+### 7.8 `k8s-install.sh`
+One-click installation of a lightweight **Kubernetes** cluster (k3s / micro-k8s) for testing. Contains commands for both development and production environments.
+
+```bash
+./k8s-install.sh
+```
+
+> All scripts are executable. If you encounter permission issues, run `chmod +x <script>`.
+
+## 8. API Reference (OpenAPI)
+
+An offline copy of the API specification lives in [`api-openapi-firefox-online.md`](./api-openapi-firefox-online.md).
+The file was generated automatically by **Apifox** after the project was completed and can be fed to an LLM to help it
+understand the entire API surface.
+
+* Online interactive documentation / playground: <https://ifoh7semfe.apifox.cn/>
+* The spec follows **OpenAPI 3.0** and can be imported into Postman, Stoplight, Swagger-UI, etc.

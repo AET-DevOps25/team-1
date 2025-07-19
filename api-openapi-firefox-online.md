@@ -1,0 +1,31 @@
+# AI-HR
+
+## API Docs
+- Authentication Controller [POST /api/v1/auth/login](https://ifoh7semfe.apifox.cn/post-apiv1authlogin-314644926e0.md): User login using email and password
+- Authentication Controller [POST /api/v1/auth/register](https://ifoh7semfe.apifox.cn/post-apiv1authregister-314644927e0.md): New candidate account registration (defaults to CANDIDATE role)
+- Authentication Controller [POST /api/v1/auth/hr-register](https://ifoh7semfe.apifox.cn/post-apiv1authhr-register-314644928e0.md): Existing HR users create other HR accounts
+- Job controller [List jobs with pagination and filtering](https://ifoh7semfe.apifox.cn/list-jobs-with-pagination-and-filtering-314644930e0.md): 
+- Job controller [Create new job (HR only)](https://ifoh7semfe.apifox.cn/create-new-job-hr-only-314644931e0.md): 
+- Job controller [Get job details](https://ifoh7semfe.apifox.cn/get-job-details-314644932e0.md): 
+- Job controller [Update job (HR only)](https://ifoh7semfe.apifox.cn/update-job-hr-only-314644933e0.md): 
+- Job controller [Close job (HR only)](https://ifoh7semfe.apifox.cn/close-job-hr-only-314644934e0.md): 
+- Job controller [Re-open job (HR only)](https://ifoh7semfe.apifox.cn/re-open-job-hr-only-314644935e0.md): 
+- Job controller [Delete job (HR only)](https://ifoh7semfe.apifox.cn/delete-job-hr-only-314644936e0.md): 
+- Application - application controller [submitApplication](https://ifoh7semfe.apifox.cn/submitapplication-314644916e0.md): 
+- Application - application controller [getApplications](https://ifoh7semfe.apifox.cn/getapplications-314644917e0.md): 
+- Application - application controller [getApplicationById](https://ifoh7semfe.apifox.cn/getapplicationbyid-314644918e0.md): 
+- Application - application controller [updateApplication](https://ifoh7semfe.apifox.cn/updateapplication-314644919e0.md): 
+- Application - application controller [Get messages for application - only accessible by HR](https://ifoh7semfe.apifox.cn/get-messages-for-application-only-accessible-by-hr-314644920e0.md): 
+- Application - application controller [createOrGetChatSession](https://ifoh7semfe.apifox.cn/createorgetchatsession-314644921e0.md): 
+- Application - application controller [completeChatSession](https://ifoh7semfe.apifox.cn/completechatsession-314644922e0.md): 
+- Application - chat controller [sendMessage](https://ifoh7semfe.apifox.cn/sendmessage-314644910e0.md): 
+- Application - chat controller [getMessages](https://ifoh7semfe.apifox.cn/getmessages-314644911e0.md): 
+- Application - Resume File Controller [Download resume file by application ID](https://ifoh7semfe.apifox.cn/download-resume-file-by-application-id-314644912e0.md): Only HR can download any resume, candidates can only download their own
+- Application - Resume File Controller [Get resume file information by application ID](https://ifoh7semfe.apifox.cn/get-resume-file-information-by-application-id-314644913e0.md): 
+- Application - assessment controller [Trigger resume scoring for an application](https://ifoh7semfe.apifox.cn/trigger-resume-scoring-for-an-application-314644914e0.md): 
+- Application - assessment controller [Trigger interview scoring for an application](https://ifoh7semfe.apifox.cn/trigger-interview-scoring-for-an-application-314644915e0.md): 
+- Internal application info endpoint (cluster-internal, no auth). [getApplicationWithAssessment](https://ifoh7semfe.apifox.cn/getapplicationwithassessment-314644924e0.md): 
+- Internal application info endpoint (cluster-internal, no auth). [createOrGetChatSession](https://ifoh7semfe.apifox.cn/createorgetchatsession-314644925e0.md): 
+- Internal user info endpoint (cluster-internal, no auth). [getUser](https://ifoh7semfe.apifox.cn/getuser-314644929e0.md): 
+- Internal job info endpoint (cluster-internal, no auth). [GET /internal/api/v1/jobs/{jobId} – fetch job details for internal services.](https://ifoh7semfe.apifox.cn/get-internalapiv1jobsjobid-fetch-job-details-for-internal-services-314644937e0.md): 
+- Test controller for developers [Test endpoint to extract text from uploaded document](https://ifoh7semfe.apifox.cn/test-endpoint-to-extract-text-from-uploaded-document-314644923e0.md): 
