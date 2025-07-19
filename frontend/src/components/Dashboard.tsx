@@ -141,7 +141,7 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const [selectedStatus] = useState<string>('ALL');
+  const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
@@ -622,9 +622,11 @@ const Dashboard: React.FC = () => {
       <DashboardHeader
         selectedView={selectedView}
         searchTerm={searchTerm}
+        selectedStatus={selectedStatus}
         resultsCount={filteredAndSortedApplications.length}
         onViewChange={setSelectedView}
         onSearchChange={setSearchTerm}
+        onStatusChange={setSelectedStatus}
         onAddHrClick={() => setIsHrRegisterModalOpen(true)}
         onCreateJobClick={openCreateJobModal}
       />
@@ -639,9 +641,6 @@ const Dashboard: React.FC = () => {
           onStatusClick={handleStatusClick}
           onHrDecisionClick={handleHrDecisionClick}
           onDetailsClick={handleDetailsClick}
-          onRefreshApplications={() => {
-            fetchApplications(currentPage, pageSize);
-          }}
         />
       )}
 

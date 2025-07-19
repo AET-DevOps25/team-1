@@ -8,7 +8,11 @@ import {
   Tabs, 
   Tab, 
   Chip,
-  TextField
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from '@mui/material';
 import { 
   People as PeopleIcon,
@@ -24,9 +28,11 @@ import { logout } from '../utils/auth';
 interface DashboardHeaderProps {
   selectedView: ViewMode;
   searchTerm: string;
+  selectedStatus: string;
   resultsCount: number;
   onViewChange: (view: ViewMode) => void;
   onSearchChange: (term: string) => void;
+  onStatusChange: (status: string) => void;
   onAddHrClick: () => void;
   onCreateJobClick: () => void;
 }
@@ -34,9 +40,11 @@ interface DashboardHeaderProps {
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   selectedView,
   searchTerm,
+  selectedStatus,
   resultsCount,
   onViewChange,
   onSearchChange,
+  onStatusChange,
   onAddHrClick,
   onCreateJobClick
 }) => {
@@ -114,6 +122,21 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
             size="small"
             sx={{ minWidth: 300 }}
           />
+          {selectedView === 'applications' && (
+            <FormControl size="small" sx={{ minWidth: 160 }}>
+              <InputLabel>Filter by Status</InputLabel>
+              <Select
+                value={selectedStatus}
+                onChange={(e) => onStatusChange(e.target.value)}
+                label="Filter by Status"
+              >
+                <MenuItem value="ALL">All Statuses</MenuItem>
+                <MenuItem value="AI_SCREENING">AI Screening</MenuItem>
+                <MenuItem value="AI_INTERVIEW">AI Interview</MenuItem>
+                <MenuItem value="COMPLETED">Completed</MenuItem>
+              </Select>
+            </FormControl>
+          )}
           <Chip 
             label={`${resultsCount} results`} 
             color="default" 

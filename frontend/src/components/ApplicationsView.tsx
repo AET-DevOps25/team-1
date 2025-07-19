@@ -12,7 +12,6 @@ interface ApplicationsViewProps {
   onStatusClick: (application: Application) => void;
   onHrDecisionClick: (application: Application) => void;
   onDetailsClick: (application: Application) => void;
-  onRefreshApplications: () => void;
 }
 
 const ApplicationsView: React.FC<ApplicationsViewProps> = ({
@@ -23,8 +22,7 @@ const ApplicationsView: React.FC<ApplicationsViewProps> = ({
   onSort,
   onStatusClick,
   onHrDecisionClick,
-  onDetailsClick,
-  onRefreshApplications
+  onDetailsClick
 }) => {
   if (isLoading) {
     return (
@@ -62,7 +60,6 @@ const ApplicationsView: React.FC<ApplicationsViewProps> = ({
       onStatusClick={onStatusClick}
       onHrDecisionClick={onHrDecisionClick}
       onDetailsClick={onDetailsClick}
-      onRefreshApplications={onRefreshApplications}
     />
   );
 };

@@ -2,14 +2,12 @@ import React, { useState } from 'react';
 import { Button } from '@mui/material';
 import { 
   Visibility as VisibilityIcon, 
-  Chat as ChatIcon,
-  Assessment as AssessmentIcon
+  Chat as ChatIcon
 } from '@mui/icons-material';
 import type { Application, SortField, SortDirection } from '../types/dashboard';
-import { isHrUser, getValidToken } from '../utils/auth';
+import { isHrUser } from '../utils/auth';
 import ChatHistoryModal from './modals/ChatHistoryModal';
 import CandidateChatModal from './modals/CandidateChatModal';
-import apiConfig from '../utils/api';
 
 interface ApplicationListProps {
   applications: Application[];
@@ -29,68 +27,11 @@ const ApplicationList: React.FC<ApplicationListProps> = ({
   onSort,
   onStatusClick,
   onHrDecisionClick,
-  onDetailsClick,
-  onRefreshApplications
+  onDetailsClick
 }) => {
   const [isChatHistoryModalOpen, setIsChatHistoryModalOpen] = useState(false);
   const [isCandidateChatModalOpen, setIsCandidateChatModalOpen] = useState(false);
   const [selectedChatApplication, setSelectedChatApplication] = useState<Application | null>(null);
-  
-  const [scoringApplications, setScoringApplications] = useState<Set<string>>(new Set());
-
-  const triggerManualScoring = async (application: Application) => {
-    const token = getValidToken();
-    if (!token) {
-      alert('Please login again to trigger scoring.');
-      return;
-    }
-
-    const applicationId = application.applicationId || application.application_id;
-    if (!applicationId) {
-      alert('No application ID found');
-      return;
-    }
-    setScoringApplications(prev => new Set(prev).add(applicationId));
-
-    try {
-      console.log('Triggering manual interview scoring for application:', applicationId);
-      
-      const response = await fetch(apiConfig.getFullURL(`/api/v1/applications/${applicationId}/assessment/interview/trigger`), {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include'
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          alert('Interview scoring triggered successfully! Scores will be updated shortly.');
-          if (onRefreshApplications) {
-            setTimeout(() => {
-              onRefreshApplications();
-            }, 2000); // Give server time to process scoring
-          }
-        } else {
-          alert(data.message || 'Failed to trigger scoring');
-        }
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        alert(errorData.message || `Failed to trigger scoring (${response.status})`);
-      }
-    } catch (error) {
-      console.error('Error triggering manual scoring:', error);
-      alert('Error triggering scoring. Please try again.');
-    } finally {
-      setScoringApplications(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(applicationId);
-        return newSet;
-      });
-    }
-  };
 
   const getSortIcon = (field: SortField): string => {
     if (sortField !== field) return '';
@@ -243,18 +184,8 @@ const ApplicationList: React.FC<ApplicationListProps> = ({
           INTERVIEW {getSortIcon('chatScore')}
         </div>
         <div 
-          className="final-score-header sortable"
-          onClick={() => onSort('finalScore')}
-          onKeyDown={(e) => e.key === 'Enter' && onSort('finalScore')}
-          role="button"
-          tabIndex={0}
-          style={{ flexBasis: '8%' }}
-        >
-          FINAL {getSortIcon('finalScore')}
-        </div>
-        <div 
           className="interview-comment-header"
-          style={{ flexBasis: '12%' }}
+          style={{ flexBasis: '14%' }}
         >
           RECOMMENDATION
         </div>
@@ -264,19 +195,19 @@ const ApplicationList: React.FC<ApplicationListProps> = ({
           onKeyDown={(e) => e.key === 'Enter' && onSort('hrDecision')}
           role="button"
           tabIndex={0}
-          style={{ flexBasis: '10%' }}
+          style={{ flexBasis: '12%' }}
         >
           HR DECISION {getSortIcon('hrDecision')}
         </div>
         <div 
           className="details-header"
-          style={{ flexBasis: '12%' }}
+          style={{ flexBasis: '14%' }}
         >
           DETAILS
         </div>
         <div 
           className="chat-header"
-          style={{ flexBasis: '14%' }}
+          style={{ flexBasis: '16%' }}
         >
           CHAT
         </div>
@@ -361,39 +292,7 @@ const ApplicationList: React.FC<ApplicationListProps> = ({
             </div>
           </div>
           
-          <div className="final-score" style={{ flexBasis: '8%' }}>
-            <div style={{ fontSize: '12px', textAlign: 'center' }}>
-              {(() => {
-                const finalScore = application.assessment?.finalScore;
-                return finalScore !== undefined && finalScore !== null ? (
-                  <span style={{ fontWeight: 'bold', color: '#2c3e50' }}>{finalScore}</span>
-                ) : (
-                  <span style={{ color: '#95a5a6' }}>-</span>
-                );
-              })()}
-              {isHrUser() && (
-                <Button
-                  variant="text"
-                  size="small"
-                  startIcon={<AssessmentIcon />}
-                  onClick={() => triggerManualScoring(application)}
-                  disabled={scoringApplications.has(application.applicationId || application.application_id || '')}
-                  sx={{ 
-                    textTransform: 'none',
-                    fontSize: '8px',
-                    minWidth: 'auto',
-                    mt: 0.5,
-                    p: 0.3,
-                    display: 'block'
-                  }}
-                >
-                  {scoringApplications.has(application.applicationId || application.application_id || '') ? 'Scoring...' : 'Re-score'}
-                </Button>
-              )}
-            </div>
-          </div>
-          
-          <div className="ai-recommend" style={{ flexBasis: '12%' }}>
+          <div className="ai-recommend" style={{ flexBasis: '14%' }}>
             <div style={{ fontSize: '11px' }}>
               {(() => {
                 // Check for both API formats
@@ -444,7 +343,7 @@ const ApplicationList: React.FC<ApplicationListProps> = ({
             </div>
           </div>
           
-          <div className="hr-decision" style={{ flexBasis: '10%' }}>
+          <div className="hr-decision" style={{ flexBasis: '12%' }}>
             <span 
               className="status-badge clickable"
               style={{ 
@@ -463,7 +362,7 @@ const ApplicationList: React.FC<ApplicationListProps> = ({
             </span>
           </div>
           
-          <div className="details" style={{ flexBasis: '12%' }}>
+          <div className="details" style={{ flexBasis: '14%' }}>
             <Button 
               variant="outlined"
               color="primary"
@@ -479,7 +378,7 @@ const ApplicationList: React.FC<ApplicationListProps> = ({
             </Button>
           </div>
 
-          <div className="chat" style={{ flexBasis: '14%' }}>
+          <div className="chat" style={{ flexBasis: '16%' }}>
             <Button 
               variant={isHrUser() ? 'outlined' : 'contained'}
               color={isHrUser() ? 'secondary' : 'primary'}
