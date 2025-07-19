@@ -7,8 +7,8 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * ChatMessage DTO according to api-documentation.yaml
- * 
+ * ChatMessage DTO according to api-openapi-original-design.yaml
+ * <p>
  * Schema definition:
  * ChatMessageDto:
  * properties:
@@ -39,7 +39,7 @@ public class ChatMessageDto {
     }
 
     public ChatMessageDto(UUID messageId, UUID sessionId, MessageSender sender,
-            String content, LocalDateTime sentAt) {
+                          String content, LocalDateTime sentAt) {
         this.messageId = messageId;
         this.sessionId = sessionId;
         this.sender = sender;

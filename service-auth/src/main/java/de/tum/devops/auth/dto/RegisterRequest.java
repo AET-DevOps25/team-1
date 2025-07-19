@@ -5,8 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
- * Register request DTO according to api-documentation.yaml
- * 
+ * Register request DTO according to api-openapi-original-design.yaml
+ * <p>
  * Schema definition:
  * RegisterRequest:
  * properties:

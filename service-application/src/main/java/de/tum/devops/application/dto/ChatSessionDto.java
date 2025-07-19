@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * ChatSession DTO according to api-documentation.yaml
+ * ChatSession DTO according to api-openapi-original-design.yaml
  * <p>
  * Schema definition:
  * ChatSessionDto:

@@ -1,12 +1,13 @@
 package de.tum.devops.auth.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Unified API response format according to api-documentation.yaml
- * 
+ * Unified API response format according to api-openapi-original-design.yaml
+ * <p>
  * Schema definition:
  * ApiResponse:
  * type: object

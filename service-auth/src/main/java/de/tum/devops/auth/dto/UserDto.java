@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * User DTO according to api-documentation.yaml
+ * User DTO according to api-openapi-original-design.yaml
  * <p>
  * Schema definition:
  * UserDto:

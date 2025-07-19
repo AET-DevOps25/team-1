@@ -5,8 +5,8 @@ import jakarta.validation.constraints.NotNull;
 
 /**
  * Request DTO for updating applications (HR decision) according to
- * api-documentation.yaml
- * 
+ * api-openapi-original-design.yaml
+ * <p>
  * Schema definition:
  * UpdateApplicationRequest:
  * properties:
