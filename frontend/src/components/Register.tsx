@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, {useState} from 'react';
+import {Link, useNavigate} from 'react-router-dom';
 import apiConfig from '../utils/api';
 import './Login.css';
 
@@ -103,6 +103,10 @@ const Register: React.FC = () => {
           const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
           document.cookie = `auth_token=${token}; expires=${expires}; path=/; SameSite=Strict; Secure`;
           localStorage.setItem('token', token);
+          // Persist user role for route guarding
+          if (data.data?.user?.role) {
+            localStorage.setItem('role', data.data.user.role);
+          }
         }
         setSuccess('Registration successful! Redirecting...');
         setIsModalOpen(true);
@@ -210,15 +214,15 @@ const Register: React.FC = () => {
           />
         </div>
 
-        <button 
-          onClick={handleRegister} 
+        <button
+            onClick={handleRegister}
           className="login-button"
           disabled={!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.confirmPassword}
         >
           Register
         </button>
 
-        <div className="register-link-text" style={{ marginTop: '20px' }}> 
+        <div className="register-link-text" style={{marginTop: '20px'}}>
           Already have an account? <Link to="/login">Sign in</Link>
         </div>
 
@@ -228,4 +232,4 @@ const Register: React.FC = () => {
   );
 };
 
-export default Register; 
+export default Register;
